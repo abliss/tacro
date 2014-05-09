@@ -5,8 +5,8 @@
         // NB: instead of the usual Simp+Frege basis for positive propositional
         // calculus, we use one of Hilbert's because it provides the necessary
         // "binding theorems" for rarr over itself.
-        // id
-        {Bone:{Stmt:[0,"T0.0","T0.0"]},
+        // ax1
+        {Bone:{Stmt:[0,"T0.0",[0,"T0.1","T0.0"]]},
          Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
         // imim1
         {Bone:{Stmt:[0,[0,"T0.0","T0.1"],[0,[0,"T0.1","T0.2"],[0,"T0.0","T0.2"]]]},
@@ -24,10 +24,7 @@
          Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
     ],
     goals:[
-        // ax1  
-        {Bone:{Stmt:[0,"T0.0",[0,"T0.1","T0.0"]]},
-         Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
-         // ax2
+        // ax2
         {Bone:{Stmt:[0,[0,"T0.0",[0,"T0.1","T0.2"]],[0,[0,"T0.0","T0.1"],[0,"T0.0","T0.2"]]]},
          Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
         {Bone:{Stmt:[0,[0,[0,"T0.0","T0.1"],"T0.2"],[0,"T0.1","T0.2"]]},
@@ -35,6 +32,8 @@
         {Bone:{Stmt:[0,[0,"T0.0",[0,"T0.1","T0.2"]],[0,"T0.1",[0,"T0.0","T0.2"]]]},
          Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
         {Bone:{Stmt:[0,[0,"T0.0","T0.1"],[0,"T0.0","T0.0"]]},
+         Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
+        {Bone:{Stmt:[0,"T0.0","T0.0"]},
          Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
         {Bone:{Stmt:[0,"T0.0",[0,"T0.1","T0.1"]]},
          Meat:{Terms:["&rarr;"],Kinds:["wff"]}},
