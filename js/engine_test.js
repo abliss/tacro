@@ -14,13 +14,18 @@ function getLand(filename) {
     var land = eval("("+Fs.readFileSync(filename,'utf8')+")");
     land.facts = [];
     land.factsByMark = {};
-    function addFact(f){
+    land.addFact = function(f){
         var fact = Fact(f);
-        fact.Skin = {Name:fingerprint(fact.getMark())}; //XXX
+        if (!fact.Skin) {
+            fact.Skin = {};
+        }
+        if (!fact.Skin.Name) {
+            fact.Skin.Name = fingerprint(fact.getMark());
+        }
         land.factsByMark[fact.getMark()] = fact;
     }
-    land.axioms.forEach(addFact);
-    land.inferences.forEach(addFact);
+    land.axioms.forEach(land.addFact);
+    land.inferences.forEach(land.addFact);
     land.getFact = function(mark) {
         return land.factsByMark[mark];
     }
@@ -135,9 +140,9 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     function assertEqual(msgTag, thing1, thing2) {
         if (thing1 !== thing2) {
             throw new Error("Unification error: " + msgTag + " @ " + debugPath +
-                            "\n  " + JSON.stringify(workExp) +
-                            "\n  " + JSON.stringify(factExp) +
-                            "\n  " + thing1 + " !== " + thing2);
+                            "\nWork:  " + JSON.stringify(workExp) +
+                            "\nFact:  " + JSON.stringify(factExp) +
+                            "\nWant:  " + thing1 + " === " + thing2);
         }
     }
     function assertNotFree(exp, freeMap) {
@@ -185,7 +190,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         }
         if (isString(factSubExp)) {
             if (alreadyMapped) {
-                assertEqualExps("mapped", factSubExp, workSubExp);
+                assertEqual("mapped", factSubExp, workSubExp);
             } else {
                 mapVarTo(factSubExp, workSubExp);
             }
@@ -252,7 +257,7 @@ function apply(work, workPath, fact, factPath) {
             var p = parseVarString(v);
             newV = work.nameVar(p.cmd,
                                 //TODO: nameKind goes in tree not meat!!
-                                work.nameKind(fact.Meat.Kinds[p.kind]),
+                                fact.Meat.Kinds[p.kind],
                                 v);
             varMap[v] = newV;
         }
@@ -370,24 +375,49 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
     }
 };
 
+function ground(work, dirtFact) {
+    // verify that the hyp is an instance of the dirt
+    var varMap = getMandHyps(work, [], dirtFact, []);
+    work.Bone.Hyps.shift();
+    var newSteps = [];
+    eachVarOnce(dirtFact.Bone.Stmt, function(v) {
+        var newV = varMap[v];
+        if (!newV) {
+            var p = parseVarString(v);
+            newV = work.nameVar(p.cmd,
+                                //TODO: nameKind goes in tree not meat!!
+                                dirtFact.Meat.Kinds[p.kind],
+                                v);
+            varMap[v] = newV;
+        }
+        newSteps.push(newV);
+    });
+    newSteps.push(nameDep(work, dirtFact));
+
+    // remove hyp step
+    work.Tree.Proof.shift(); 
+    // Replace with proof of hyp instance
+    work.Tree.Proof.unshift.apply(work.Tree.Proof, newSteps);
+    return work;
+}
 state.work = startWork(state.land.goals[state.goal]);
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
 console.log("XXXX Work now: " + JSON.stringify(state.work));
 console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 // |- (PQR)(PQ)PPR => |- (PQR)(PQ)PR
-state.work = apply(state.work, [2,1], imim2, [1]);
+state.work = apply(state.work, [2,1], imim1, [1]);
 // |- (P(QR))((QR)(PR))(P(PR)) => |- (PQR)(PQ)PR
 console.log("XXXX Work now: " + JSON.stringify(state.work));
 console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
-state.work = ground(state.work, imim2);
+state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
-land.facts.push(state.work);
+state.land.addFact(state.work);
 state.goal++;
 console.log("XXXX Work now: " + JSON.stringify(state.work));
 console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 var ax2 = state.work;
-
+throw new Error("finis");
 state.work = startWork(state.land.goals[state.goal]);
 // |- ((PQ)R)QR => |- ((PQ)R)QR
 state.work = apply(state.work, [], imim1, [1]);
