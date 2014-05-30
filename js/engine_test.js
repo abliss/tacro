@@ -312,6 +312,7 @@ function apply(work, workPath, fact, factPath) {
     // #. compute new preimage and update Hyps.0
     // TODO: hardcoded for now
     work.Bone.Hyps[0] = pusp.tool[1];
+    
     // don't delete any steps
     pusp.newSteps.unshift(0);
     // keep the "hyps.0".
@@ -403,24 +404,29 @@ function ground(work, dirtFact) {
 state.work = startWork(state.land.goals[state.goal]);
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
-console.log("XXXX Work now: " + JSON.stringify(state.work));
-console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 // |- (PQR)(PQ)PPR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,1], imim1, [1]);
 // |- (P(QR))((QR)(PR))(P(PR)) => |- (PQR)(PQ)PR
-console.log("XXXX Work now: " + JSON.stringify(state.work));
-console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
 state.land.addFact(state.work);
 state.goal++;
-console.log("XXXX Work now: " + JSON.stringify(state.work));
-console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 var ax2 = state.work;
-throw new Error("finis");
+console.log("#XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
+
 state.work = startWork(state.land.goals[state.goal]);
 // |- ((PQ)R)QR => |- ((PQ)R)QR
-state.work = apply(state.work, [], imim1, [1]);
+
+state.work = apply(state.work, [], imim1, [2]);
 // |- QPQ => |- ((PQ)R)QR
+
 state.work = ground(state.work, ax1);
+state.land.addFact(state.work);
+state.goal++;
 var himp1 = state.work;
+console.log("#XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
+
+/*
+console.log("XXXX Work now: " + JSON.stringify(state.work));
+
+*/
