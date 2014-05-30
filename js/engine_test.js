@@ -16,7 +16,7 @@ function getLand(filename) {
     land.factsByMark = {};
     function addFact(f){
         var fact = Fact(f);
-        fact.Skin = {Name:JSON.stringify(fact.getMark())}; //XXX
+        fact.Skin = {Name:fingerprint(fact.getMark())}; //XXX
         land.factsByMark[fact.getMark()] = fact;
     }
     land.axioms.forEach(addFact);
@@ -42,17 +42,35 @@ function makeMark(fact) {
     return Fact(fact).getMark();
 }
 
+function nameDep(workFact, depFact) {
+    return workFact.nameDep(fingerprint(depFact.getMark()), depFact);
+}
+
 function startWork(fact) {
     var work = clone(fact);
     work.Bone.Hyps = [clone(work.Bone.Stmt)];
     work.Bone.Free = [];
-    work.Skin = {Name: "TODO",
-                 HypNames: ["h0"],
-                 DepNames:[]};
+    work.Skin = {
+        HypNames: ["Hyps.0"],
+        DepNames: [],
+        V: [],
+        T: [],
+    };
+    function nameVar(varStr) {
+        var p = parseVarString(varStr);
+        if (p.cmd != 'T' && p.cmd != 'V') {
+            throw new Error("Bad var cmd " + varStr);
+        }
+        if (!work.Skin[p.cmd][p.kind]) {
+            work.Skin[p.cmd][p.kind] = [];
+        }
+        work.Skin[p.cmd][p.kind][p.num] = varStr;
+    }
+    eachVarOnce(work.Bone.Stmt,nameVar);
     work.Tree = {
         Cmd: "thm",
         Proof: ["Hyps.0"],
-        Terms: work.Meat.Terms,
+        Terms: work.Meat.Terms, //XXX: dangerous?
         Kinds: work.Meat.Kinds,
         Deps: [],
     };
@@ -198,7 +216,6 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
 
 function queryPushUp(params) {
     // TODO
-    console.log("XXXX Query " + JSON.stringify(params));
     var pushup = TODO_PUSHUPMAP[params];
     if (!pushup) {
         throw new Error("No pushup found for " + JSON.stringify(params));
@@ -241,7 +258,7 @@ function apply(work, workPath, fact, factPath) {
         }
         pusp.newSteps.push(newV);
     });
-    pusp.newSteps.push(work.nameDep("", fact));
+    pusp.newSteps.push(nameDep(work, fact));
     // Now on the stack: an instance of fact, with factPath equalling a subexp
     // of work.
 
@@ -253,11 +270,21 @@ function apply(work, workPath, fact, factPath) {
     pusp.goal = clone(work.Bone.Hyps[0]);      // what we want to prove
     pusp.goalPath = clone(workPath);           // path to subexp B
     // invariant: subexp A == subexp B
-    while (pusp.goalPath.length > 0) {
+    function checkInvariant() {
+        if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
+            JSON.stringify(zpath(pusp.goal, pusp.goalPath))) {
+            throw new Error("Invariant broken!");
+        }
+/*
         console.log("Check invariant: \n" +
                     zpath(pusp.tool, pusp.toolPath) + "\n" + 
                     zpath(pusp.goal, pusp.goalPath));
         console.log("XXXX pusp: ", JSON.stringify(pusp));
+*/
+    }
+
+    while (pusp.goalPath.length > 0) {
+        checkInvariant();
         var goalArgNum = pusp.goalPath.pop();
         var goalTerm = work.Meat.Terms[zpath(pusp.goal, pusp.goalPath)[0]];
         pusp.goalPath.push(goalArgNum);
@@ -271,13 +298,12 @@ function apply(work, workPath, fact, factPath) {
         pushUp.pushUp(pusp, work);
 
     }
-    console.log("Check invariant: \n" +
-                zpath(pusp.tool, pusp.toolPath) + "\n" + 
-                zpath(pusp.goal, pusp.goalPath));
-    console.log("XXXX pusp: ", JSON.stringify(pusp));
+    checkInvariant();
+
     // Now, since the invariant holds and goalPath = [], tool[2] == goal, so 
     // just detach.
-    
+    pusp.newSteps.push(nameDep(work, axmp)); // TODO: XXX ???
+
     // #. compute new preimage and update Hyps.0
     // TODO: hardcoded for now
     work.Bone.Hyps[0] = pusp.tool[1];
@@ -305,8 +331,6 @@ var imim2 = Fact(state.land.axioms[2]); // (PQ)(RP)RQ
 var pm243 = Fact(state.land.axioms[3]); // (PPQ)PQ
 var axmp = Fact(state.land.inferences[0]);
 
-console.log("XXXX" + JSON.stringify(pm243.getMark()));
-
 TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
     fact:imim2,
     pushUp: function(pusp, work) {
@@ -315,8 +339,8 @@ TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
         pusp.newSteps.push(thirdArg);
-        pusp.newSteps.push(work.nameDep("", this.fact));
-        pusp.newSteps.push(work.nameDep("", axmp));
+        pusp.newSteps.push(nameDep(work, this.fact));
+        pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
         pusp.tool = [rarr,
                      [rarr, thirdArg, pusp.tool[1]],
@@ -325,23 +349,43 @@ TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
     }
 };
 TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
-    fact:imim1
+    fact:imim1,
+    pushUp: function(pusp, work) {
+        // Goal: -> A B
+        // Tool: -> A C
+        // new goal: -> C B 
+        // imim1: (-> (-> A C) (-> (-> C B) (-> A B))
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.goalPath.pop();
+        var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
+        pusp.newSteps.push(thirdArg);
+        pusp.newSteps.push(nameDep(work, this.fact));
+        pusp.newSteps.push(nameDep(work, axmp));
+        var rarr = work.nameTerm("&rarr;");
+        pusp.tool = [rarr,
+                     [rarr, pusp.tool[2], thirdArg],
+                     [rarr, pusp.tool[1], thirdArg]];
+        pusp.toolPath = [2];
+    }
 };
 
 state.work = startWork(state.land.goals[state.goal]);
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
 console.log("XXXX Work now: " + JSON.stringify(state.work));
-console.log(state.work.toGhilbert(state.land.getFact));
-throw new Error("finis");
+console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 // |- (PQR)(PQ)PPR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,1], imim2, [1]);
 // |- (P(QR))((QR)(PR))(P(PR)) => |- (PQR)(PQ)PR
+console.log("XXXX Work now: " + JSON.stringify(state.work));
+console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 state.work = ground(state.work, imim2);
 // |- (PQR)(PQ)PR
 land.facts.push(state.work);
 state.goal++;
-console.log(state.work.toGhilbert());
+console.log("XXXX Work now: " + JSON.stringify(state.work));
+console.log("XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
 var ax2 = state.work;
 
 state.work = startWork(state.land.goals[state.goal]);
