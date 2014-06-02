@@ -517,6 +517,16 @@ function canonicalize(work) {
     out.setFree([]); // XXX
     out.setProof(mapList(work.Tree.Proof));
     out.setName(fingerprint(out.getMark()));
+    
+    function renameVars(skin, cmd) {
+        for (var k = 0; k < skin[cmd].length; k++) {
+            for (var n = 0; n < skin[cmd][k].length; n++) {
+                skin[cmd][k][n] = cmd + k + "." + n;
+            }
+        }
+    }
+    renameVars(out.Skin, "T");
+    renameVars(out.Skin, "V");
     return out;
 }
 
@@ -592,7 +602,6 @@ applyArrow([0], thms.Simplify, 1);
 thms.idd = save();
 
 applyArrow([], thms.idd, 0);
-DEBUG=true
 thms.id = save();
 /*
 startWith(thms.Distribute);
