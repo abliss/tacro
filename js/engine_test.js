@@ -603,7 +603,7 @@ thms.idd = save();
 
 applyArrow([], thms.idd, 0);
 thms.id = save();
-/*
+
 startWith(thms.Distribute);
 applyArrow([0], thms.idd, 1);
 applyArrow([1,0], thms.Simplify, 1);
@@ -615,9 +615,11 @@ startWith(thms.id);
 applyArrow([], thms.mp, 0);
 thms.idie = save();
 
+/* XXX already defined
 startWith(thms.mp);
 applyArrow([], thms.Distribute, 0);
 thms.contract = save();
+*/
 /*
 // %%% END import from orcat_test.js
 */
