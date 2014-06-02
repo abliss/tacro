@@ -8,6 +8,8 @@ var state = {};
 
 var TODO_PUSHUPMAP = {};
 
+var DEBUG = false;
+
 function getLand(filename) {
     // Uses eval instead of json to allow comments and naked keys.
     // This is almost certainly a terrible idea.
@@ -123,6 +125,10 @@ function eachVarOnce(exp, cb, seen) {
     }
 }
 
+function newDummy() {
+    return "DUMMY_" + Math.random(); //XXX
+}
+
 // Returns a list of mandatory hypotheses (i.e., values for each var) of the
 // fact, such that the named subexpression of the fact's stmt matches the named
 // subexpression of the work's first hyp.
@@ -137,6 +143,11 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     var varMap = {};
     var workExp = zpath(work.Bone.Hyps[0], hypPath);
     var factExp = zpath(fact.Bone.Stmt, stmtPath);
+    var nonDummy = {};
+    var dummyMap = {};
+    eachVarOnce(work.Bone.Stmt, function(v) {
+        nonDummy[v] = v;
+    });
     function assertEqual(msgTag, thing1, thing2) {
         if (thing1 !== thing2) {
             throw new Error("Unification error: " + msgTag + " @ " + debugPath +
@@ -188,21 +199,46 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             factSubExp = varMap[factSubExp];
             alreadyMapped = true;
         }
+        while (dummyMap[factSubExp]) {
+            factSubExp = dummyMap[factSubExp];
+        }
+        while (dummyMap[workSubExp]) {
+            workSubExp = dummyMap[workSubExp];
+        }
         if (isString(factSubExp)) {
             if (alreadyMapped) {
-                assertEqual("mapped", factSubExp, workSubExp);
+                if (nonDummy[workSubExp]) {
+                    assertEqual("mapped", factSubExp, workSubExp);
+                } else {
+                    if (factSubExp != workSubExp) { 
+                        dummyMap[workSubExp] = factSubExp;
+                    }
+                }
             } else {
                 mapVarTo(factSubExp, workSubExp);
             }
         } else {
+            var factTerm = fact.Meat.Terms[factSubExp[0]];
             if (isString(workSubExp)) {
-                // Work is var, Fact is exp. Don't support now.
-                assertEqual("shrug", workSubExp, factSubExp); //XXX
-            } else {
+                // Work is var, Fact is exp. 
+                if (nonDummy[workSubExp]) {
+                    assertEqual("shrug", workSubExp, factSubExp); //XXX
+                } else {
+                    var newExp = [];
+                    newExp.push(work.nameTerm(factTerm));
+                    for (var i = 1; i < factSubExp.length; i++) {
+                        newExp.push(work.nameVar(
+                            "T",
+                            factTerm.Meat.Kinds[0], //XXX: Need Meat.Signs!
+                            newDummy()));
+                    }
+                    dummyMap[workSubExp] = newExp;
+                }
+            } 
+            if (!isString(workSubExp)) {
                 // exp - exp
                 var term1 = work.Meat.Terms[workSubExp[0]];
-                var term2 = fact.Meat.Terms[factSubExp[0]];
-                assertEqual("term", term1, term2);
+                assertEqual("term", term1, factTerm);
                 assertEqual("arity", workExp.length, factExp.length);
                 for (var i = 1; i < workExp.length; i++) {
                     debugPath.push(i);
@@ -213,7 +249,35 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         }
     }
     recurse(workExp, factExp, false);
-    
+    function replaceDummies(x) {
+        // TODO: does not handle freemap dummies!
+        if (isString(x)) {
+            while (dummyMap[x]) {
+                x = dummyMap[x];
+            }
+            return x;
+        } else if (!isNaN(x)) {
+            return x;
+        } else {
+            for (var k in x) if (x.hasOwnProperty(k)) {
+                x[k] = replaceDummies(x[k]);
+            }
+            return x;
+        }
+    }
+    if (DEBUG) {
+        console.log("#XXXX Work now: " + JSON.stringify(work));
+        
+        for (var v in dummyMap) if (dummyMap.hasOwnProperty(v)) {
+            console.log("#XXXX Dummy:" + v + "=> " + JSON.stringify(dummyMap[v]));
+            
+        }
+    }
+    replaceDummies(work);
+    if (DEBUG) {
+        console.log("#XXXX Work undummied: " + JSON.stringify(work));
+    }
+
     //console.log("Unified: " + JSON.stringify(varMap));
     return varMap;
 }
@@ -245,6 +309,7 @@ function globalSub(fact, varMap, work) {
 }
 function apply(work, workPath, fact, factPath) {
     var varMap = getMandHyps(work, workPath, fact, factPath);
+    if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
     // If that didn't throw, we can start mutating
     // PushUpScratchPad
     var pusp = {};
@@ -258,7 +323,7 @@ function apply(work, workPath, fact, factPath) {
             newV = work.nameVar(p.cmd,
                                 //TODO: nameKind goes in tree not meat!!
                                 fact.Meat.Kinds[p.kind],
-                                v);
+                                newDummy()); // XXX HACK
             varMap[v] = newV;
         }
         pusp.newSteps.push(newV);
@@ -388,7 +453,7 @@ function ground(work, dirtFact) {
             newV = work.nameVar(p.cmd,
                                 //TODO: nameKind goes in tree not meat!!
                                 dirtFact.Meat.Kinds[p.kind],
-                                v);
+                                newDummy()); // XXX HACK
             varMap[v] = newV;
         }
         newSteps.push(newV);
@@ -401,32 +466,90 @@ function ground(work, dirtFact) {
     work.Tree.Proof.unshift.apply(work.Tree.Proof, newSteps);
     return work;
 }
+
+
+// TODO: should be generated
+var ghilbertText = 'import (TMP tmp2.ghi () "")\n' +
+    'tvar (kind0 T0.0 T0.1 T0.2 T0.3 T0.4 T0.5)\n\n' ;
+
 state.work = startWork(state.land.goals[state.goal]);
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
 // |- (PQR)(PQ)PPR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,1], imim1, [1]);
-// |- (P(QR))((QR)(PR))(P(PR)) => |- (PQR)(PQ)PR
+// |- (P(QR))((Qr)(Pr))(P(PR)) => |- (PQR)(PQ)PR
+
 state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
 state.land.addFact(state.work);
 state.goal++;
 var ax2 = state.work;
-console.log("#XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
+if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+ghilbertText += state.work.toGhilbert(state.land.getFact);
 
-state.work = startWork(state.land.goals[state.goal]);
-// |- ((PQ)R)QR => |- ((PQ)R)QR
 
-state.work = apply(state.work, [], imim1, [2]);
-// |- QPQ => |- ((PQ)R)QR
+// Apparatus for importing proofs from orcat_test.js
+var thms = {};
+thms.imim1 = imim1;
+thms.imim2 = imim2;
+thms.Distribute = ax2;
+thms.Simplify = ax1;
 
-state.work = ground(state.work, ax1);
-state.land.addFact(state.work);
-state.goal++;
-var himp1 = state.work;
-console.log("#XXXX Ghilbert:\n" + state.work.toGhilbert(state.land.getFact));
+var stack = []; // goalPath, fact, factPath
+function startWith(fact) {
+    stack = [[fact]];
+}
+function applyArrow(path, fact, side) {
+    stack.unshift([path.map(function(x){return x+1;}), fact, [2 - side]]);
+}
+function save() {
+    state.work = startWork(state.land.goals[state.goal]);
+    stack.forEach(function(step) {
+        if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+        if (step.length > 1) {
+            state.work = apply(state.work, step[0], step[1], step[2]);
+        } else {
+            state.work = ground(state.work, step[0]);
+        }
+    });
+    state.land.addFact(state.work);
+    state.goal++;
+    ghilbertText += state.work.toGhilbert(state.land.getFact);
+    return state.work.Skin.Name;
+}
 
+// %%% BEGIN import from orcat_test.js
+startWith(thms.Simplify);
+applyArrow([], thms.imim1, 0);
+thms.himp1 = save();
+
+startWith(thms.Distribute);
+applyArrow([1,0],thms.Simplify, 1);
+thms.con12 = save();
 /*
-console.log("XXXX Work now: " + JSON.stringify(state.work));
+startWith(thms.Simplify);
+applyArrow([], thms.Distribute, 0);
+thms.iddlem1 = save(); //PICKUP: what to do with continued no/start
+applyArrow([0], thms.Simplify, 1);
+thms.idd = save();
 
+applyArrow([], thms.idd, 0);
+thms.id = save();
+startWith(thms.Distribute);
+applyArrow([0], thms.idd, 1);
+applyArrow([1,0], thms.Simplify, 1);
+thms.mpd = save();
+
+applyArrow([], thms.mpd, 0);
+thms.mp = save();
+startWith(thms.id);
+applyArrow([], thms.mp, 0);
+thms.idie = save();
+
+startWith(thms.mp);
+applyArrow([], thms.Distribute, 0);
+thms.contract = save();
+/*
+// %%% END import from orcat_test.js
 */
+console.log(ghilbertText);
