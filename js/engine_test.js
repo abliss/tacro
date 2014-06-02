@@ -207,12 +207,16 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         }
         if (isString(factSubExp)) {
             if (alreadyMapped) {
-                if (nonDummy[workSubExp]) {
-                    assertEqual("mapped", factSubExp, workSubExp);
-                } else {
+                if (!nonDummy[workSubExp]) {
                     if (factSubExp != workSubExp) { 
                         dummyMap[workSubExp] = factSubExp;
                     }
+                } else if (!nonDummy[factSubExp]) {
+                    if (factSubExp != workSubExp) { 
+                        dummyMap[factSubExp] = workSubExp;;
+                    }                
+                } else {
+                    assertEqual("mapped", factSubExp, workSubExp);
                 }
             } else {
                 mapVarTo(factSubExp, workSubExp);
@@ -250,7 +254,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     }
     recurse(workExp, factExp, false);
     function replaceDummies(x) {
-        // TODO: does not handle freemap dummies!
+        // TODO: handle freemap dummies correctly!
         if (isString(x)) {
             while (dummyMap[x]) {
                 x = dummyMap[x];
@@ -273,12 +277,17 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             
         }
     }
-    replaceDummies(work);
+    replaceDummies(work.Bone.Stmt);
+    replaceDummies(work.Bone.Hyps);
+    replaceDummies(work.Tree.Proof);
     if (DEBUG) {
         console.log("#XXXX Work undummied: " + JSON.stringify(work));
     }
 
     //console.log("Unified: " + JSON.stringify(varMap));
+    for (x in varMap) if (varMap.hasOwnProperty(x)) {
+        varMap[x] = replaceDummies(varMap[x]);
+    }
     return varMap;
 }
 
@@ -444,6 +453,7 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
 function ground(work, dirtFact) {
     // verify that the hyp is an instance of the dirt
     var varMap = getMandHyps(work, [], dirtFact, []);
+    if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
     work.Bone.Hyps.shift();
     var newSteps = [];
     eachVarOnce(dirtFact.Bone.Stmt, function(v) {
@@ -512,10 +522,12 @@ function save() {
             state.work = ground(state.work, step[0]);
         }
     });
+    if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
     state.land.addFact(state.work);
     state.goal++;
     ghilbertText += state.work.toGhilbert(state.land.getFact);
-    return state.work.Skin.Name;
+    startWith(state.work);
+    return state.work;
 }
 
 // %%% BEGIN import from orcat_test.js
@@ -526,13 +538,16 @@ thms.himp1 = save();
 startWith(thms.Distribute);
 applyArrow([1,0],thms.Simplify, 1);
 thms.con12 = save();
-/*
+
+
 startWith(thms.Simplify);
 applyArrow([], thms.Distribute, 0);
-thms.iddlem1 = save(); //PICKUP: what to do with continued no/start
+thms.iddlem1 = save();
+
+startWith(thms.iddlem1)
 applyArrow([0], thms.Simplify, 1);
 thms.idd = save();
-
+/*
 applyArrow([], thms.idd, 0);
 thms.id = save();
 startWith(thms.Distribute);
