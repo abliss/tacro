@@ -193,18 +193,19 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         varMap[factVarName] = workExp;
     }
     function recurse(workSubExp, factSubExp, alreadyMapped) {
-        //console.log("XXXX Recurse:\n  " + JSON.stringify(workSubExp) + "\n  " +
-        //            JSON.stringify(factSubExp));
         if (!alreadyMapped && isString(factSubExp) && varMap[factSubExp]) {
             factSubExp = varMap[factSubExp];
             alreadyMapped = true;
         }
-        while (dummyMap[factSubExp]) {
-            factSubExp = dummyMap[factSubExp];
+        if (alreadyMapped) {
+            while (dummyMap[factSubExp]) {
+                factSubExp = dummyMap[factSubExp];
+            }
         }
         while (dummyMap[workSubExp]) {
             workSubExp = dummyMap[workSubExp];
         }
+
         if (isString(factSubExp)) {
             if (alreadyMapped) {
                 if (!nonDummy[workSubExp]) {
@@ -233,19 +234,21 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                     for (var i = 1; i < factSubExp.length; i++) {
                         newExp.push(work.nameVar(
                             "T",
-                            factTerm.Meat.Kinds[0], //XXX: Need Meat.Signs!
+                            work.Meat.Kinds[0], //XXX: Need Meat.Signs!
                             newDummy()));
                     }
                     dummyMap[workSubExp] = newExp;
+                    workSubExp = newExp;
                 }
             } 
             if (!isString(workSubExp)) {
                 // exp - exp
                 var term1 = work.Meat.Terms[workSubExp[0]];
                 assertEqual("term", term1, factTerm);
-                assertEqual("arity", workExp.length, factExp.length);
-                for (var i = 1; i < workExp.length; i++) {
+                assertEqual("arity", workSubExp.length, factSubExp.length);
+                for (var i = 1; i < workSubExp.length; i++) {
                     debugPath.push(i);
+                    // TODO: possible infinite loop here on bad unification
                     recurse(workSubExp[i], factSubExp[i], alreadyMapped);
                     debugPath.pop();
                 }
@@ -259,7 +262,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             while (dummyMap[x]) {
                 x = dummyMap[x];
             }
-            return x;
+            return isString(x) ? x : replaceDummies(x);
         } else if (!isNaN(x)) {
             return x;
         } else {
@@ -453,7 +456,7 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
 function ground(work, dirtFact) {
     // verify that the hyp is an instance of the dirt
     var varMap = getMandHyps(work, [], dirtFact, []);
-    if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
+    if (DEBUG) {console.log("# ground MandHyps: " + JSON.stringify(varMap));}
     work.Bone.Hyps.shift();
     var newSteps = [];
     eachVarOnce(dirtFact.Bone.Stmt, function(v) {
@@ -474,7 +477,47 @@ function ground(work, dirtFact) {
     work.Tree.Proof.shift(); 
     // Replace with proof of hyp instance
     work.Tree.Proof.unshift.apply(work.Tree.Proof, newSteps);
+    if (DEBUG) {console.log("#XXXX Work before canon:" + JSON.stringify(work));}
+    
+    work = canonicalize(work);
     return work;
+}
+
+// Reorders variables so that they appear in first-used order.
+// Removes no-longer-used dummies.
+// Renames remaining variable Skins to Tx.y
+// Reorders Deps so they appear in first-used order
+// Trims from Meat.Kinds and Meat.Terms that which is not in Bone
+// TODO: doesn't handle hyps or free, currently
+function canonicalize(work) {
+    var out = new Fact();
+    function mapList(exp) {
+        if (isString(exp)) {
+            var dots = exp.split(".");
+            if (dots[0] == "Deps") {
+                var depNum = dots[1];
+                // TODO: HACK
+                var depWrap = {getMark: function() {
+                    return work.Tree.Deps[depNum];}};
+                return out.nameDep(work.Skin.DepNames[depNum],
+                                   depWrap);
+            }
+            var p = parseVarString(exp);
+            return out.nameVar(p.cmd,
+                               work.Tree.Kinds[p.kind],
+                               exp);
+        } else if (!isNaN(exp)) {
+            return out.nameTerm(work.Tree.Terms[exp]);
+        } else {
+            return exp.map(mapList);
+        }
+    }
+    out.setCmd("thm");
+    out.setStmt(mapList(work.Bone.Stmt));
+    out.setFree([]); // XXX
+    out.setProof(mapList(work.Tree.Proof));
+    out.setName(fingerprint(out.getMark()));
+    return out;
 }
 
 
@@ -547,9 +590,11 @@ thms.iddlem1 = save();
 startWith(thms.iddlem1)
 applyArrow([0], thms.Simplify, 1);
 thms.idd = save();
-/*
+
 applyArrow([], thms.idd, 0);
+DEBUG=true
 thms.id = save();
+/*
 startWith(thms.Distribute);
 applyArrow([0], thms.idd, 1);
 applyArrow([1,0], thms.Simplify, 1);
