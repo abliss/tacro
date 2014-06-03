@@ -18,18 +18,31 @@ function getLand(filename) {
     land.factsByMark = {};
     land.addFact = function(f){
         var fact = Fact(f);
-        if (!fact.Skin) {
-            fact.Skin = {};
+        if (DEBUG) {
+            console.log("# Adding fact: " + JSON.stringify(fact));
         }
-        if (!fact.Skin.Name) {
-            fact.Skin.Name = fingerprint(fact.getMark());
+        fact = canonicalize(fact);
+        if (DEBUG) {
+            console.log("# Canonically: " + JSON.stringify(fact));
         }
         land.factsByMark[fact.getMark()] = fact;
     }
-    land.axioms.forEach(land.addFact);
-    land.inferences.forEach(land.addFact);
+    function addAxiom(fact) {
+        if (!fact.Tree) {
+            fact.Tree = {};
+        }
+        fact.Tree.Cmd = "stmt";
+        land.addFact(fact);
+    }
+    land.axioms.forEach(addAxiom);
+    land.inferences.forEach(addAxiom);
     land.getFact = function(mark) {
-        return land.factsByMark[mark];
+        var fact = land.factsByMark[mark];
+        if (!fact) {
+            throw new Error("No fact for mark " +
+                            JSON.stringify(mark));
+        }
+        return fact;
     }
 
     return land;
@@ -408,11 +421,11 @@ var rarr = getLand("land_rarr.js");
 lands.push(rarr);
 state.land = rarr;
 state.goal = 0;
-var ax1 = Fact(state.land.axioms[0]);   // PQP
-var imim1 = Fact(state.land.axioms[1]); // (PQ)(QR)PR
-var imim2 = Fact(state.land.axioms[2]); // (PQ)(RP)RQ
-var pm243 = Fact(state.land.axioms[3]); // (PPQ)PQ
-var axmp = Fact(state.land.inferences[0]);
+var ax1 = canonicalize(Fact(state.land.axioms[0]));   // PQP
+var imim1 = canonicalize(Fact(state.land.axioms[1])); // (PQ)(QR)PR
+var imim2 = canonicalize(Fact(state.land.axioms[2])); // (PQ)(RP)RQ
+var pm243 = canonicalize(Fact(state.land.axioms[3])); // (PPQ)PQ
+var axmp = canonicalize(Fact(state.land.inferences[0]));
 
 TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
     fact:imim2,
@@ -488,11 +501,18 @@ function ground(work, dirtFact) {
 // Renames remaining variable Skins to Tx.y
 // Reorders Deps so they appear in first-used order
 // Trims from Meat.Kinds and Meat.Terms that which is not in Bone
-// TODO: doesn't handle hyps or free, currently
+// TODO: doesn't handle freemap, currently
 function canonicalize(work) {
     var out = new Fact();
+    var terms = (work.Tree && work.Tree.Terms) ? work.Tree.Terms : work.Meat.Terms;
+    var kinds = (work.Tree && work.Tree.Kinds) ? work.Tree.Kinds : work.Meat.Kinds;
+    if (work.Bone.Free && work.Bone.Free.length > 0) {
+        throw new Error("TODO");
+    }
     function mapList(exp) {
-        if (isString(exp)) {
+        if (exp === undefined) {
+            return exp;
+        } else if (isString(exp)) {
             var dots = exp.split(".");
             if (dots[0] == "Deps") {
                 var depNum = dots[1];
@@ -504,18 +524,23 @@ function canonicalize(work) {
             }
             var p = parseVarString(exp);
             return out.nameVar(p.cmd,
-                               work.Tree.Kinds[p.kind],
+                               kinds[p.kind],
                                exp);
         } else if (!isNaN(exp)) {
-            return out.nameTerm(work.Tree.Terms[exp]);
+            return out.nameTerm(terms[exp]);
         } else {
             return exp.map(mapList);
         }
     }
-    out.setCmd("thm");
     out.setStmt(mapList(work.Bone.Stmt));
     out.setFree([]); // XXX
+    if (work.Bone.Hyps) {
+        work.Bone.Hyps.forEach(function(h) {
+            out.Bone.Hyps.push(mapList(h));
+        });
+    }
     out.setProof(mapList(work.Tree.Proof));
+    out.setCmd(work.Tree.Cmd);
     out.setName(fingerprint(out.getMark()));
     
     function renameVars(skin, cmd) {
@@ -532,6 +557,16 @@ function canonicalize(work) {
 
 
 // TODO: should be generated
+var interfaceText = 'kind (kind0)\n' +
+    'tvar (kind0 T0.0 T0.1 T0.2 T0.3 T0.4 T0.5)\n' +
+    'term (kind0 (&rarr; T0.0 T0.1))\n\n';
+
+for (var k in state.land.factsByMark) {
+    if (state.land.factsByMark.hasOwnProperty(k)) {
+        interfaceText += state.land.factsByMark[k].toGhilbert(state.land.getFact);
+    }
+}
+
 var ghilbertText = 'import (TMP tmp2.ghi () "")\n' +
     'tvar (kind0 T0.0 T0.1 T0.2 T0.3 T0.4 T0.5)\n\n' ;
 
@@ -623,4 +658,50 @@ thms.contract = save();
 /*
 // %%% END import from orcat_test.js
 */
-console.log(ghilbertText);
+
+
+// ==== Verify ====
+GH = global.GH = {};
+global.log = console.log;
+require('../../caghni/js/verify.js')
+require('../../caghni/js/proofstep.js')
+
+var UrlCtx = {
+    files: {},
+    resolve: function(url) {
+        return this.files[url];
+    }
+}
+
+UrlCtx.files["tmp2.ghi"] = interfaceText;
+UrlCtx.files["tmp2.gh"] = ghilbertText;
+
+function run(url_context, url, context) {
+  var scanner = new GH.Scanner(url_context.resolve(url).split(/\r?\n/));
+  while (true) {
+    var command = GH.read_sexp(scanner);
+    if (command === null || command === undefined) {
+      return true;
+    }
+    if (GH.typeOf(command) != 'string') {
+      throw 'Command must be atom';
+    }
+    // We don't care about styling, but apparently we need to participate in passing
+    // it around.
+    var styling = scanner.styleScanner.get_styling('');
+    var arg = GH.read_sexp(scanner);
+    context.do_cmd(command, arg, styling);
+    scanner.styleScanner.clear();
+  }
+  return false;
+}
+
+var verifyCtx = new GH.VerifyCtx(UrlCtx, run);
+if (DEBUG) {
+    console.log("#### AXIOMS");
+    console.log(UrlCtx.files["tmp2.ghi"]);
+    console.log("#### PROOFS");
+    console.log(UrlCtx.files["tmp2.gh"]);
+}
+run(UrlCtx, "tmp2.gh", verifyCtx);
+
