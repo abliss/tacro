@@ -17,7 +17,7 @@ function getLand(filename) {
     land.facts = [];
     land.factsByMark = {};
     land.addFact = function(f){
-        var fact = Fact(f);
+        var fact = new Fact(f);
         if (DEBUG) {
             console.log("# Adding fact: " + JSON.stringify(fact));
         }
@@ -59,7 +59,7 @@ function clone(obj) {
 }
 
 function makeMark(fact) {
-    return Fact(fact).getMark();
+    return new Fact(fact).getMark();
 }
 
 function nameDep(workFact, depFact) {
@@ -67,48 +67,22 @@ function nameDep(workFact, depFact) {
 }
 
 function startWork(fact) {
-    var work = clone(fact);
-    work.Bone.Hyps = [clone(work.Bone.Stmt)];
-    work.Bone.Free = [];
-    work.Skin = {
-        HypNames: ["Hyps.0"],
-        DepNames: [],
-        V: [],
-        T: [],
-    };
-    function nameVar(varStr) {
-        var p = parseVarString(varStr);
-        if (p.cmd != 'T' && p.cmd != 'V') {
-            throw new Error("Bad var cmd " + varStr);
-        }
-        if (!work.Skin[p.cmd][p.kind]) {
-            work.Skin[p.cmd][p.kind] = [];
-        }
-        work.Skin[p.cmd][p.kind][p.num] = varStr;
+    var work = new Fact(clone(fact));
+    work.setHyps([clone(work.Core[Fact.CORE_STMT])]);
+    work.Skin.HypNames = ["Hyps.0"];
+    if (work.Skin.VarNames == undefined) {
+        // TODO: PICKUP
+        throw new Error("wtf fact? " + JSON.stringify(work));
     }
-    eachVarOnce(work.Bone.Stmt,nameVar);
-    work.Tree = {
-        Cmd: "thm",
-        Proof: ["Hyps.0"],
-        Terms: work.Meat.Terms, //XXX: dangerous?
-        Kinds: work.Meat.Kinds,
-        Deps: [],
-    };
-    return Fact(work);
+    function nameVar(varNum) {
+        work.Skin.VarNames[varNum] = "V" + varNum;
+    }
+    eachVarOnce(work.Core[Fact.CORE_STMT], nameVar);
+    work.setCmd("thm");
+    work.setProof(["Hyps.0"]);
+    return new Fact(work);
 }
 
-// returns {cmd:T or V, kind:kindIndex, num:varNum]
-function parseVarString(s) {
-    var arr = s.substring(1).split('.');
-    arr[0] = Number(arr[0]);
-    arr[1] = Number(arr[1]);
-    if (((s[0] != 'T') && (s[0] != 'V')) ||
-        isNaN(arr[0]) ||
-        isNaN(arr[1])) {
-        throw new Error("Bad var string " + s);
-    }
-    return {cmd:s[0], kind:arr[0], num:arr[1]};
-}
 
 // NB: not the same as orcat's xpath definition. Pass 0 to get the term.
 function zpath(exp, path) {
@@ -119,14 +93,10 @@ function zpath(exp, path) {
     return a;
 }
 
-function isString(s) {
-    return (typeof s === "string") || (s instanceof String);
-}
-
 // Visits each var exactly once, in left-to-right depth-first order
 function eachVarOnce(exp, cb, seen) {
     seen = seen || {};
-    if (isString(exp)) {
+    if (!Array.isArray(exp)) {
         if (!seen[exp]) {
             seen[exp] = 1;
             cb(exp);
@@ -154,11 +124,11 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     var debugPath = [];
     // from fact vars to work exps
     var varMap = {};
-    var workExp = zpath(work.Bone.Hyps[0], hypPath);
-    var factExp = zpath(fact.Bone.Stmt, stmtPath);
+    var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
+    var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
     var nonDummy = {};
     var dummyMap = {};
-    eachVarOnce(work.Bone.Stmt, function(v) {
+    eachVarOnce(work.Core[Fact.CORE_STMT], function(v) {
         nonDummy[v] = v;
     });
     function assertEqual(msgTag, thing1, thing2) {
@@ -170,7 +140,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         }
     }
     function assertNotFree(exp, freeMap) {
-        if (isString(exp)) {
+        if (!Array.isArray(exp)) {
             assertEqual("free", freeMap[exp], undefined);
         } else {
             for (var i = 1; i < exp.length; i++) {
@@ -181,14 +151,15 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         }
     }
     function getFreeList(factVarName) {
-        if (!fact.Bone.Free) {
+        var freeMap = fact.Core[Fact.CORE_FREE];
+        if (!freeMap) {
             return undefined;
         }
         // TODO: could be faster.
-        for (var i = 0; i < fact.Bone.Free.length; i++) {
-            if (fact.Bone.Free[i][0] === factVarName) {
+        for (var i = 0; i < freeMap.length; i++) {
+            if (freeMap[i][0] === factVarName) {
                 var free = {};
-                fact.Bone.Free[i].slice(1).forEach(function(v) {
+                freeMap[i].slice(1).forEach(function(v) {
                     free[v] = 1;
                 });
                 return free;
@@ -206,7 +177,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         varMap[factVarName] = workExp;
     }
     function recurse(workSubExp, factSubExp, alreadyMapped) {
-        if (!alreadyMapped && isString(factSubExp) && varMap[factSubExp]) {
+        if (!alreadyMapped && !Array.isArray(factSubExp) && varMap[factSubExp]) {
             factSubExp = varMap[factSubExp];
             alreadyMapped = true;
         }
@@ -219,7 +190,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             workSubExp = dummyMap[workSubExp];
         }
 
-        if (isString(factSubExp)) {
+        if (!Array.isArray(factSubExp)) {
             if (alreadyMapped) {
                 if (!nonDummy[workSubExp]) {
                     if (factSubExp != workSubExp) { 
@@ -227,7 +198,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                     }
                 } else if (!nonDummy[factSubExp]) {
                     if (factSubExp != workSubExp) { 
-                        dummyMap[factSubExp] = workSubExp;;
+                        dummyMap[factSubExp] = workSubExp;
                     }                
                 } else {
                     assertEqual("mapped", factSubExp, workSubExp);
@@ -236,8 +207,8 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                 mapVarTo(factSubExp, workSubExp);
             }
         } else {
-            var factTerm = fact.Meat.Terms[factSubExp[0]];
-            if (isString(workSubExp)) {
+            var factTerm = fact.Skin.TermsNames[factSubExp[0]];
+            if (!Array.isArray(workSubExp)) {
                 // Work is var, Fact is exp. 
                 if (nonDummy[workSubExp]) {
                     assertEqual("shrug", workSubExp, factSubExp); //XXX
@@ -245,18 +216,15 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                     var newExp = [];
                     newExp.push(work.nameTerm(factTerm));
                     for (var i = 1; i < factSubExp.length; i++) {
-                        newExp.push(work.nameVar(
-                            "T",
-                            work.Meat.Kinds[0], //XXX: Need Meat.Signs!
-                            newDummy()));
+                        newExp.push(work.nameVar(newDummy()));
                     }
                     dummyMap[workSubExp] = newExp;
                     workSubExp = newExp;
                 }
             } 
-            if (!isString(workSubExp)) {
+            if (!!Array.isArray(workSubExp)) {
                 // exp - exp
-                var term1 = work.Meat.Terms[workSubExp[0]];
+                var term1 = fact.Skin.TermNames[workSubExp[0]];
                 assertEqual("term", term1, factTerm);
                 assertEqual("arity", workSubExp.length, factSubExp.length);
                 for (var i = 1; i < workSubExp.length; i++) {
@@ -271,13 +239,16 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     recurse(workExp, factExp, false);
     function replaceDummies(x) {
         // TODO: handle freemap dummies correctly!
-        if (isString(x)) {
+        if (Array.isArray(x)) {
+            for (var i = 1; i < x.length; i++) {
+                x[k] = replaceDummies(x[k]);
+            }
+            return x;
+        } else if (typeof x == 'number') {
             while (dummyMap[x]) {
                 x = dummyMap[x];
             }
-            return isString(x) ? x : replaceDummies(x);
-        } else if (!isNaN(x)) {
-            return x;
+            return Array.isArray(x) ? replaceDummies(x) : x;
         } else {
             for (var k in x) if (x.hasOwnProperty(k)) {
                 x[k] = replaceDummies(x[k]);
@@ -293,9 +264,10 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             
         }
     }
-    replaceDummies(work.Bone.Stmt);
-    replaceDummies(work.Bone.Hyps);
-    replaceDummies(work.Tree.Proof);
+    work.Core[Fact.CORE_STMT] = work.Core[Fact.CORE_STMT].map(replaceDummies);
+    work.Core[Fact.CORE_HYPS] = work.Core[Fact.CORE_HYPS].map(replaceDummies);
+    work.Tree.Proof = work.Tree.Proof.map(replaceDummies);
+     // TODO: undummy freemap
     if (DEBUG) {
         console.log("#XXXX Work undummied: " + JSON.stringify(work));
     }
@@ -319,18 +291,18 @@ function queryPushUp(params) {
 
 function globalSub(fact, varMap, work) {
     function mapper(x) {
-        if (!isNaN(x)) {
-            return work.nameTerm(fact.Meat.Terms[x]);
-        } else if (isString(x)) {
+        if (Array.isArray(x)) {
+            var out = x.slice(1).map(mapper);
+            out.unshift(work.nameTerm(fact.Skin.TermNames[x[0]]));
+            return out;
+        } else {
             if (!varMap[x]) {
                 throw new Error("Unmapped var " + x);
             }
             return varMap[x];
-        } else {
-            return x.map(mapper);
         }
     }
-    return mapper(fact.Bone.Stmt);
+    return mapper(fact.Core[Fact.CORE_STMT]);
 }
 function apply(work, workPath, fact, factPath) {
     var varMap = getMandHyps(work, workPath, fact, factPath);
@@ -341,14 +313,10 @@ function apply(work, workPath, fact, factPath) {
 
     pusp.newSteps = [];
     
-    eachVarOnce(fact.Bone.Stmt, function(v) {
+    eachVarOnce(fact.Core[Fact.CORE_STMT], function(v) {
         var newV = varMap[v];
         if (!newV) {
-            var p = parseVarString(v);
-            newV = work.nameVar(p.cmd,
-                                //TODO: nameKind goes in tree not meat!!
-                                fact.Meat.Kinds[p.kind],
-                                newDummy()); // XXX HACK
+            newV = work.nameVar(newDummy()); // XXX HACK
             varMap[v] = newV;
         }
         pusp.newSteps.push(newV);
@@ -362,7 +330,7 @@ function apply(work, workPath, fact, factPath) {
     // #. invoke sequence of pushup theorems, ensuring presence in Deps
     pusp.tool = globalSub(fact, varMap, work); // what's on the stack
     pusp.toolPath = clone(factPath);           // path to subexp A
-    pusp.goal = clone(work.Bone.Hyps[0]);      // what we want to prove
+    pusp.goal = clone(work.Core[Fact.CORE_HYPS][0]);      // what we want to prove
     pusp.goalPath = clone(workPath);           // path to subexp B
     // invariant: subexp A == subexp B
     function checkInvariant() {
@@ -381,10 +349,10 @@ function apply(work, workPath, fact, factPath) {
     while (pusp.goalPath.length > 0) {
         checkInvariant();
         var goalArgNum = pusp.goalPath.pop();
-        var goalTerm = work.Meat.Terms[zpath(pusp.goal, pusp.goalPath)[0]];
+        var goalTerm = work.Skin.TermNames[zpath(pusp.goal, pusp.goalPath)[0]];
         pusp.goalPath.push(goalArgNum);
         var toolArgNum = pusp.toolPath.pop();
-        var toolTerm = work.Meat.Terms[zpath(pusp.tool, pusp.toolPath)[0]];
+        var toolTerm = work.Skin.TermNames[zpath(pusp.tool, pusp.toolPath)[0]];
         pusp.toolPath.push(toolArgNum);
 
         var query = [goalTerm, goalArgNum, toolTerm,
@@ -401,7 +369,7 @@ function apply(work, workPath, fact, factPath) {
 
     // #. compute new preimage and update Hyps.0
     // TODO: hardcoded for now
-    work.Bone.Hyps[0] = pusp.tool[1];
+    work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
     
     // don't delete any steps
     pusp.newSteps.unshift(0);
@@ -421,11 +389,11 @@ var rarr = getLand("land_rarr.js");
 lands.push(rarr);
 state.land = rarr;
 state.goal = 0;
-var ax1 = canonicalize(Fact(state.land.axioms[0]));   // PQP
-var imim1 = canonicalize(Fact(state.land.axioms[1])); // (PQ)(QR)PR
-var imim2 = canonicalize(Fact(state.land.axioms[2])); // (PQ)(RP)RQ
-var pm243 = canonicalize(Fact(state.land.axioms[3])); // (PPQ)PQ
-var axmp = canonicalize(Fact(state.land.inferences[0]));
+var ax1 = canonicalize(new Fact(state.land.axioms[0]));   // PQP
+var imim1 = canonicalize(new Fact(state.land.axioms[1])); // (PQ)(QR)PR
+var imim2 = canonicalize(new Fact(state.land.axioms[2])); // (PQ)(RP)RQ
+var pm243 = canonicalize(new Fact(state.land.axioms[3])); // (PPQ)PQ
+var axmp = canonicalize(new Fact(state.land.inferences[0]));
 
 TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
     fact:imim2,
@@ -470,16 +438,12 @@ function ground(work, dirtFact) {
     // verify that the hyp is an instance of the dirt
     var varMap = getMandHyps(work, [], dirtFact, []);
     if (DEBUG) {console.log("# ground MandHyps: " + JSON.stringify(varMap));}
-    work.Bone.Hyps.shift();
+    work.Core[Fact.CORE_HYPS].shift();
     var newSteps = [];
-    eachVarOnce(dirtFact.Bone.Stmt, function(v) {
+    eachVarOnce(dirtFact.Core[Fact.CORE_STMT], function(v) {
         var newV = varMap[v];
         if (!newV) {
-            var p = parseVarString(v);
-            newV = work.nameVar(p.cmd,
-                                //TODO: nameKind goes in tree not meat!!
-                                dirtFact.Meat.Kinds[p.kind],
-                                newDummy()); // XXX HACK
+            newV = work.nameVar(newDummy()); // XXX HACK
             varMap[v] = newV;
         }
         newSteps.push(newV);
@@ -498,21 +462,20 @@ function ground(work, dirtFact) {
 
 // Reorders variables so that they appear in first-used order.
 // Removes no-longer-used dummies.
-// Renames remaining variable Skins to Tx.y
+// Renames remaining variable Skins to Vn
 // Reorders Deps so they appear in first-used order
-// Trims from Meat.Kinds and Meat.Terms that which is not in Bone
+// Trims from Skin.TermNames that which is not in Core (TODO: PICKUP: ???)
 // TODO: doesn't handle freemap, currently
 function canonicalize(work) {
     var out = new Fact();
-    var terms = (work.Tree && work.Tree.Terms) ? work.Tree.Terms : work.Meat.Terms;
-    var kinds = (work.Tree && work.Tree.Kinds) ? work.Tree.Kinds : work.Meat.Kinds;
-    if (work.Bone.Free && work.Bone.Free.length > 0) {
+    var terms = work.Skin.TermNames;
+    if (work.Core[Fact.CORE_FREE] && work.Core[Fact.CORE_FREE].length > 0) {
         throw new Error("TODO");
     }
     function mapList(exp) {
         if (exp === undefined) {
             return exp;
-        } else if (isString(exp)) {
+        } else if (typeof exp == 'string') {
             var dots = exp.split(".");
             if (dots[0] == "Deps") {
                 var depNum = dots[1];
@@ -522,36 +485,27 @@ function canonicalize(work) {
                 return out.nameDep(work.Skin.DepNames[depNum],
                                    depWrap);
             }
-            var p = parseVarString(exp);
-            return out.nameVar(p.cmd,
-                               kinds[p.kind],
-                               exp);
-        } else if (!isNaN(exp)) {
+            return out.nameVar(exp);
+        } else if (typeof exp == 'number') {
             return out.nameTerm(terms[exp]);
         } else {
             return exp.map(mapList);
         }
     }
-    out.setStmt(mapList(work.Bone.Stmt));
+    out.setStmt(mapList(work.Core[Fact.CORE_STMT]));
     out.setFree([]); // XXX
-    if (work.Bone.Hyps) {
-        work.Bone.Hyps.forEach(function(h) {
-            out.Bone.Hyps.push(mapList(h));
+    if (work.Core[Fact.CORE_HYPS]) {
+        work.Core[Fact.CORE_HYPS].forEach(function(h) {
+            out.Core[Fact.CORE_HYPS].push(mapList(h));
         });
     }
     out.setProof(mapList(work.Tree.Proof));
     out.setCmd(work.Tree.Cmd);
     out.setName(fingerprint(out.getMark()));
     
-    function renameVars(skin, cmd) {
-        for (var k = 0; k < skin[cmd].length; k++) {
-            for (var n = 0; n < skin[cmd][k].length; n++) {
-                skin[cmd][k][n] = cmd + k + "." + n;
-            }
-        }
+    for (var n = 0; n < out.Skin.VarNames.length; n++) {
+        out.Skin.VarNames[n] = "V" + n;
     }
-    renameVars(out.Skin, "T");
-    renameVars(out.Skin, "V");
     return out;
 }
 
