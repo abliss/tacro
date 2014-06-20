@@ -10,12 +10,23 @@ var TODO_PUSHUPMAP = {};
 
 var DEBUG = false;
 
+state.factsByMark = {};
+state.requestFact = function(core, hint, cb) {
+    var mark = JSON.stringify(core) + ";" + JSON.stringify(hint.terms);
+    var fact = state.factsByMark[mark];
+    if (!fact) {
+        cb(new Error("No fact for mark " + JSON.stringify(mark)) +
+           "\n facts: " + JSON.stringify(state.factsByMark));
+    } else {
+        cb(null, fact);
+    }
+}
+
 function getLand(filename) {
     // Uses eval instead of json to allow comments and naked keys.
     // This is almost certainly a terrible idea.
     var land = eval("("+Fs.readFileSync(filename,'utf8')+")");
     land.facts = [];
-    land.factsByMark = {};
     land.addFact = function(f){
         var fact = new Fact(f);
         if (DEBUG) {
@@ -25,27 +36,24 @@ function getLand(filename) {
         if (DEBUG) {
             console.log("# Canonically: " + JSON.stringify(fact));
         }
-        land.factsByMark[fact.getMark()] = fact;
+        state.factsByMark[fact.getMark()] = fact;
+        return fact;
     }
     function addAxiom(fact) {
         if (!fact.Tree) {
             fact.Tree = {};
         }
         fact.Tree.Cmd = "stmt";
-        land.addFact(fact);
+
+        fact = land.addFact(fact);
+        fact.toGhilbert(state, appendTo(interfaceText));
     }
-    land.axioms.forEach(addAxiom);
-    land.inferences.forEach(addAxiom);
-    land.requestFact = function(core, hint, cb) {
-        var mark = JSON.stringify(core) + ";" + JSON.stringify(hint.terms);
-        var fact = land.factsByMark[mark];
-        if (!fact) {
-            cb(new Error("No fact for mark " + JSON.stringify(mark)) +
-               "\n facts: " + JSON.stringify(land.factsByMark));
-        } else {
-            cb(null, fact);
-        }
-    }
+
+    if (land.axioms) land.axioms.forEach(addAxiom);
+    if (land.inferences) land.inferences.forEach(addAxiom);
+    lands.push(land);
+    state.land = land;
+    state.goal = 0;
 
     return land;
 }
@@ -65,7 +73,8 @@ function makeMark(fact) {
 }
 
 function nameDep(workFact, depFact) {
-    return workFact.nameDep(fingerprint(depFact.getMark()), depFact);
+    var n = workFact.nameDep(fingerprint(depFact.getMark()), depFact);
+    return n;
 }
 
 function startWork(fact) {
@@ -124,6 +133,12 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     var varMap = {};
     var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
     var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
+    if ((workExp == undefined) || (factExp == undefined)) {
+        throw new Error("Undefined!\n" + JSON.stringify(work) + "\n" +
+                        JSON.stringify(hypPath) + "\n" +
+                        JSON.stringify(fact) + 
+                        JSON.stringify(stmtPath));
+    }
     var nonDummy = {};
     var dummyMap = {};
     eachVarOnce(work.Core[Fact.CORE_STMT], function(v) {
@@ -131,7 +146,8 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     });
     function assertEqual(msgTag, thing1, thing2) {
         if (thing1 !== thing2) {
-            throw new Error("Unification error: " + msgTag + " @ " + debugPath +
+            throw new Error("Unification error: " + msgTag + " @ " +
+                            JSON.stringify(debugPath) +
                             "\nWork:  " + JSON.stringify(workExp) +
                             "\nFact:  " + JSON.stringify(factExp) +
                             "\nWant:  " + thing1 + " === " + thing2);
@@ -171,7 +187,9 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         if (free) {
             assertNotFree(workExp, free);
         }
-        // TODO: check kind match and tvarness match
+        if (factVarName == undefined) {
+            throw new Error("undefined varMap to " + JSON.stringify(workExp));
+        }
         varMap[factVarName] = workExp;
     }
     function recurse(workSubExp, factSubExp, alreadyMapped) {
@@ -206,7 +224,13 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                 mapVarTo(factSubExp, workSubExp);
             }
         } else {
-            var factTerm = fact.Skin.TermNames[factSubExp[0]];
+            var factTerm = (alreadyMapped ? work : fact).Skin.TermNames[
+                factSubExp[0]];
+            if (factTerm == undefined) {
+                throw new Error("No factTerm\n" +
+                                JSON.stringify(fact) + "\n" +
+                                JSON.stringify(factSubExp));
+            }
             if (!Array.isArray(workSubExp)) {
                 // Work is var, Fact is exp. 
                 if (nonDummy[workSubExp]) {
@@ -221,10 +245,10 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                     workSubExp = newExp;
                 }
             } 
-            if (!!Array.isArray(workSubExp)) {
+            if (Array.isArray(workSubExp)) {
                 // exp - exp
-                var term1 = fact.Skin.TermNames[workSubExp[0]];
-                assertEqual("term", term1, factTerm);
+                var workTerm = work.Skin.TermNames[workSubExp[0]];
+                assertEqual("term", workTerm, factTerm);
                 assertEqual("arity", workSubExp.length, factSubExp.length);
                 for (var i = 1; i < workSubExp.length; i++) {
                     debugPath.push(i);
@@ -249,10 +273,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             }
             return Array.isArray(x) ? replaceDummies(x) : x;
         } else {
-            for (var k in x) if (x.hasOwnProperty(k)) {
-                x[k] = replaceDummies(x[k]);
-            }
-            return x;
+            throw new Error("hmm")
         }
     }
     if (DEBUG) {
@@ -337,8 +358,9 @@ function apply(work, workPath, fact, factPath) {
     function checkInvariant() {
         if (DEBUG) {
             console.log("Check invariant: \n" +
-                        zpath(pusp.tool, pusp.toolPath) + "\n" + 
-                        zpath(pusp.goal, pusp.goalPath));
+                        JSON.stringify(zpath(pusp.tool, pusp.toolPath)) +
+                        "\n" + 
+                        JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
             console.log("XXXX pusp: ", JSON.stringify(pusp));
         }
         if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
@@ -386,15 +408,32 @@ function apply(work, workPath, fact, factPath) {
     return work;
 }
 
-var rarr = getLand("land_rarr.js");
-lands.push(rarr);
-state.land = rarr;
-state.goal = 0;
-var ax1 = canonicalize(new Fact(state.land.axioms[0]));   // PQP
-var imim1 = canonicalize(new Fact(state.land.axioms[1])); // (PQ)(QR)PR
-var imim2 = canonicalize(new Fact(state.land.axioms[2])); // (PQ)(RP)RQ
-var pm243 = canonicalize(new Fact(state.land.axioms[3])); // (PPQ)PQ
-var axmp = canonicalize(new Fact(state.land.inferences[0]));
+// TODO: should be generated
+var interfaceText = {txt:'kind (kind0)\n' +
+    'tvar (kind0 V0 V1 V2 V3 V4)\n' +
+                     'term (kind0 (&rarr; V0 V1))\n\n'};
+
+var outstanding = 0;
+function appendTo(strptr) {
+    outstanding++;
+    return function(err, txt) {
+        if (err) throw new Error(err);
+        strptr.txt += txt;
+        outstanding--;
+    }
+}
+
+var landRarr = getLand("land_rarr.js");
+var ax1 = state.factsByMark[
+    "[[],[0,0,[0,1,0]],[]];[\"&rarr;\"]"];
+var imim1 = state.factsByMark[
+    "[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];[\"&rarr;\"]"];
+var imim2 = state.factsByMark[
+    "[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];[\"&rarr;\"]"];
+var pm243 = state.factsByMark[
+    "[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];[\"&rarr;\"]"];
+var axmp = state.factsByMark[
+    "[[1,[0,1,0]],0,[]];[\"&rarr;\"]"];
 
 TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
     fact:imim2,
@@ -432,6 +471,48 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
                      [rarr, pusp.tool[2], thirdArg],
                      [rarr, pusp.tool[1], thirdArg]];
         pusp.toolPath = [2];
+    }
+};
+TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",2]]] = {
+    fact:imim1,
+    pushUp: function(pusp, work) {
+        // Goal: -> A B
+        // Tool: -> C A
+        // new goal: -> C B 
+        // imim1: (-> (-> C A) (-> (-> A B) (-> C B))
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.goalPath.pop();
+        var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
+        pusp.newSteps.push(thirdArg);
+        pusp.newSteps.push(nameDep(work, this.fact));
+        pusp.newSteps.push(nameDep(work, axmp));
+        var rarr = work.nameTerm("&rarr;");
+        pusp.tool = [rarr,
+                     [rarr, pusp.tool[2], thirdArg],
+                     [rarr, pusp.tool[1], thirdArg]];
+        pusp.toolPath = [1];
+    }
+};
+TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",1]]] = {
+    fact:imim2,
+    pushUp: function(pusp, work) {
+        // Goal: -> A B
+        // Tool: -> B C
+        // new goal: -> A C 
+        // imim2: (-> (-> B C) (-> (-> A B) (-> A C))
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.goalPath.pop();
+        var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
+        pusp.newSteps.push(thirdArg);
+        pusp.newSteps.push(nameDep(work, this.fact));
+        pusp.newSteps.push(nameDep(work, axmp));
+        var rarr = work.nameTerm("&rarr;");
+        pusp.tool = [rarr,
+                     [rarr, thirdArg, pusp.tool[1]],
+                     [rarr, thirdArg, pusp.tool[2]]];
+        pusp.toolPath = [1];
     }
 };
 
@@ -493,7 +574,13 @@ function canonicalize(work) {
     out.setProof(work.Tree.Proof.map(mapExp));
     out.setCmd(work.Tree.Cmd);
     out.setName(fingerprint(out.getMark()));
-    out.Tree.Deps = clone(work.Tree.Deps);
+    out.Tree.Deps = work.Tree.Deps.map(function(d) {
+        var e = d[1].map(function(t) {
+            return out.nameTerm(work.Skin.TermNames[t]);
+        });
+        return [clone(d[0]), e];
+    });
+
     
     for (var n = 0; n < out.Skin.VarNames.length; n++) {
         out.Skin.VarNames[n] = "V" + n;
@@ -506,31 +593,10 @@ function canonicalize(work) {
 }
 
 
-// TODO: should be generated
-var interfaceText = {txt:'kind (kind0)\n' +
-    'tvar (kind0 V0 V1 V2 V3 V4)\n' +
-                     'term (kind0 (&rarr; V0 V1))\n\n'};
 
-var outstanding = 0;
-function appendTo(strptr) {
-    outstanding++;
-    return function(err, txt) {
-        if (err) throw err;
-        strptr.txt += txt;
-        outstanding--;
-    }
-}
-
-for (var k in state.land.factsByMark) {
-    if (state.land.factsByMark.hasOwnProperty(k)) {
-        state.land.factsByMark[k].toGhilbert(
-            state.land, appendTo(interfaceText));
-    }
-}
 
 var ghilbertText = {txt:'import (TMP tmp2.ghi () "")\n' +
     'tvar (kind0 V0 V1 V2 V3 V4 V5)\n\n'};
-
 state.work = startWork(state.land.goals[state.goal]);
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
@@ -542,8 +608,7 @@ state.work = ground(state.work, imim1);
 state.land.addFact(state.work);
 state.goal++;
 var ax2 = state.work;
-
-state.work.toGhilbert(state.land, appendTo(ghilbertText));
+state.work.toGhilbert(state, appendTo(ghilbertText));
 
 // Apparatus for importing proofs from orcat_test.js
 var thms = {};
@@ -563,16 +628,22 @@ function save() {
     state.work = startWork(state.land.goals[state.goal]);
     stack.forEach(function(step) {
         if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
-        if (step.length > 1) {
-            state.work = apply(state.work, step[0], step[1], step[2]);
-        } else {
-            state.work = ground(state.work, step[0]);
+        try {
+            if (step.length > 1) {
+                state.work = apply(state.work, step[0], step[1], step[2]);
+            } else {
+                state.work = ground(state.work, step[0]);
+            }
+        } catch (e) {
+            console.log("Error in step " + JSON.stringify(step));
+            throw(e);
         }
+
     });
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
     state.land.addFact(state.work);
     state.goal++;
-    state.work.toGhilbert(state.land, appendTo(ghilbertText));
+    state.work.toGhilbert(state, appendTo(ghilbertText));
     startWith(state.work);
     return state.work;
 }
@@ -616,6 +687,28 @@ thms.idie = save();
 
 // Level 2
 
+interfaceText.txt += '\nterm (kind0 (&not; V0))\n'; //TODO: should be auto
+var landNot = getLand("land_not.js");
+
+thms.Transpose = state.factsByMark[
+    "[[],[1,[1,[0,0],[0,1]],[1,1,0]],[]];[\"&not;\",\"&rarr;\"]"];
+
+startWith(thms.Simplify);
+applyArrow([1], thms.Transpose, 0);
+thms.fie = save();
+startWith(thms.fie);
+applyArrow([1], thms.Transpose, 0);
+applyArrow([1], thms.idie, 0);
+thms.nn1 = save();
+startWith(thms.fie);
+applyArrow([1], thms.Transpose, 0);
+applyArrow([1], thms.idie, 0);
+applyArrow([], thms.Transpose, 0);
+thms.nn2 = save();
+startWith(thms.Transpose);
+applyArrow([0,1], thms.nn2, 1);
+applyArrow([0,0], thms.nn1, 0);
+thms.con3 = save();
 
 
 
@@ -678,8 +771,7 @@ if (DEBUG) {
 try {
     run(UrlCtx, "tmp2.gh", verifyCtx);
 } catch (e) {
-    console.log(e);
     console.log(e.toString());
-    throw(e);
+    throw(new Error(e));
 }
 
