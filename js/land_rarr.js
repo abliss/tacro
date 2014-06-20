@@ -20,7 +20,7 @@
     ],
     inferences:[  // Not displayed in the user's toolbox.
         // ax-mp
-        {Core:[[[1,[0,1,0]]],0,[]],
+        {Core:[[1,[0,1,0]],0,[]],
          Skin:{TermNames:["&rarr;"]}},
     ],
     goals:[

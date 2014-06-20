@@ -36,13 +36,15 @@ function getLand(filename) {
     }
     land.axioms.forEach(addAxiom);
     land.inferences.forEach(addAxiom);
-    land.getFact = function(mark) {
+    land.requestFact = function(core, hint, cb) {
+        var mark = JSON.stringify(core) + ";" + JSON.stringify(hint.terms);
         var fact = land.factsByMark[mark];
         if (!fact) {
-            throw new Error("No fact for mark " +
-                            JSON.stringify(mark));
+            cb(new Error("No fact for mark " + JSON.stringify(mark)) +
+               "\n facts: " + JSON.stringify(land.factsByMark));
+        } else {
+            cb(null, fact);
         }
-        return fact;
     }
 
     return land;
@@ -70,10 +72,6 @@ function startWork(fact) {
     var work = new Fact(clone(fact));
     work.setHyps([clone(work.Core[Fact.CORE_STMT])]);
     work.Skin.HypNames = ["Hyps.0"];
-    if (work.Skin.VarNames == undefined) {
-        // TODO: PICKUP
-        throw new Error("wtf fact? " + JSON.stringify(work));
-    }
     function nameVar(varNum) {
         work.Skin.VarNames[varNum] = "V" + varNum;
     }
@@ -177,7 +175,8 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         varMap[factVarName] = workExp;
     }
     function recurse(workSubExp, factSubExp, alreadyMapped) {
-        if (!alreadyMapped && !Array.isArray(factSubExp) && varMap[factSubExp]) {
+        if (!alreadyMapped && !Array.isArray(factSubExp) &&
+            (varMap[factSubExp] != undefined)) {
             factSubExp = varMap[factSubExp];
             alreadyMapped = true;
         }
@@ -207,7 +206,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                 mapVarTo(factSubExp, workSubExp);
             }
         } else {
-            var factTerm = fact.Skin.TermsNames[factSubExp[0]];
+            var factTerm = fact.Skin.TermNames[factSubExp[0]];
             if (!Array.isArray(workSubExp)) {
                 // Work is var, Fact is exp. 
                 if (nonDummy[workSubExp]) {
@@ -244,7 +243,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                 x[k] = replaceDummies(x[k]);
             }
             return x;
-        } else if (typeof x == 'number') {
+        } else if ((typeof x == 'number') || (typeof x == 'string')) {
             while (dummyMap[x]) {
                 x = dummyMap[x];
             }
@@ -291,12 +290,12 @@ function queryPushUp(params) {
 
 function globalSub(fact, varMap, work) {
     function mapper(x) {
-        if (Array.isArray(x)) {
+        if (Array.isArray(x) && (x.length > 0)) {
             var out = x.slice(1).map(mapper);
             out.unshift(work.nameTerm(fact.Skin.TermNames[x[0]]));
             return out;
         } else {
-            if (!varMap[x]) {
+            if (varMap[x] == undefined) {
                 throw new Error("Unmapped var " + x);
             }
             return varMap[x];
@@ -312,13 +311,15 @@ function apply(work, workPath, fact, factPath) {
     var pusp = {};
 
     pusp.newSteps = [];
-    
+    if (DEBUG) console.log("Vars from " + JSON.stringify(fact));
     eachVarOnce(fact.Core[Fact.CORE_STMT], function(v) {
         var newV = varMap[v];
-        if (!newV) {
+        if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
+        if (newV == undefined) {
             newV = work.nameVar(newDummy()); // XXX HACK
             varMap[v] = newV;
         }
+        if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
         pusp.newSteps.push(newV);
     });
     pusp.newSteps.push(nameDep(work, fact));
@@ -334,16 +335,16 @@ function apply(work, workPath, fact, factPath) {
     pusp.goalPath = clone(workPath);           // path to subexp B
     // invariant: subexp A == subexp B
     function checkInvariant() {
+        if (DEBUG) {
+            console.log("Check invariant: \n" +
+                        zpath(pusp.tool, pusp.toolPath) + "\n" + 
+                        zpath(pusp.goal, pusp.goalPath));
+            console.log("XXXX pusp: ", JSON.stringify(pusp));
+        }
         if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
             JSON.stringify(zpath(pusp.goal, pusp.goalPath))) {
             throw new Error("Invariant broken!");
         }
-/*
-        console.log("Check invariant: \n" +
-                    zpath(pusp.tool, pusp.toolPath) + "\n" + 
-                    zpath(pusp.goal, pusp.goalPath));
-        console.log("XXXX pusp: ", JSON.stringify(pusp));
-*/
     }
 
     while (pusp.goalPath.length > 0) {
@@ -442,7 +443,7 @@ function ground(work, dirtFact) {
     var newSteps = [];
     eachVarOnce(dirtFact.Core[Fact.CORE_STMT], function(v) {
         var newV = varMap[v];
-        if (!newV) {
+        if (newV == undefined) {
             newV = work.nameVar(newDummy()); // XXX HACK
             varMap[v] = newV;
         }
@@ -463,66 +464,72 @@ function ground(work, dirtFact) {
 // Reorders variables so that they appear in first-used order.
 // Removes no-longer-used dummies.
 // Renames remaining variable Skins to Vn
-// Reorders Deps so they appear in first-used order
-// Trims from Skin.TermNames that which is not in Core (TODO: PICKUP: ???)
 // TODO: doesn't handle freemap, currently
+// TODO: reorder termnames
+// TODO: sort deps alphabetically?
 function canonicalize(work) {
     var out = new Fact();
     var terms = work.Skin.TermNames;
     if (work.Core[Fact.CORE_FREE] && work.Core[Fact.CORE_FREE].length > 0) {
         throw new Error("TODO");
     }
-    function mapList(exp) {
-        if (exp === undefined) {
-            return exp;
-        } else if (typeof exp == 'string') {
-            var dots = exp.split(".");
-            if (dots[0] == "Deps") {
-                var depNum = dots[1];
-                // TODO: HACK
-                var depWrap = {getMark: function() {
-                    return work.Tree.Deps[depNum];}};
-                return out.nameDep(work.Skin.DepNames[depNum],
-                                   depWrap);
-            }
-            return out.nameVar(exp);
+    function mapExp(exp) {
+        if (Array.isArray(exp) && (exp.length > 0)) {
+            var mapped = exp.slice(1).map(mapExp);
+            mapped.unshift(out.nameTerm(terms[exp[0]]));
+            return mapped;
         } else if (typeof exp == 'number') {
-            return out.nameTerm(terms[exp]);
+            return out.nameVar("V" + exp);
         } else {
-            return exp.map(mapList);
+            return exp;
         }
     }
-    out.setStmt(mapList(work.Core[Fact.CORE_STMT]));
+    out.setStmt(mapExp(work.Core[Fact.CORE_STMT]));
     out.setFree([]); // XXX
-    if (work.Core[Fact.CORE_HYPS]) {
-        work.Core[Fact.CORE_HYPS].forEach(function(h) {
-            out.Core[Fact.CORE_HYPS].push(mapList(h));
-        });
+    for (var i = 0; i < work.Core[Fact.CORE_HYPS].length; i++) {
+        out.Core[Fact.CORE_HYPS][i] = mapExp(work.Core[Fact.CORE_HYPS][i]);
+        out.Skin.HypNames[i] = "Hyps." + i;
     }
-    out.setProof(mapList(work.Tree.Proof));
+    out.setProof(work.Tree.Proof.map(mapExp));
     out.setCmd(work.Tree.Cmd);
     out.setName(fingerprint(out.getMark()));
+    out.Tree.Deps = clone(work.Tree.Deps);
     
     for (var n = 0; n < out.Skin.VarNames.length; n++) {
         out.Skin.VarNames[n] = "V" + n;
+    }
+    if (DEBUG) {
+        console.log("work=" + JSON.stringify(work) +
+                    "\nfact=" +JSON.stringify(out));
     }
     return out;
 }
 
 
 // TODO: should be generated
-var interfaceText = 'kind (kind0)\n' +
-    'tvar (kind0 T0.0 T0.1 T0.2 T0.3 T0.4 T0.5)\n' +
-    'term (kind0 (&rarr; T0.0 T0.1))\n\n';
+var interfaceText = {txt:'kind (kind0)\n' +
+    'tvar (kind0 V0 V1 V2 V3 V4)\n' +
+                     'term (kind0 (&rarr; V0 V1))\n\n'};
 
-for (var k in state.land.factsByMark) {
-    if (state.land.factsByMark.hasOwnProperty(k)) {
-        interfaceText += state.land.factsByMark[k].toGhilbert(state.land.getFact);
+var outstanding = 0;
+function appendTo(strptr) {
+    outstanding++;
+    return function(err, txt) {
+        if (err) throw err;
+        strptr.txt += txt;
+        outstanding--;
     }
 }
 
-var ghilbertText = 'import (TMP tmp2.ghi () "")\n' +
-    'tvar (kind0 T0.0 T0.1 T0.2 T0.3 T0.4 T0.5)\n\n' ;
+for (var k in state.land.factsByMark) {
+    if (state.land.factsByMark.hasOwnProperty(k)) {
+        state.land.factsByMark[k].toGhilbert(
+            state.land, appendTo(interfaceText));
+    }
+}
+
+var ghilbertText = {txt:'import (TMP tmp2.ghi () "")\n' +
+    'tvar (kind0 V0 V1 V2 V3 V4 V5)\n\n'};
 
 state.work = startWork(state.land.goals[state.goal]);
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
@@ -530,15 +537,14 @@ state.work = apply(state.work, [2,2], pm243, [2]);
 // |- (PQR)(PQ)PPR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,1], imim1, [1]);
 // |- (P(QR))((Qr)(Pr))(P(PR)) => |- (PQR)(PQ)PR
-
 state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
 state.land.addFact(state.work);
 state.goal++;
 var ax2 = state.work;
-if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
-ghilbertText += state.work.toGhilbert(state.land.getFact);
 
+state.work.toGhilbert(state.land, appendTo(ghilbertText));
+console.log("XXXX Fact is " + JSON.stringify(state.work));  // PICKUP: should not be any v3 here! does not verify!
 
 // Apparatus for importing proofs from orcat_test.js
 var thms = {};
@@ -567,7 +573,7 @@ function save() {
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
     state.land.addFact(state.work);
     state.goal++;
-    ghilbertText += state.work.toGhilbert(state.land.getFact);
+    state.work.toGhilbert(state.land, appendTo(ghilbertText));
     startWith(state.work);
     return state.work;
 }
@@ -632,9 +638,17 @@ var UrlCtx = {
     }
 }
 
-UrlCtx.files["tmp2.ghi"] = interfaceText;
-UrlCtx.files["tmp2.gh"] = ghilbertText;
+while (outstanding > 0) {
+    throw "yield";
+}
+UrlCtx.files["tmp2.ghi"] = interfaceText.txt;
+UrlCtx.files["tmp2.gh"] = ghilbertText.txt;
 
+DEBUG=true
+if (DEBUG) {
+    console.log("==== IFACE ====\n" + interfaceText.txt);
+    console.log("==== PROOF ====\n" + ghilbertText.txt);
+}
 function run(url_context, url, context) {
   var scanner = new GH.Scanner(url_context.resolve(url).split(/\r?\n/));
   while (true) {
