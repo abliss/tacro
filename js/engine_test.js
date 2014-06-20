@@ -240,11 +240,11 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         // TODO: handle freemap dummies correctly!
         if (Array.isArray(x)) {
             for (var i = 1; i < x.length; i++) {
-                x[k] = replaceDummies(x[k]);
+                x[i] = replaceDummies(x[i]);
             }
             return x;
         } else if ((typeof x == 'number') || (typeof x == 'string')) {
-            while (dummyMap[x]) {
+            while (dummyMap[x] != undefined) {
                 x = dummyMap[x];
             }
             return Array.isArray(x) ? replaceDummies(x) : x;
@@ -263,7 +263,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             
         }
     }
-    work.Core[Fact.CORE_STMT] = work.Core[Fact.CORE_STMT].map(replaceDummies);
+    work.Core[Fact.CORE_STMT] = replaceDummies(work.Core[Fact.CORE_STMT])
     work.Core[Fact.CORE_HYPS] = work.Core[Fact.CORE_HYPS].map(replaceDummies);
     work.Tree.Proof = work.Tree.Proof.map(replaceDummies);
      // TODO: undummy freemap
@@ -544,7 +544,6 @@ state.goal++;
 var ax2 = state.work;
 
 state.work.toGhilbert(state.land, appendTo(ghilbertText));
-console.log("XXXX Fact is " + JSON.stringify(state.work));  // PICKUP: should not be any v3 here! does not verify!
 
 // Apparatus for importing proofs from orcat_test.js
 var thms = {};
@@ -644,7 +643,6 @@ while (outstanding > 0) {
 UrlCtx.files["tmp2.ghi"] = interfaceText.txt;
 UrlCtx.files["tmp2.gh"] = ghilbertText.txt;
 
-DEBUG=true
 if (DEBUG) {
     console.log("==== IFACE ====\n" + interfaceText.txt);
     console.log("==== PROOF ====\n" + ghilbertText.txt);
@@ -676,5 +674,12 @@ if (DEBUG) {
     console.log("#### PROOFS");
     console.log(UrlCtx.files["tmp2.gh"]);
 }
-run(UrlCtx, "tmp2.gh", verifyCtx);
+
+try {
+    run(UrlCtx, "tmp2.gh", verifyCtx);
+} catch (e) {
+    console.log(e);
+    console.log(e.toString());
+    throw(e);
+}
 
