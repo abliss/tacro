@@ -610,6 +610,31 @@ TODO_PUSHUPMAP[[["&and;",2],["&rarr;",2]]] = {
     }
 };
 
+TODO_PUSHUPMAP[[["&and;",2],["&rarr;",1]]] = {
+    mark:'[[],[0,[0,0,1],[0,[1,2,0],[1,2,1]]],[]];["&rarr;","&and;"]',
+    pushUp: function(pusp, work) {
+        // Goal: and B A
+        // Tool: -> A C
+        // new goal: and B C
+        // pushup: (-> (-> A C) (-> (and B A) (and B C)))
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.goalPath.pop();
+        var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
+        pusp.newSteps.push(thirdArg);
+        var pushupFact = sfbm[this.mark];
+        if (!pushupFact) return null;
+        pusp.newSteps.push(nameDep(work, pushupFact));
+        pusp.newSteps.push(nameDep(work, axmp));
+        var rarr = work.nameTerm("&rarr;");
+        var and = work.nameTerm("&and;");
+        pusp.tool = [rarr,
+                     [and, thirdArg, pusp.tool[1]],
+                     [and, thirdArg, pusp.tool[2]]];
+        pusp.toolPath = [1];
+    }
+};
+
 function ground(work, dirtFact) {
     // verify that the hyp is an instance of the dirt
     var varMap = getMandHyps(work, [], dirtFact, []);
@@ -737,7 +762,8 @@ function save() {
                 state.work = ground(state.work, step[0]);
             }
         } catch (e) {
-            console.log("Error in step " + JSON.stringify(step));
+            console.log("Error in step " + JSON.stringify(step) +
+                        "\nwork=" + JSON.stringify(state.work));
             throw(e);
         }
 
@@ -966,7 +992,7 @@ thms.Equivalate = saveGoal();
   applyArrow([1,0], thms.imim1, 0);
   applyArrow([1], thms.defbi2, 0);
   thms.imbi1 = save();
-/*
+
 //  scheme.setEquivalenceThm(exports.rarr, 0, thms.imbi1);
 
   startWith(thms.defbi1);
@@ -1025,8 +1051,9 @@ thms.Equivalate = saveGoal();
   startWith(thms.mp);
   applyArrow([1,0], thms.bi2, 1);
   thms.mpbir = save();
-
   startWith(thms.defbi1);
+
+
   applyArrow([1,0], thms.anim1, 0);
   applyArrow([1,1], thms.anim1, 0);
   applyArrow([1], thms.defbi2, 0);
@@ -1068,7 +1095,7 @@ thms.Equivalate = saveGoal();
   thms.biid = save();
 
 
-
+/*
   startWith(thms.nn1);
   applyArrow([], thms.conj, 0);
   applyArrow([1], thms.defbi2, 0);
@@ -1269,58 +1296,21 @@ try {
 
 /*
   ==== Things to be proved ====
-  {Core:[[],[0,[1,0,0],[1,1,1]],[]],
-  Skin:{TermNames:["&and;","&rarr;"]}}
-  {Core:[[],[0,[1,0,1],[2,[0,0,1],[0,1,0]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;","&and;"]}},
-  {Core:[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]],
-  Skin:{TermNames:["&rarr;","&and;","&harr;"]}},
 
-  {Core:[[],[0,[1,0,1],[0,0,1]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,[1,0,1],[0,1,0]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,[1,0,1],[1,[0,2,0],[0,2,1]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,[1,0,1],[1,[1,2,0],[1,2,1]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,0,[0,[1,0,1],1]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,0,[0,[1,1,0],1]],[]],
-  Skin:{TermNames:["&rarr;","&harr;"]}},
-  {Core:[[],[0,[1,0,1],[1,[2,,0,2],[2,1,2]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;","&and;"]}},
-  {Core:[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;","&and;"]}},
-  {Core:[[],[0,[1,0,1],[1,[2,1],[2,0]]],[]],
-  Skin:{TermNames:["&rarr;","&harr;","&not;"]}},
 
-  {Core:[[],[harr,[harr,0,1],[harr,1,0]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,0,0],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,0,[not,[not,0]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[rarr,0,1],[rarr,[not,1],[not,0]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[and,0,1],[not,[rarr,0,[not,1]]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[and,0,1],[and,1,0]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,0,[and,0,0]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[rarr,0,[rarr,1,2]],[rarr,1,[rarr,0,2]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[and,[and,0,1],2],[and,0,[and,1,2]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[rarr,0,[rarr,1,2]],[rarr,[and,0,1],2]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[harr,0,1],[and,[rarr,0,1],[rarr,1,0]]],[]],
-  Skin:{TermNames:[""]}},
+  {Core:[[],[0,[and,0,1],[and,1,0]],[]],
+  Skin:{TermNames:["&harr;"]}},
+  {Core:[[],[0,0,[and,0,0]],[]],
+  Skin:{TermNames:["&harr;"]}},
+  {Core:[[],[0,[rarr,0,[rarr,1,2]],[rarr,1,[rarr,0,2]]],[]],
+  Skin:{TermNames:["&harr;"]}},
+  {Core:[[],[0,[and,[and,0,1],2],[and,0,[and,1,2]]],[]],
+  Skin:{TermNames:["&harr;"]}},
+  {Core:[[],[0,[rarr,0,[rarr,1,2]],[rarr,[and,0,1],2]],[]],
+  Skin:{TermNames:["&harr;"]}},
+  {Core:[[],[0,[0,0,1],[and,[rarr,0,1],[rarr,1,0]]],[]],
+  Skin:{TermNames:["&harr;"]}},
+
   {Core:[[],[rarr,0,[or,1,0]],[]],
   Skin:{TermNames:[""]}},
   {Core:[[],[rarr,0,[or,0,1]],[]],
