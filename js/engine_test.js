@@ -812,8 +812,6 @@ thms.dfand = save();
 
 var landHarr = getLand("land_and.js");
 startNextGoal();
-
-
 state.work = ground(state.work, thms.dfand);
 state.land.addFact(state.work);
 thms.Conjoin = saveGoal();
@@ -903,290 +901,286 @@ applyArrow([1,0], thms.ancom, 1);
 applyArrow([1,1], thms.ancom, 0);
 thms.prth = save();
 
-/*
+var landHarr = getLand("land_harr.js");
+
 
 startWith(thms.id);
 applyArrow([], thms.conj, 0);
 applyArrow([], thms.idie, 0);
 thms.dfbi = save();
-// Level 4
-var harr = exports.theory.newOperator("&harr;", exports.wff, [exports.wff, exports.wff]);
-exports.harr = harr;
-exports.theory.addAxiom(thms.Equivalate, theory.parseTerm(
-                            [and, [I, [harr, 1, 2], [and, [I, 1, 2], [I, 2, 1]]],
-                             [I, [and, [I, 1, 2], [I, 2, 1]], [harr, 1, 2]]]));
-ghText += "\ndefthm (" + thms.Equivalate + " wff (harr A B) () () \
-     (and (rarr (harr A B) (and (rarr A B) (rarr B A))) \
-         (rarr (and (rarr A B) (rarr B A)) (harr A B))) \
-    (and (rarr A B) (rarr B A))  (and (rarr A B) (rarr B A))  " + thms.dfbi + " \
-)\n";
 
-scheme.setEquivalence(exports.wff, harr);
+startNextGoal();
+state.work = ground(state.work, thms.dfbi);
+state.land.addFact(state.work);
+thms.Equivalate = saveGoal();
 
-startWith(thms.Equivalate);
-applyArrow([], thms.andl, 0);
-thms.defbi1 = save();
+//  scheme.setEquivalence(exports.wff, harr); // TODO
+  startWith(thms.Equivalate);
+  applyArrow([], thms.andl, 0);
+  thms.defbi1 = save();
 
-startWith(thms.Equivalate);
-applyArrow([], thms.andr, 0);
-thms.defbi2 = save();
+  startWith(thms.Equivalate);
+  applyArrow([], thms.andr, 0);
+  thms.defbi2 = save();
 
-startWith(thms.defbi1);
-applyArrow([1], thms.andl, 0);
-thms.bi1 = save();
+  startWith(thms.defbi1);
+  applyArrow([1], thms.andl, 0);
+  thms.bi1 = save();
 
-scheme.setEquivalenceImplication(exports.wff, 0, thms.bi1);
+//  scheme.setEquivalenceImplication(exports.wff, 0, thms.bi1); //TODO
 
-startWith(thms.defbi1);
-applyArrow([1], thms.andr, 0);
-thms.bi2 = save();
+  startWith(thms.defbi1);
+  applyArrow([1], thms.andr, 0);
+  thms.bi2 = save();
 
-scheme.setEquivalenceImplication(exports.wff, 1, thms.bi2);
+//  scheme.setEquivalenceImplication(exports.wff, 1, thms.bi2);
 
-startWith(thms.defbi1);
-applyArrow([1,1], thms.imim1, 0);
-applyArrow([1,0], thms.imim1, 0);
-applyArrow([1], thms.defbi2, 0);
+DEBUG=true
 
-thms.imbi1 = save();
-scheme.setEquivalenceThm(exports.rarr, 0, thms.imbi1);
-
-startWith(thms.defbi1);
-applyArrow([1,0], thms.imim2, 0);
-applyArrow([1,1], thms.imim2, 0);
-applyArrow([1], thms.defbi2, 0);
-thms.imbi2 = save();
-scheme.setEquivalenceThm(exports.rarr, 1, thms.imbi2);
-
-scheme.setBinding(harr, 0, scheme.EXACT());
-scheme.setBinding(harr, 1, scheme.EXACT());
-
-startWith(thms.defbi1);
-applyArrow([1,0], thms.imim1, 0);
-applyArrow([1,1], thms.imim2, 0);
-applyArrow([1], thms.prth, 0);
-applyArrow([1,0], thms.defbi1, 1);
-applyArrow([1,1], thms.defbi2, 0);
-applyArrow([], thms.ancr, 0);
-applyArrow([1,0], thms.defbi1, 0);
-applyArrow([1,0,0], thms.imim2, 0);
-applyArrow([1,0,1], thms.imim1, 0);
-applyArrow([1,0], thms.prth, 0);
-applyArrow([1,0,0], thms.ancom, 1);
-applyArrow([1,0,1], thms.ancom, 0);
-applyArrow([1,0,0], thms.defbi1, 1);
-applyArrow([1,0,1], thms.defbi2, 0);
-applyArrow([1], thms.defbi2, 0);
-thms.bibi1 = save();
-scheme.setEquivalenceThm(exports.harr, 0, thms.bibi1);
-
-startWith(thms.defbi1);
-applyArrow([1,0], thms.imim2, 0);
-applyArrow([1,1], thms.imim1, 0);
-applyArrow([1], thms.prth, 0);
-applyArrow([1,0], thms.defbi1, 1);
-applyArrow([1,1], thms.defbi2, 0);
-applyArrow([], thms.ancr, 0);
-applyArrow([1,0], thms.defbi1, 0);
-applyArrow([1,0,0], thms.imim1, 0);
-applyArrow([1,0,1], thms.imim2, 0);
-applyArrow([1,0], thms.prth, 0);
-applyArrow([1,0,0], thms.ancom, 1);
-applyArrow([1,0,1], thms.ancom, 0);
-applyArrow([1,0,0], thms.defbi1, 1);
-applyArrow([1,0,1], thms.defbi2, 0);
-applyArrow([1], thms.ancom, 0);
-applyArrow([1], thms.defbi2, 0);
-thms.bibi2 = save();
-scheme.setEquivalenceThm(exports.harr, 1, thms.bibi2);
-
-startWith(thms.mp);
-applyArrow([1,0], thms.bi1, 1);
-thms.mpbi = save();
-
-startWith(thms.mp);
-applyArrow([1,0], thms.bi2, 1);
-thms.mpbir = save();
-
-startWith(thms.defbi1);
-applyArrow([1,0], thms.anim1, 0);
-applyArrow([1,1], thms.anim1, 0);
-applyArrow([1], thms.defbi2, 0);
-thms.anbi1 = save();
-scheme.setEquivalenceThm(exports.and, 0, thms.anbi1);
-
-startWith(thms.defbi1);
-applyArrow([1,0], thms.anim2, 0);
-applyArrow([1,1], thms.anim2, 0);
-applyArrow([1], thms.defbi2, 0);
-thms.anbi2 = save();
-scheme.setEquivalenceThm(exports.and, 1, thms.anbi2);
-
-startWith(thms.defbi1);
-applyArrow([1,0], thms.con3, 0);
-applyArrow([1,1], thms.con3, 0);
-applyArrow([1], thms.defbi2, 0);
-thms.notbi = save();
-scheme.setEquivalenceThm(exports.not, 0, thms.notbi);
-
-// Level 5
-
-startWith(thms.bi1);
-applyArrow([], thms.ancr, 0);
-applyArrow([1,0], thms.bi2, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,1], thms.defbi2, 1);
-applyArrow([0,1,1], thms.bi1, 1);
-applyArrow([0,1], thms.ancom, 1);
-applyArrow([0], thms.ancr, 1);
-applyArrow([0,1], thms.bi2, 1);
-applyArrow([], thms.idie, 0);
-thms.bicom = save();
-
-startWith(thms.dfbi);
-applyArrow([], thms.defbi2, 0);
-thms.biid = save();
-
-
-
-startWith(thms.nn1);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,1], thms.nn2, 1);
-applyArrow([], thms.idie, 0);
-applyArrow([], thms.bicom, 1);
-thms.nnbi = save();
-
-startWith(thms.Transpose);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.ancom, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,1], thms.con3, 1);
-applyArrow([], thms.idie, 0);
-thms.con3bi = save();
-
-startWith(thms.and1);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,1], thms.and2, 1);
-applyArrow([], thms.idie, 0);
-thms.dfanbi = save();
-
-startWith(thms.ancom);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,0], thms.ancom, 0);
-applyArrow([], thms.idie, 0);
-thms.ancombi = save();
-
-startWith(thms.anid);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,0], thms.andr, 0);
-applyArrow([], thms.idie, 0);
-thms.anidbi = save();
-
-startWith(thms.con12);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,1], thms.con12, 1);
-applyArrow([], thms.idie, 0);
-thms.con12bi = save();
-
-startWith(thms.dfanbi);
-applyArrow([1,0,1,0], thms.dfanbi, 0);
-applyArrow([1,0,1], thms.nnbi, 1);
-applyArrow([1,0], thms.con12bi, 0);
-applyArrow([1,0,1], thms.nnbi, 0);
-applyArrow([1], thms.dfanbi, 1);
-applyArrow([1,1], thms.dfanbi, 1);
-applyArrow([0], thms.ancombi, 0);
-applyArrow([1,1], thms.ancombi, 0);
-thms.anass = save();
-
-
-startWith(thms.imprt);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,0], thms.imim2, 0);
-applyArrow([0,0,0], thms.conj, 1);
-applyArrow([], thms.idie, 0);
-thms.impexp = save();
-
-startWith(thms.defbi1);
-applyArrow([], thms.conj, 0);
-applyArrow([1], thms.defbi2, 0);
-applyArrow([0,1], thms.defbi2, 1);
-applyArrow([], thms.idie, 0);
-thms.dfbi3 = save();
-
-// Level 6
-
-startWith(thms.biid); 
-proofState = proofState.specify([1], exports.rarr);
-proofState = proofState.specify([1,0], exports.not);
-thms.df_or = defthm('&or;');
-
-
-startWith(thms.df_or);
-applyArrow([], thms.bi2, 0);
-applyArrow([0], thms.Simplify, 1);
-thms.or2 = save();
- // GHT.Thms['or2'] = T(O("->"),TV("wff -53792),T(O("or"),TV("wff -53793),TV("wff -53792)));
-
-startWith(thms.df_or);
-applyArrow([], thms.bi2, 0);
-applyArrow([0], thms.con3bi, 0);
-applyArrow([0], thms.Simplify, 1);
-applyArrow([0], thms.nnbi, 1);
-thms.or1 = save();
-
-startWith(thms.imim2);
-applyArrow([1,0], thms.con3bi, 1);
-applyArrow([1,0], thms.df_or, 1);
-applyArrow([1,1], thms.con3bi, 0);
-applyArrow([1,1,1], thms.nnbi, 1);
-applyArrow([1,1], thms.df_or, 1);
-applyArrow([0,0], thms.nnbi, 1);
-thms.orim1 = save();
-
-startWith(thms.imbi1);
-applyArrow([1,0], thms.df_or, 1);
-applyArrow([1,1], thms.df_or, 1);
-applyArrow([0], thms.notbi, 1);
-thms.orbi1 = save();
-scheme.setEquivalenceThm(theory.operator("or"), 0, thms.orbi1);
-scheme.setBinding(theory.operator("or"), 0, scheme.LEFT(), thms.orim1);
-
-startWith(thms.imim2);
-applyArrow([1,0], thms.df_or, 1);
-applyArrow([1,1], thms.df_or, 1);
-thms.orim2 = save();
-
-startWith(thms.imbi1);
-applyArrow([1,0], thms.con3bi, 1);
-applyArrow([1,1], thms.con3bi, 1);
-applyArrow([1,0], thms.df_or, 1);
-applyArrow([1,1], thms.df_or, 1);
-applyArrow([0], thms.notbi, 1);
-thms.orbi2 = save();
-scheme.setEquivalenceThm(theory.operator("or"), 1, thms.orbi2);
-scheme.setBinding(theory.operator("or"), 1, scheme.LEFT(), thms.orim2);
-
-
-startWith(thms.con3bi);
-applyArrow([1], thms.df_or, 1);
-applyArrow([0], thms.df_or, 1);
-applyArrow([1,1], thms.nnbi, 1);
-thms.orcom = save();
-
-
-
+  startWith(thms.defbi1);
+  applyArrow([1,1], thms.imim1, 0);
+  applyArrow([1,0], thms.imim1, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.imbi1 = save();
 /*
-// %%% END import from orcat_test.js
-*/
+//  scheme.setEquivalenceThm(exports.rarr, 0, thms.imbi1);
+
+  startWith(thms.defbi1);
+  applyArrow([1,0], thms.imim2, 0);
+  applyArrow([1,1], thms.imim2, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.imbi2 = save();
+//  scheme.setEquivalenceThm(exports.rarr, 1, thms.imbi2);
+
+//  scheme.setBinding(harr, 0, scheme.EXACT());
+//  scheme.setBinding(harr, 1, scheme.EXACT());
+
+  startWith(thms.defbi1);
+  applyArrow([1,0], thms.imim1, 0);
+  applyArrow([1,1], thms.imim2, 0);
+  applyArrow([1], thms.prth, 0);
+  applyArrow([1,0], thms.defbi1, 1);
+  applyArrow([1,1], thms.defbi2, 0);
+  applyArrow([], thms.ancr, 0);
+  applyArrow([1,0], thms.defbi1, 0);
+  applyArrow([1,0,0], thms.imim2, 0);
+  applyArrow([1,0,1], thms.imim1, 0);
+  applyArrow([1,0], thms.prth, 0);
+  applyArrow([1,0,0], thms.ancom, 1);
+  applyArrow([1,0,1], thms.ancom, 0);
+  applyArrow([1,0,0], thms.defbi1, 1);
+  applyArrow([1,0,1], thms.defbi2, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.bibi1 = save();
+//  scheme.setEquivalenceThm(exports.harr, 0, thms.bibi1);
+
+  startWith(thms.defbi1);
+  applyArrow([1,0], thms.imim2, 0);
+  applyArrow([1,1], thms.imim1, 0);
+  applyArrow([1], thms.prth, 0);
+  applyArrow([1,0], thms.defbi1, 1);
+  applyArrow([1,1], thms.defbi2, 0);
+  applyArrow([], thms.ancr, 0);
+  applyArrow([1,0], thms.defbi1, 0);
+  applyArrow([1,0,0], thms.imim1, 0);
+  applyArrow([1,0,1], thms.imim2, 0);
+  applyArrow([1,0], thms.prth, 0);
+  applyArrow([1,0,0], thms.ancom, 1);
+  applyArrow([1,0,1], thms.ancom, 0);
+  applyArrow([1,0,0], thms.defbi1, 1);
+  applyArrow([1,0,1], thms.defbi2, 0);
+  applyArrow([1], thms.ancom, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.bibi2 = save();
+//  scheme.setEquivalenceThm(exports.harr, 1, thms.bibi2);
+
+  startWith(thms.mp);
+  applyArrow([1,0], thms.bi1, 1);
+  thms.mpbi = save();
+
+  startWith(thms.mp);
+  applyArrow([1,0], thms.bi2, 1);
+  thms.mpbir = save();
+
+  startWith(thms.defbi1);
+  applyArrow([1,0], thms.anim1, 0);
+  applyArrow([1,1], thms.anim1, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.anbi1 = save();
+//  scheme.setEquivalenceThm(exports.and, 0, thms.anbi1);
+
+  startWith(thms.defbi1);
+  applyArrow([1,0], thms.anim2, 0);
+  applyArrow([1,1], thms.anim2, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.anbi2 = save();
+//  scheme.setEquivalenceThm(exports.and, 1, thms.anbi2);
+
+  startWith(thms.defbi1);
+  applyArrow([1,0], thms.con3, 0);
+  applyArrow([1,1], thms.con3, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.notbi = save();
+//  scheme.setEquivalenceThm(exports.not, 0, thms.notbi);
+
+  // Level 5
+
+  startWith(thms.bi1);
+  applyArrow([], thms.ancr, 0);
+  applyArrow([1,0], thms.bi2, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,1], thms.defbi2, 1);
+  applyArrow([0,1,1], thms.bi1, 1);
+  applyArrow([0,1], thms.ancom, 1);
+  applyArrow([0], thms.ancr, 1);
+  applyArrow([0,1], thms.bi2, 1);
+  applyArrow([], thms.idie, 0);
+  thms.bicom = save();
+
+  startWith(thms.dfbi);
+  applyArrow([], thms.defbi2, 0);
+  thms.biid = save();
+
+
+
+  startWith(thms.nn1);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,1], thms.nn2, 1);
+  applyArrow([], thms.idie, 0);
+  applyArrow([], thms.bicom, 1);
+  thms.nnbi = save();
+
+  startWith(thms.Transpose);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.ancom, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,1], thms.con3, 1);
+  applyArrow([], thms.idie, 0);
+  thms.con3bi = save();
+
+  startWith(thms.and1);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,1], thms.and2, 1);
+  applyArrow([], thms.idie, 0);
+  thms.dfanbi = save();
+
+  startWith(thms.ancom);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,0], thms.ancom, 0);
+  applyArrow([], thms.idie, 0);
+  thms.ancombi = save();
+
+  startWith(thms.anid);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,0], thms.andr, 0);
+  applyArrow([], thms.idie, 0);
+  thms.anidbi = save();
+
+  startWith(thms.con12);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,1], thms.con12, 1);
+  applyArrow([], thms.idie, 0);
+  thms.con12bi = save();
+
+  startWith(thms.dfanbi);
+  applyArrow([1,0,1,0], thms.dfanbi, 0);
+  applyArrow([1,0,1], thms.nnbi, 1);
+  applyArrow([1,0], thms.con12bi, 0);
+  applyArrow([1,0,1], thms.nnbi, 0);
+  applyArrow([1], thms.dfanbi, 1);
+  applyArrow([1,1], thms.dfanbi, 1);
+  applyArrow([0], thms.ancombi, 0);
+  applyArrow([1,1], thms.ancombi, 0);
+  thms.anass = save();
+
+
+  startWith(thms.imprt);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,0], thms.imim2, 0);
+  applyArrow([0,0,0], thms.conj, 1);
+  applyArrow([], thms.idie, 0);
+  thms.impexp = save();
+
+  startWith(thms.defbi1);
+  applyArrow([], thms.conj, 0);
+  applyArrow([1], thms.defbi2, 0);
+  applyArrow([0,1], thms.defbi2, 1);
+  applyArrow([], thms.idie, 0);
+  thms.dfbi3 = save();
+
+  // Level 6
+
+  startWith(thms.biid); 
+  proofState = proofState.specify([1], exports.rarr);
+  proofState = proofState.specify([1,0], exports.not);
+  thms.df_or = defthm('&or;');
+
+
+  startWith(thms.df_or);
+  applyArrow([], thms.bi2, 0);
+  applyArrow([0], thms.Simplify, 1);
+  thms.or2 = save();
+  // GHT.Thms['or2'] = T(O("->"),TV("wff -53792),T(O("or"),TV("wff -53793),TV("wff -53792)));
+
+  startWith(thms.df_or);
+  applyArrow([], thms.bi2, 0);
+  applyArrow([0], thms.con3bi, 0);
+  applyArrow([0], thms.Simplify, 1);
+  applyArrow([0], thms.nnbi, 1);
+  thms.or1 = save();
+
+  startWith(thms.imim2);
+  applyArrow([1,0], thms.con3bi, 1);
+  applyArrow([1,0], thms.df_or, 1);
+  applyArrow([1,1], thms.con3bi, 0);
+  applyArrow([1,1,1], thms.nnbi, 1);
+  applyArrow([1,1], thms.df_or, 1);
+  applyArrow([0,0], thms.nnbi, 1);
+  thms.orim1 = save();
+
+  startWith(thms.imbi1);
+  applyArrow([1,0], thms.df_or, 1);
+  applyArrow([1,1], thms.df_or, 1);
+  applyArrow([0], thms.notbi, 1);
+  thms.orbi1 = save();
+//  scheme.setEquivalenceThm(theory.operator("or"), 0, thms.orbi1);
+//  scheme.setBinding(theory.operator("or"), 0, scheme.LEFT(), thms.orim1);
+
+  startWith(thms.imim2);
+  applyArrow([1,0], thms.df_or, 1);
+  applyArrow([1,1], thms.df_or, 1);
+  thms.orim2 = save();
+
+  startWith(thms.imbi1);
+  applyArrow([1,0], thms.con3bi, 1);
+  applyArrow([1,1], thms.con3bi, 1);
+  applyArrow([1,0], thms.df_or, 1);
+  applyArrow([1,1], thms.df_or, 1);
+  applyArrow([0], thms.notbi, 1);
+  thms.orbi2 = save();
+  scheme.setEquivalenceThm(theory.operator("or"), 1, thms.orbi2);
+  scheme.setBinding(theory.operator("or"), 1, scheme.LEFT(), thms.orim2);
+
+
+  startWith(thms.con3bi);
+  applyArrow([1], thms.df_or, 1);
+  applyArrow([0], thms.df_or, 1);
+  applyArrow([1,1], thms.nnbi, 1);
+  thms.orcom = save();
+
+
+
+  /*
+  // %%% END import from orcat_test.js
+  */
 
 
 // ==== Verify ====
@@ -1214,23 +1208,23 @@ if (DEBUG) {
     console.log("==== PROOF ====\n" + ghilbertText.txt);
 }
 function run(url_context, url, context) {
-  var scanner = new GH.Scanner(url_context.resolve(url).split(/\r?\n/));
-  while (true) {
-    var command = GH.read_sexp(scanner);
-    if (command === null || command === undefined) {
-      return true;
+    var scanner = new GH.Scanner(url_context.resolve(url).split(/\r?\n/));
+    while (true) {
+        var command = GH.read_sexp(scanner);
+        if (command === null || command === undefined) {
+            return true;
+        }
+        if (GH.typeOf(command) != 'string') {
+            throw 'Command must be atom';
+        }
+        // We don't care about styling, but apparently we need to participate in passing
+        // it around.
+        var styling = scanner.styleScanner.get_styling('');
+        var arg = GH.read_sexp(scanner);
+        context.do_cmd(command, arg, styling);
+        scanner.styleScanner.clear();
     }
-    if (GH.typeOf(command) != 'string') {
-      throw 'Command must be atom';
-    }
-    // We don't care about styling, but apparently we need to participate in passing
-    // it around.
-    var styling = scanner.styleScanner.get_styling('');
-    var arg = GH.read_sexp(scanner);
-    context.do_cmd(command, arg, styling);
-    scanner.styleScanner.clear();
-  }
-  return false;
+    return false;
 }
 
 var verifyCtx = new GH.VerifyCtx(UrlCtx, run);
@@ -1250,45 +1244,84 @@ try {
 
 
 /*
-==== Things to be proved ====
-{Core:[[],[and,[rarr,0,0],[rarr,1,1]],[]],
- Skin:{TermNames:[""]}}
-[rarr,[harr,0,1],[and,[rarr,0,1],[rarr,1,0]]]
-[rarr,[and,[rarr,0,1],[rarr,1,0]],[harr,0,1]]
-[rarr,[harr,0,1],[rarr,0,1]]
-[rarr,[harr,0,1],[rarr,1,0]]
-[rarr,[harr,0,1],[harr,[rarr,1,2],[rarr,0,2]]]
-[rarr,[harr,0,1],[harr,[rarr,2,0],[rarr,2,1]]]
-[rarr,[harr,0,1],[harr,[harr,0,2],[harr,1,2]]]
-[rarr,[harr,0,1],[harr,[harr,2,0],[harr,2,1]]]
-[rarr,0,[rarr,[harr,0,1],1]]
-[rarr,0,[rarr,[harr,1,0],1]]
-[rarr,[harr,0,1],[harr,[and,0,2],[and,1,2]]]
-[rarr,[harr,0,1],[harr,[and,2,0],[and,2,1]]]
-[rarr,[harr,0,1],[harr,[not,1],[not,0]]]
-[harr,[harr,0,1],[harr,1,0]]
-[harr,0,0]
-[harr,0,[not,[not,0]]]
-[harr,[rarr,0,1],[rarr,[not,1],[not,0]]]
-[harr,[and,0,1],[not,[rarr,0,[not,1]]]]
-[harr,[and,0,1],[and,1,0]]
-[harr,0,[and,0,0]]
-[harr,[rarr,0,[rarr,1,2]],[rarr,1,[rarr,0,2]]]
-[harr,[and,[and,0,1],2],[and,0,[and,1,2]]]
-[harr,[rarr,0,[rarr,1,2]],[rarr,[and,0,1],2]]
-[harr,[harr,0,1],[and,[rarr,0,1],[rarr,1,0]]]
-[rarr,0,[or,1,0]]
-[rarr,0,[or,0,1]]
-[rarr,[rarr,0,1],[rarr,[or,0,2],[or,1,2]]]
-[rarr,[harr,0,1],[harr,[or,0,2],[or,1,2]]]
-[rarr,[rarr,0,1],[rarr,[or,2,0],[or,2,1]]]
-[rarr,[harr,0,1],[harr,[or,2,0],[or,2,1]]]
-[harr,[or,0,1],[or,1,0]]
-[rarr,[harr,0,1],[harr,[harr,2,0],[harr,1,2]]]
+  ==== Things to be proved ====
+  {Core:[[],[0,[1,0,0],[1,1,1]],[]],
+  Skin:{TermNames:["&and;","&rarr;"]}}
+  {Core:[[],[0,[1,0,1],[2,[0,0,1],[0,1,0]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;","&and;"]}},
+  {Core:[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]],
+  Skin:{TermNames:["&rarr;","&and;","&harr;"]}},
 
-[rarr,[forall,0,[harr,1,2]],[rarr,[forall,0,1],[forall,0,2]]]
-[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,1],[forall,0,2]]]
-[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,2],[forall,0,1]]]
-[rarr,[not,[forall,0,[not,[equals,1,2]]]],[not,[forall,0,[not,[equals,2,2]]]]]
-[equals,0,0]
+  {Core:[[],[0,[1,0,1],[0,0,1]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,[1,0,1],[0,1,0]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,[1,0,1],[1,[0,2,0],[0,2,1]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,[1,0,1],[1,[1,2,0],[1,2,1]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,0,[0,[1,0,1],1]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,0,[0,[1,1,0],1]],[]],
+  Skin:{TermNames:["&rarr;","&harr;"]}},
+  {Core:[[],[0,[1,0,1],[1,[2,,0,2],[2,1,2]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;","&and;"]}},
+  {Core:[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;","&and;"]}},
+  {Core:[[],[0,[1,0,1],[1,[2,1],[2,0]]],[]],
+  Skin:{TermNames:["&rarr;","&harr;","&not;"]}},
+
+  {Core:[[],[harr,[harr,0,1],[harr,1,0]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,0,0],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,0,[not,[not,0]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[rarr,0,1],[rarr,[not,1],[not,0]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[and,0,1],[not,[rarr,0,[not,1]]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[and,0,1],[and,1,0]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,0,[and,0,0]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[rarr,0,[rarr,1,2]],[rarr,1,[rarr,0,2]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[and,[and,0,1],2],[and,0,[and,1,2]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[rarr,0,[rarr,1,2]],[rarr,[and,0,1],2]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[harr,0,1],[and,[rarr,0,1],[rarr,1,0]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,0,[or,1,0]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,0,[or,0,1]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[rarr,0,1],[rarr,[or,0,2],[or,1,2]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[harr,0,1],[harr,[or,0,2],[or,1,2]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[rarr,0,1],[rarr,[or,2,0],[or,2,1]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[harr,0,1],[harr,[or,2,0],[or,2,1]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[harr,[or,0,1],[or,1,0]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[harr,0,1],[harr,[harr,2,0],[harr,1,2]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],
+  [rarr,[forall,0,[harr,1,2]],[rarr,[forall,0,1],[forall,0,2]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,1],[forall,0,2]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,2],[forall,0,1]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[rarr,[not,[forall,0,[not,[equals,1,2]]]],[not,[forall,0,[not,[equals,2,2]]]]],[]],
+  Skin:{TermNames:[""]}},
+  {Core:[[],[equals,0,0],[]],
+  Skin:{TermNames:[""]}},
 */
