@@ -11,6 +11,8 @@ var TODO_PUSHUPMAP = {};
 var DEBUG = false;
 
 state.factsByMark = {};
+var sfbm = state.factsByMark;
+
 state.requestFact = function(core, hint, cb) {
     var mark = JSON.stringify(core) + ";" + JSON.stringify(hint.terms);
     var fact = state.factsByMark[mark];
@@ -439,26 +441,23 @@ function appendTo(strptr) {
 }
 
 var landRarr = getLand("land_rarr.js");
-var ax1 = state.factsByMark[
-    "[[],[0,0,[0,1,0]],[]];[\"&rarr;\"]"];
-var imim1 = state.factsByMark[
-    "[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];[\"&rarr;\"]"];
-var imim2 = state.factsByMark[
-    "[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];[\"&rarr;\"]"];
-var pm243 = state.factsByMark[
-    "[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];[\"&rarr;\"]"];
-var axmp = state.factsByMark[
-    "[[1,[0,1,0]],0,[]];[\"&rarr;\"]"];
+var ax1 =   sfbm['[[],[0,0,[0,1,0]],[]];["&rarr;"]'];
+var imim1 = sfbm['[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]'];
+var imim2 = sfbm['[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]'];
+var pm243 = sfbm['[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]'];
+var axmp =  sfbm['[[1,[0,1,0]],0,[]];["&rarr;"]'];
 
 TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
-    fact:imim2,
+    mark:'[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]',
     pushUp: function(pusp, work) {
         pusp.newSteps.push(pusp.tool[1]);
         pusp.newSteps.push(pusp.tool[2]);
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
         pusp.newSteps.push(thirdArg);
-        pusp.newSteps.push(nameDep(work, this.fact));
+        var pushupFact = sfbm[this.mark];
+        if (!pushupFact) return null;
+        pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
         pusp.tool = [rarr,
@@ -468,7 +467,7 @@ TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
     }
 };
 TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
-    fact:imim1,
+    mark:'[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]',
     pushUp: function(pusp, work) {
         // Goal: -> A B
         // Tool: -> A C
@@ -479,7 +478,9 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
         pusp.newSteps.push(thirdArg);
-        pusp.newSteps.push(nameDep(work, this.fact));
+        var pushupFact = sfbm[this.mark];
+        if (!pushupFact) return null;
+        pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
         pusp.tool = [rarr,
@@ -489,7 +490,7 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
     }
 };
 TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",2]]] = {
-    fact:imim1,
+    mark:'[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]',
     pushUp: function(pusp, work) {
         // Goal: -> A B
         // Tool: -> C A
@@ -500,7 +501,9 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",2]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
         pusp.newSteps.push(thirdArg);
-        pusp.newSteps.push(nameDep(work, this.fact));
+        var pushupFact = sfbm[this.mark];
+        if (!pushupFact) return null;
+        pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
         pusp.tool = [rarr,
@@ -510,7 +513,7 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",2]]] = {
     }
 };
 TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",1]]] = {
-    fact:imim2,
+    mark:'[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]',
     pushUp: function(pusp, work) {
         // Goal: -> A B
         // Tool: -> B C
@@ -521,13 +524,39 @@ TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",1]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
         pusp.newSteps.push(thirdArg);
-        pusp.newSteps.push(nameDep(work, this.fact));
+        var pushupFact = sfbm[this.mark];
+        if (!pushupFact) return null;
+        pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
         pusp.tool = [rarr,
                      [rarr, thirdArg, pusp.tool[1]],
                      [rarr, thirdArg, pusp.tool[2]]];
         pusp.toolPath = [1];
+    }
+};
+
+TODO_PUSHUPMAP[[["&not;",1],["&rarr;",1]]] = {
+    mark:'[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["&rarr;","&not;"]',
+    pushUp: function(pusp, work) {
+        // Goal: -. A
+        // Tool: -> A B
+        // new goal: -. B
+        // con3: (-> (-> A B) (-> (-. B) (-. A))
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.goalPath.pop();
+        // NB: no thirdArg
+        var pushupFact = sfbm[this.mark];
+        if (!pushupFact) return null;
+        pusp.newSteps.push(nameDep(work, pushupFact));
+        pusp.newSteps.push(nameDep(work, axmp));
+        var rarr = work.nameTerm("&rarr;");
+        var not = work.nameTerm("&not;");
+        pusp.tool = [rarr,
+                     [not, pusp.tool[2]],
+                     [not, pusp.tool[1]]];
+        pusp.toolPath = [2];
     }
 };
 
@@ -705,14 +734,14 @@ thms.idie = save();
 //startWith(thms.mp);
 //applyArrow([], thms.Distribute, 0);
 //thms.contract = save();
+thms.contract = pm243;
 
 // Level 2
 
 interfaceText.txt += '\nterm (k (&not; V0))\n'; //TODO: should be auto
 var landNot = getLand("land_not.js");
 
-thms.Transpose = state.factsByMark[
-    '[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]'];
+thms.Transpose = sfbm['[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]'];
 
 startWith(thms.Simplify);
 applyArrow([1], thms.Transpose, 0);
@@ -806,18 +835,18 @@ startWith(thms.conjnimp);
 applyArrow([1,1], thms.and2, 0);
 applyArrow([1,0], thms.nn2, 1);
 thms.conj = save();
-/*
-DEBUG=true;
+
 startWith(thms.conj);
 applyArrow([], thms.contract, 0);
 thms.anid = save();
+
 
 startWith(thms.and1);
 applyArrow([1,0], thms.Transpose, 1);
 applyArrow([1,0,0], thms.nn1, 0);
 applyArrow([1], thms.and2, 0);
 thms.ancom = save();
-
+/*
 startWith(thms.anim2);
 applyArrow([1,0], thms.anid, 1);
 thms.ancr = save();
