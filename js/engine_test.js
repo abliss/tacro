@@ -560,6 +560,31 @@ TODO_PUSHUPMAP[[["&not;",1],["&rarr;",1]]] = {
     }
 };
 
+TODO_PUSHUPMAP[[["&and;",1],["&rarr;",2]]] = {
+    mark:'[[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]];["&rarr;","&and;"]',
+    pushUp: function(pusp, work) {
+        // Goal: and A B
+        // Tool: -> C A
+        // new goal: and C B
+        // pushup: (-> (-> C A) (-> (and C B) (and A B)))
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.goalPath.pop();
+        var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
+        pusp.newSteps.push(thirdArg);
+        var pushupFact = sfbm[this.mark];
+        if (!pushupFact) return null;
+        pusp.newSteps.push(nameDep(work, pushupFact));
+        pusp.newSteps.push(nameDep(work, axmp));
+        var rarr = work.nameTerm("&rarr;");
+        var and = work.nameTerm("&and;");
+        pusp.tool = [rarr,
+                     [and, pusp.tool[1], thirdArg],
+                     [and, pusp.tool[2], thirdArg]];
+        pusp.toolPath = [2];
+    }
+};
+
 function ground(work, dirtFact) {
     // verify that the hyp is an instance of the dirt
     var varMap = getMandHyps(work, [], dirtFact, []);
@@ -846,7 +871,7 @@ applyArrow([1,0], thms.Transpose, 1);
 applyArrow([1,0,0], thms.nn1, 0);
 applyArrow([1], thms.and2, 0);
 thms.ancom = save();
-/*
+
 startWith(thms.anim2);
 applyArrow([1,0], thms.anid, 1);
 thms.ancr = save();
