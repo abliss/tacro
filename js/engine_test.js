@@ -614,7 +614,7 @@ function canonicalize(work) {
 
 var ghilbertText = {txt:'import (TMP tmp2.ghi () "")\n' +
     'tvar (k V0 V1 V2 V3 V4 V5)\n\n'};
-state.work = startWork(state.land.goals[state.goal]);
+startNextGoal();
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
 // |- (PQR)(PQ)PPR => |- (PQR)(PQ)PR
@@ -622,10 +622,7 @@ state.work = apply(state.work, [2,1], imim1, [1]);
 // |- (P(QR))((Qr)(Pr))(P(PR)) => |- (PQR)(PQ)PR
 state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
-state.land.addFact(state.work);
-state.goal++;
-var ax2 = state.work;
-state.work.toGhilbert(state, appendTo(ghilbertText));
+var ax2 = saveGoal();
 
 // Apparatus for importing proofs from orcat_test.js
 var thms = {};
@@ -635,6 +632,15 @@ thms.Distribute = ax2;
 thms.Simplify = ax1;
 
 var stack = []; // goalPath, fact, factPath
+function startNextGoal() {
+    state.work = startWork(state.land.goals[state.goal]);
+}
+function saveGoal() {
+    state.land.addFact(state.work);
+    state.work.toGhilbert(state, appendTo(ghilbertText));
+    state.goal++;
+    return state.work;
+}
 function startWith(fact) {
     stack = [[fact]];
 }
@@ -642,7 +648,7 @@ function applyArrow(path, fact, side) {
     stack.unshift([path.map(function(x){return x+1;}), fact, [2 - side]]);
 }
 function save() {
-    state.work = startWork(state.land.goals[state.goal]);
+    startNextGoal();
     stack.forEach(function(step) {
         if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
         try {
@@ -658,9 +664,7 @@ function save() {
 
     });
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
-    state.land.addFact(state.work);
-    state.goal++;
-    state.work.toGhilbert(state, appendTo(ghilbertText));
+    saveGoal();
     startWith(state.work);
     return state.work;
 }
@@ -752,14 +756,26 @@ applyArrow([0], thms.nn2, 1);
 applyArrow([], thms.idie, 0);
 thms.dfand = save();
 
-state.work = startWork(state.land.goals[state.goal]);
+startNextGoal();
 state.work = ground(state.work, thms.dfand);
-console.log("#XXXX Work now: " + JSON.stringify(state.work));
 
 state.land.addFact(state.work);
-state.work.toGhilbert(state, appendTo(ghilbertText));
-thms.dfbi = state.work;
-state.goal++;
+thms.dfbi = saveGoal()
+
+var landHarr = getLand("land_harr.js");
+/*
+thms.dfbi = state.factsByMark[
+    '[[],[0,[1,[1,[2,0,1],[0,[1,[1,0,1],[0,[1,1,0]]]]],[0,[1,[0,[1,[1,0,1],[0,[1,1,0]]]],[2,0,1]]]]],[]];["&not;","&rarr;"]'];
+
+*/
+console.log(JSON.stringify(thms));
+
+startNextGoal();
+state.work = apply(state.work, [], thms.nimp1, [2]);
+state.work = apply(state.work, [], thms.nimp1, [2]);
+state.work = ground(state.work, thms.dfbi);
+thms.bi1 = saveGoal();
+
 
 
 /*
@@ -1162,6 +1178,7 @@ while (outstanding > 0) {
 UrlCtx.files["tmp2.ghi"] = interfaceText.txt;
 UrlCtx.files["tmp2.gh"] = ghilbertText.txt;
 
+DEBUG=true
 if (DEBUG) {
     console.log("==== IFACE ====\n" + interfaceText.txt);
     console.log("==== PROOF ====\n" + ghilbertText.txt);
