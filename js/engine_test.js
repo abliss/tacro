@@ -904,6 +904,7 @@ applyArrow([1,1], thms.ancom, 0);
 thms.prth = save();
 
 /*
+
 startWith(thms.id);
 applyArrow([], thms.conj, 0);
 applyArrow([], thms.idie, 0);
@@ -1247,3 +1248,47 @@ try {
     throw(new Error(e));
 }
 
+
+/*
+==== Things to be proved ====
+{Core:[[],[and,[rarr,0,0],[rarr,1,1]],[]],
+ Skin:{TermNames:[""]}}
+[rarr,[harr,0,1],[and,[rarr,0,1],[rarr,1,0]]]
+[rarr,[and,[rarr,0,1],[rarr,1,0]],[harr,0,1]]
+[rarr,[harr,0,1],[rarr,0,1]]
+[rarr,[harr,0,1],[rarr,1,0]]
+[rarr,[harr,0,1],[harr,[rarr,1,2],[rarr,0,2]]]
+[rarr,[harr,0,1],[harr,[rarr,2,0],[rarr,2,1]]]
+[rarr,[harr,0,1],[harr,[harr,0,2],[harr,1,2]]]
+[rarr,[harr,0,1],[harr,[harr,2,0],[harr,2,1]]]
+[rarr,0,[rarr,[harr,0,1],1]]
+[rarr,0,[rarr,[harr,1,0],1]]
+[rarr,[harr,0,1],[harr,[and,0,2],[and,1,2]]]
+[rarr,[harr,0,1],[harr,[and,2,0],[and,2,1]]]
+[rarr,[harr,0,1],[harr,[not,1],[not,0]]]
+[harr,[harr,0,1],[harr,1,0]]
+[harr,0,0]
+[harr,0,[not,[not,0]]]
+[harr,[rarr,0,1],[rarr,[not,1],[not,0]]]
+[harr,[and,0,1],[not,[rarr,0,[not,1]]]]
+[harr,[and,0,1],[and,1,0]]
+[harr,0,[and,0,0]]
+[harr,[rarr,0,[rarr,1,2]],[rarr,1,[rarr,0,2]]]
+[harr,[and,[and,0,1],2],[and,0,[and,1,2]]]
+[harr,[rarr,0,[rarr,1,2]],[rarr,[and,0,1],2]]
+[harr,[harr,0,1],[and,[rarr,0,1],[rarr,1,0]]]
+[rarr,0,[or,1,0]]
+[rarr,0,[or,0,1]]
+[rarr,[rarr,0,1],[rarr,[or,0,2],[or,1,2]]]
+[rarr,[harr,0,1],[harr,[or,0,2],[or,1,2]]]
+[rarr,[rarr,0,1],[rarr,[or,2,0],[or,2,1]]]
+[rarr,[harr,0,1],[harr,[or,2,0],[or,2,1]]]
+[harr,[or,0,1],[or,1,0]]
+[rarr,[harr,0,1],[harr,[harr,2,0],[harr,1,2]]]
+
+[rarr,[forall,0,[harr,1,2]],[rarr,[forall,0,1],[forall,0,2]]]
+[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,1],[forall,0,2]]]
+[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,2],[forall,0,1]]]
+[rarr,[not,[forall,0,[not,[equals,1,2]]]],[not,[forall,0,[not,[equals,2,2]]]]]
+[equals,0,0]
+*/
