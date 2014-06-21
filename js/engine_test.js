@@ -756,43 +756,16 @@ applyArrow([0], thms.nn2, 1);
 applyArrow([], thms.idie, 0);
 thms.dfand = save();
 
+var landHarr = getLand("land_and.js");
 startNextGoal();
+
+
 state.work = ground(state.work, thms.dfand);
-
 state.land.addFact(state.work);
-thms.dfbi = saveGoal()
+thms.Conjoin = saveGoal();
 
-var landHarr = getLand("land_harr.js");
-/*
-thms.dfbi = state.factsByMark[
-    '[[],[0,[1,[1,[2,0,1],[0,[1,[1,0,1],[0,[1,1,0]]]]],[0,[1,[0,[1,[1,0,1],[0,[1,1,0]]]],[2,0,1]]]]],[]];["&not;","&rarr;"]'];
+//scheme.setBinding(not, 0, scheme.RIGHT(), thms.con3); // TODO
 
-*/
-console.log(JSON.stringify(thms));
-
-startNextGoal();
-state.work = apply(state.work, [], thms.nimp1, [2]);
-state.work = apply(state.work, [], thms.nimp1, [2]);
-state.work = ground(state.work, thms.dfbi);
-thms.bi1 = saveGoal();
-
-
-
-/*
-// Level 3
-var and = exports.theory.newOperator("&and;", exports.wff, [exports.wff, exports.wff]);
-exports.and = and;
-expectUnify(ORCAT.theory.parseTerm([I, 1353, [I, [and, 1354, 1355], 1356]]),
-            ORCAT.theory.parseTerm([I, 1357, [I, 1357, 1358]]));
-exports.theory.addAxiom(thms.Conjoin, theory.parseTerm(
-                            [not, [I, [I, [and, 0, 1], [not, [I, 0, [not, 1]]]],
-                                   [not, [I, [not, [I, 0, [not, 1]]], [and, 0, 1]]]]]));
-//scheme.setBinding(not, 0, scheme.RIGHT(), thms.con3);
-//PICKUP: this should be read from a file!
-ghText += "\ndefthm (" + thms.Conjoin + " wff (and A B) () () \
-          (not (rarr (rarr (and A B) (not (rarr A (not B)))) \
-                  (not (rarr (not (rarr A (not B))) (and A B))))) \
-     (not (rarr A (not B)))  (not (rarr A (not B)))  " + thms.dfand + ")\n";
 startWith(thms.Conjoin);
 applyArrow([], thms.nimp1, 0);
 thms.and1 = save();
@@ -808,7 +781,7 @@ applyArrow([1,0], thms.and1, 1);
 applyArrow([1,1], thms.and2, 0);
 thms.anim1 = save();
 
-scheme.setBinding(and, 0, scheme.LEFT(), thms.anim1);
+// scheme.setBinding(and, 0, scheme.LEFT(), thms.anim1); // TODO
 
 startWith(thms.imim2);
 applyArrow([1], thms.con3, 0);
@@ -817,7 +790,7 @@ applyArrow([1,0], thms.and1, 1);
 applyArrow([0], thms.con3, 1);
 thms.anim2 = save();
 
-scheme.setBinding(and, 1, scheme.LEFT(), thms.anim2);
+// scheme.setBinding(and, 1, scheme.LEFT(), thms.anim2); // TODO
 
 
 startWith(thms.and1);
@@ -833,7 +806,8 @@ startWith(thms.conjnimp);
 applyArrow([1,1], thms.and2, 0);
 applyArrow([1,0], thms.nn2, 1);
 thms.conj = save();
-
+/*
+DEBUG=true;
 startWith(thms.conj);
 applyArrow([], thms.contract, 0);
 thms.anid = save();
@@ -875,6 +849,7 @@ applyArrow([1,0], thms.ancom, 1);
 applyArrow([1,1], thms.ancom, 0);
 thms.prth = save();
 
+/*
 startWith(thms.id);
 applyArrow([], thms.conj, 0);
 applyArrow([], thms.idie, 0);
@@ -1178,7 +1153,7 @@ while (outstanding > 0) {
 UrlCtx.files["tmp2.ghi"] = interfaceText.txt;
 UrlCtx.files["tmp2.gh"] = ghilbertText.txt;
 
-DEBUG=true
+
 if (DEBUG) {
     console.log("==== IFACE ====\n" + interfaceText.txt);
     console.log("==== PROOF ====\n" + ghilbertText.txt);
