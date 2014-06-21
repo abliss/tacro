@@ -85,7 +85,9 @@ function startWork(fact) {
         work.Skin.VarNames[varNum] = "V" + varNum;
     }
     eachVarOnce(work.Core[Fact.CORE_STMT], nameVar);
-    work.setCmd("thm");
+    if (!work.Tree.Cmd) {
+        work.setCmd("thm");
+    }
     work.setProof(["Hyps.0"]);
     return new Fact(work);
 }
@@ -207,6 +209,19 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
             workSubExp = dummyMap[workSubExp];
         }
 
+
+        if ((hypPath.length == 0) &&
+            (stmtPath.length == 0) &&
+            Array.isArray(workSubExp) &&
+            (workSubExp[0] == work.Tree.Definiendum)) {
+            // When grounding a defthm, the statement left on the stack
+            // doesn't match the Core's STMT until the substitution is
+            // applied.
+            // TODO: but we *should* be checking the consistency of the
+            // substitution....
+            return;
+        }
+
         if (!Array.isArray(factSubExp)) {
             if (alreadyMapped) {
                 if (!nonDummy[workSubExp]) {
@@ -244,7 +259,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                     dummyMap[workSubExp] = newExp;
                     workSubExp = newExp;
                 }
-            } 
+            }
             if (Array.isArray(workSubExp)) {
                 // exp - exp
                 var workTerm = work.Skin.TermNames[workSubExp[0]];
@@ -409,9 +424,9 @@ function apply(work, workPath, fact, factPath) {
 }
 
 // TODO: should be generated
-var interfaceText = {txt:'kind (kind0)\n' +
-    'tvar (kind0 V0 V1 V2 V3 V4)\n' +
-                     'term (kind0 (&rarr; V0 V1))\n\n'};
+var interfaceText = {txt:'kind (k)\n' +
+                     'tvar (k V0 V1 V2 V3 V4)\n' +
+                     'term (k (&rarr; V0 V1))\n\n'};
 
 var outstanding = 0;
 function appendTo(strptr) {
@@ -550,14 +565,17 @@ function ground(work, dirtFact) {
 // TODO: sort deps alphabetically?
 function canonicalize(work) {
     var out = new Fact();
-    var terms = work.Skin.TermNames;
     if (work.Core[Fact.CORE_FREE] && work.Core[Fact.CORE_FREE].length > 0) {
         throw new Error("TODO");
     }
+    function mapTerm(t) {
+        return out.nameTerm(work.Skin.TermNames[t]);
+    }
     function mapExp(exp) {
         if (Array.isArray(exp) && (exp.length > 0)) {
+            var t = mapTerm(exp[0]);
             var mapped = exp.slice(1).map(mapExp);
-            mapped.unshift(out.nameTerm(terms[exp[0]]));
+            mapped.unshift(t);
             return mapped;
         } else if (typeof exp == 'number') {
             return out.nameVar("V" + exp);
@@ -566,6 +584,10 @@ function canonicalize(work) {
         }
     }
     out.setStmt(mapExp(work.Core[Fact.CORE_STMT]));
+    if (DEBUG) {
+        console.log("\nwork=" + JSON.stringify(work) +
+                    "\nfact=" +JSON.stringify(out));
+    }
     out.setFree([]); // XXX
     for (var i = 0; i < work.Core[Fact.CORE_HYPS].length; i++) {
         out.Core[Fact.CORE_HYPS][i] = mapExp(work.Core[Fact.CORE_HYPS][i]);
@@ -575,19 +597,14 @@ function canonicalize(work) {
     out.setCmd(work.Tree.Cmd);
     out.setName(fingerprint(out.getMark()));
     out.Tree.Deps = work.Tree.Deps.map(function(d) {
-        var e = d[1].map(function(t) {
-            return out.nameTerm(work.Skin.TermNames[t]);
-        });
-        return [clone(d[0]), e];
+        return [clone(d[0]), d[1].map(mapTerm)];
     });
-
+    if (work.Tree.Definiendum != undefined) {
+        out.Tree.Definiendum = mapTerm(work.Tree.Definiendum);
+    }
     
     for (var n = 0; n < out.Skin.VarNames.length; n++) {
         out.Skin.VarNames[n] = "V" + n;
-    }
-    if (DEBUG) {
-        console.log("work=" + JSON.stringify(work) +
-                    "\nfact=" +JSON.stringify(out));
     }
     return out;
 }
@@ -596,7 +613,7 @@ function canonicalize(work) {
 
 
 var ghilbertText = {txt:'import (TMP tmp2.ghi () "")\n' +
-    'tvar (kind0 V0 V1 V2 V3 V4 V5)\n\n'};
+    'tvar (k V0 V1 V2 V3 V4 V5)\n\n'};
 state.work = startWork(state.land.goals[state.goal]);
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
@@ -687,11 +704,11 @@ thms.idie = save();
 
 // Level 2
 
-interfaceText.txt += '\nterm (kind0 (&not; V0))\n'; //TODO: should be auto
+interfaceText.txt += '\nterm (k (&not; V0))\n'; //TODO: should be auto
 var landNot = getLand("land_not.js");
 
 thms.Transpose = state.factsByMark[
-    "[[],[1,[1,[0,0],[0,1]],[1,1,0]],[]];[\"&not;\",\"&rarr;\"]"];
+    '[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]'];
 
 startWith(thms.Simplify);
 applyArrow([1], thms.Transpose, 0);
@@ -710,7 +727,7 @@ applyArrow([0,1], thms.nn2, 1);
 applyArrow([0,0], thms.nn1, 0);
 thms.con3 = save();
 
-//XXX scheme.setBinding(not, 0, scheme.RIGHT(), thms.con3);
+//XXX TODO PICKUP scheme.setBinding(not, 0, scheme.RIGHT(), thms.con3);
 
 startWith(thms.Simplify);
 applyArrow([], thms.con3, 0);
@@ -727,10 +744,23 @@ applyArrow([], thms.Distribute, 0);
 applyArrow([1], thms.Transpose, 0);
 applyArrow([1], thms.idie, 0);
 thms.contradict = save();
+
+
 startWith(thms.id);
 applyArrow([], thms.conjnimp, 0);
 applyArrow([0], thms.nn2, 1);
 applyArrow([], thms.idie, 0);
+thms.dfand = save();
+
+state.work = startWork(state.land.goals[state.goal]);
+state.work = ground(state.work, thms.dfand);
+console.log("#XXXX Work now: " + JSON.stringify(state.work));
+
+state.land.addFact(state.work);
+state.work.toGhilbert(state, appendTo(ghilbertText));
+thms.dfbi = state.work;
+state.goal++;
+
 
 /*
 // Level 3
