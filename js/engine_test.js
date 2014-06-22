@@ -7,11 +7,16 @@ var lands = [];
 var state = {};
 
 var TODO_PUSHUPMAP = {};
+var TODO_DETACHMAP = {};
 
 var DEBUG = false;
 
 state.factsByMark = {};
-var sfbm = state.factsByMark;
+function sfbm(mark) {
+    var fact = state.factsByMark[mark];
+    if (!fact) throw new Error("mark not found: " + mark);
+    return fact;
+}
 
 state.requestFact = function(core, hint, cb) {
     var mark = JSON.stringify(core) + ";" + JSON.stringify(hint.terms);
@@ -226,6 +231,9 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
 
         if (!Array.isArray(factSubExp)) {
             if (alreadyMapped) {
+                if (Array.isArray(workSubExp)) {
+                    assertEqual("mappedA", factSubExp, workSubExp)
+                }
                 if (!nonDummy[workSubExp]) {
                     if (factSubExp != workSubExp) { 
                         dummyMap[workSubExp] = factSubExp;
@@ -323,7 +331,16 @@ function queryPushUp(params) {
     if (!pushup) {
         throw new Error("No pushup found for " + JSON.stringify(params));
     }
-    return pushup
+    return pushup;
+}
+
+function queryDetach(params) {
+    // TODO
+    var detach = TODO_DETACHMAP[params];
+    if (!detach) {
+        throw new Error("No detach found for " + JSON.stringify(params));
+    }
+    return detach;
 }
 
 function globalSub(fact, varMap, work) {
@@ -397,19 +414,18 @@ function apply(work, workPath, fact, factPath) {
 
         var query = [goalTerm, goalArgNum, toolTerm,
                      pusp.toolPath[pusp.toolPath.length - 1]];
-        var pushUp = queryPushUp(query);
-        pushUp.pushUp(pusp, work);
+        queryPushUp(query).pushUp(pusp, work);
 
     }
     checkInvariant();
 
-    // Now, since the invariant holds and goalPath = [], tool[2] == goal, so 
-    // just detach.
-    pusp.newSteps.push(nameDep(work, axmp)); // TODO: XXX ???
+    // Now, since the invariant holds and goalPath = [], and
+    // tool[toolPath[0]] == goal, so just detach.
+    var query = [work.Skin.TermNames[pusp.tool[0]], pusp.toolPath];
+    queryDetach(query).detach(pusp, work);
 
     // #. compute new preimage and update Hyps.0
     // TODO: hardcoded for now
-    work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
     
     // don't delete any steps
     pusp.newSteps.unshift(0);
@@ -441,11 +457,44 @@ function appendTo(strptr) {
 }
 
 var landRarr = getLand("land_rarr.js");
-var ax1 =   sfbm['[[],[0,0,[0,1,0]],[]];["&rarr;"]'];
-var imim1 = sfbm['[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]'];
-var imim2 = sfbm['[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]'];
-var pm243 = sfbm['[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]'];
-var axmp =  sfbm['[[1,[0,1,0]],0,[]];["&rarr;"]'];
+var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
+var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
+var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
+var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
+var axmp =  sfbm('[[1,[0,1,0]],0,[]];["&rarr;"]');
+
+TODO_DETACHMAP[["&rarr;",[2]]] = {
+    mark:'[[1,[0,1,0]],0,[]];["&rarr;"]',
+    detach: function(pusp, work) {
+        var detachFact = sfbm(this.mark);
+        pusp.newSteps.push(nameDep(work, detachFact));
+        work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
+    }
+};
+TODO_DETACHMAP[["&harr;",[2]]] = {
+    mark:'[[],[0,[1,0,1],[0,0,1]],[]];["&rarr;","&harr;"]',
+    detach: function(pusp, work) {
+        var detachFact = sfbm(this.mark);
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.newSteps.push(nameDep(work, detachFact));
+        pusp.newSteps.push(nameDep(work, axmp)); // XXX
+        pusp.newSteps.push(nameDep(work, axmp)); // XXX
+        work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
+    }
+};
+TODO_DETACHMAP[["&harr;",[1]]] = {
+    mark:'[[],[0,[1,0,1],[0,1,0]],[]];["&rarr;","&harr;"]',
+    detach: function(pusp, work) {
+        var detachFact = sfbm(this.mark);
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.newSteps.push(nameDep(work, detachFact));
+        pusp.newSteps.push(nameDep(work, axmp)); // XXX
+        pusp.newSteps.push(nameDep(work, axmp)); // XXX
+        work.Core[Fact.CORE_HYPS][0] = pusp.tool[2];
+    }
+};
 
 TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
     mark:'[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]',
@@ -455,8 +504,7 @@ TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
         pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -478,8 +526,7 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
         pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -501,8 +548,7 @@ TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",2]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
         pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -524,8 +570,7 @@ TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",1]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
         pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -547,8 +592,7 @@ TODO_PUSHUPMAP[[["&not;",1],["&rarr;",1]]] = {
         pusp.newSteps.push(pusp.tool[2]);
         pusp.goalPath.pop();
         // NB: no thirdArg
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -572,8 +616,7 @@ TODO_PUSHUPMAP[[["&and;",1],["&rarr;",2]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
         pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -597,8 +640,7 @@ TODO_PUSHUPMAP[[["&and;",2],["&rarr;",2]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
         pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -622,8 +664,7 @@ TODO_PUSHUPMAP[[["&and;",2],["&rarr;",1]]] = {
         pusp.goalPath.pop();
         var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
         pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm[this.mark];
-        if (!pushupFact) return null;
+        var pushupFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, pushupFact));
         pusp.newSteps.push(nameDep(work, axmp));
         var rarr = work.nameTerm("&rarr;");
@@ -737,7 +778,9 @@ thms.Simplify = ax1;
 
 var stack = []; // goalPath, fact, factPath
 function startNextGoal() {
-    state.work = startWork(state.land.goals[state.goal]);
+    var goal = state.land.goals[state.goal];
+    if (!goal) throw new Error("no more goals!");
+    state.work = startWork(goal);
 }
 function saveGoal() {
     state.land.addFact(state.work);
@@ -817,7 +860,7 @@ thms.contract = pm243;
 interfaceText.txt += '\nterm (k (&not; V0))\n'; //TODO: should be auto
 var landNot = getLand("land_not.js");
 
-thms.Transpose = sfbm['[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]'];
+thms.Transpose = sfbm('[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]');
 
 startWith(thms.Simplify);
 applyArrow([1], thms.Transpose, 0);
@@ -1094,8 +1137,6 @@ thms.Equivalate = saveGoal();
   applyArrow([], thms.defbi2, 0);
   thms.biid = save();
 
-
-/*
   startWith(thms.nn1);
   applyArrow([], thms.conj, 0);
   applyArrow([1], thms.defbi2, 0);
@@ -1139,7 +1180,7 @@ thms.Equivalate = saveGoal();
   applyArrow([0,1], thms.con12, 1);
   applyArrow([], thms.idie, 0);
   thms.con12bi = save();
-
+/*
   startWith(thms.dfanbi);
   applyArrow([1,0,1,0], thms.dfanbi, 0);
   applyArrow([1,0,1], thms.nnbi, 1);
@@ -1298,18 +1339,8 @@ try {
   ==== Things to be proved ====
 
 
-  {Core:[[],[0,[and,0,1],[and,1,0]],[]],
-  Skin:{TermNames:["&harr;"]}},
-  {Core:[[],[0,0,[and,0,0]],[]],
-  Skin:{TermNames:["&harr;"]}},
-  {Core:[[],[0,[rarr,0,[rarr,1,2]],[rarr,1,[rarr,0,2]]],[]],
-  Skin:{TermNames:["&harr;"]}},
-  {Core:[[],[0,[and,[and,0,1],2],[and,0,[and,1,2]]],[]],
-  Skin:{TermNames:["&harr;"]}},
-  {Core:[[],[0,[rarr,0,[rarr,1,2]],[rarr,[and,0,1],2]],[]],
-  Skin:{TermNames:["&harr;"]}},
-  {Core:[[],[0,[0,0,1],[and,[rarr,0,1],[rarr,1,0]]],[]],
-  Skin:{TermNames:["&harr;"]}},
+
+
 
   {Core:[[],[rarr,0,[or,1,0]],[]],
   Skin:{TermNames:[""]}},
