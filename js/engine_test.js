@@ -6,7 +6,6 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
 var lands = [];
 var state = {};
 
-var TODO_PUSHUPMAP = {};
 var TODO_DETACHMAP = {};
 
 var DEBUG = false;
@@ -326,25 +325,15 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
 
 
 function queryPushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum) {
-    var oldPushUp = TODO_PUSHUPMAP[[goalOp, goalArgNum, toolOp, toolArgNum]];
     // Try covariant first, then contravariant if not found.
-    var pushUp = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum,
-                            true);
-    if (!state.factsByMark[pushUp.mark]) {
-        pushUp = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum,
-                            false);
-        if (!state.factsByMark[pushUp.mark]) {
+    var p = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
+    if (!state.factsByMark[p.mark]) {
+        p = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, false);
+        if (!state.factsByMark[p.mark]) {
             throw new Error("No pushUp found for " + JSON.stringify(arguments));
         }
     }
-    
-    return {pushUp: function(pusp, work) {
-/*
-        var pusp2 = clone(pusp);
-        var work2 = clone(work);
-*/
-        return oldPushUp.pushUp(pusp, work); // TODO: PICKUP
-    }};
+    return p;
 }
 
 function queryDetach(params) {
@@ -511,185 +500,6 @@ TODO_DETACHMAP[["&harr;",[1]]] = {
     }
 };
 
-TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",2]]] = {
-    mark:'[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]',
-    pushUp: function(pusp, work) {
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
-        pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        pusp.tool = [rarr,
-                     [rarr, thirdArg, pusp.tool[1]],
-                     [rarr, thirdArg, pusp.tool[2]]];
-        pusp.toolPath = [2];
-    }
-};
-TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",1]]] = {
-    mark:'[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]',
-    pushUp: function(pusp, work) {
-        // Goal: -> A B
-        // Tool: -> A C
-        // new goal: -> C B 
-        // imim1: (-> (-> A C) (-> (-> C B) (-> A B))
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
-        pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        pusp.tool = [rarr,
-                     [rarr, pusp.tool[2], thirdArg],
-                     [rarr, pusp.tool[1], thirdArg]];
-        pusp.toolPath = [2];
-    }
-};
-TODO_PUSHUPMAP[[["&rarr;",1],["&rarr;",2]]] = {
-    mark:'[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]',
-    pushUp: function(pusp, work) {
-        // Goal: -> A B
-        // Tool: -> C A
-        // new goal: -> C B 
-        // imim1: (-> (-> C A) (-> (-> A B) (-> C B))
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
-        pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        pusp.tool = [rarr,
-                     [rarr, pusp.tool[2], thirdArg],
-                     [rarr, pusp.tool[1], thirdArg]];
-        pusp.toolPath = [1];
-    }
-};
-TODO_PUSHUPMAP[[["&rarr;",2],["&rarr;",1]]] = {
-    mark:'[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]',
-    pushUp: function(pusp, work) {
-        // Goal: -> A B
-        // Tool: -> B C
-        // new goal: -> A C 
-        // imim2: (-> (-> B C) (-> (-> A B) (-> A C))
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
-        pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        pusp.tool = [rarr,
-                     [rarr, thirdArg, pusp.tool[1]],
-                     [rarr, thirdArg, pusp.tool[2]]];
-        pusp.toolPath = [1];
-    }
-};
-
-TODO_PUSHUPMAP[[["&not;",1],["&rarr;",1]]] = {
-    mark:'[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["&rarr;","&not;"]',
-    pushUp: function(pusp, work) {
-        // Goal: -. A
-        // Tool: -> A B
-        // new goal: -. B
-        // con3: (-> (-> A B) (-> (-. B) (-. A))
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        // NB: no thirdArg
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        var not = work.nameTerm("&not;");
-        pusp.tool = [rarr,
-                     [not, pusp.tool[2]],
-                     [not, pusp.tool[1]]];
-        pusp.toolPath = [2];
-    }
-};
-
-TODO_PUSHUPMAP[[["&and;",1],["&rarr;",2]]] = {
-    mark:'[[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]];["&rarr;","&and;"]',
-    pushUp: function(pusp, work) {
-        // Goal: and A B
-        // Tool: -> C A
-        // new goal: and C B
-        // pushup: (-> (-> C A) (-> (and C B) (and A B)))
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        var thirdArg = zpath(pusp.goal, pusp.goalPath)[2];
-        pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        var and = work.nameTerm("&and;");
-        pusp.tool = [rarr,
-                     [and, pusp.tool[1], thirdArg],
-                     [and, pusp.tool[2], thirdArg]];
-        pusp.toolPath = [2];
-    }
-};
-
-TODO_PUSHUPMAP[[["&and;",2],["&rarr;",2]]] = {
-    mark:'[[],[0,[0,0,1],[0,[1,2,0],[1,2,1]]],[]];["&rarr;","&and;"]',
-    pushUp: function(pusp, work) {
-        // Goal: and B A
-        // Tool: -> C A
-        // new goal: and B C
-        // pushup: (-> (-> C A) (-> (and B C) (and B A)))
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
-        pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        var and = work.nameTerm("&and;");
-        pusp.tool = [rarr,
-                     [and, thirdArg, pusp.tool[1]],
-                     [and, thirdArg, pusp.tool[2]]];
-        pusp.toolPath = [2];
-    }
-};
-
-TODO_PUSHUPMAP[[["&and;",2],["&rarr;",1]]] = {
-    mark:'[[],[0,[0,0,1],[0,[1,2,0],[1,2,1]]],[]];["&rarr;","&and;"]',
-    pushUp: function(pusp, work) {
-        // Goal: and B A
-        // Tool: -> A C
-        // new goal: and B C
-        // pushup: (-> (-> A C) (-> (and B A) (and B C)))
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.goalPath.pop();
-        var thirdArg = zpath(pusp.goal, pusp.goalPath)[1];
-        pusp.newSteps.push(thirdArg);
-        var pushupFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, pushupFact));
-        pusp.newSteps.push(nameDep(work, axmp));
-        var rarr = work.nameTerm("&rarr;");
-        var and = work.nameTerm("&and;");
-        pusp.tool = [rarr,
-                     [and, thirdArg, pusp.tool[1]],
-                     [and, thirdArg, pusp.tool[2]]];
-        pusp.toolPath = [1];
-    }
-};
 
 // goalOp is an goalOpArity-arg term.
 // goalArg is in 1...goalOpArity, specifying which argchild the goal is
@@ -745,7 +555,7 @@ PushUp.prototype.pushUp = function(pusp, work) {
     for (var i = 1; i < this.goalOpArity; i++) {
         if (i == this.goalArg) {
             arr1.push(pusp.tool[this.toolArg]);
-            arr2.push(pusp.tool[2 - this.toolArg]);
+            arr2.push(pusp.tool[3 - this.toolArg]);
         } else {
             var arg = goalParent[i];
             pusp.newSteps.push(arg);
