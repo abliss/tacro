@@ -325,13 +325,26 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
 }
 
 
-function queryPushUp(params) {
-    // TODO
-    var pushup = TODO_PUSHUPMAP[params];
-    if (!pushup) {
-        throw new Error("No pushup found for " + JSON.stringify(params));
+function queryPushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum) {
+    var oldPushUp = TODO_PUSHUPMAP[[goalOp, goalArgNum, toolOp, toolArgNum]];
+    // Try covariant first, then contravariant if not found.
+    var pushUp = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum,
+                            true);
+    if (!state.factsByMark[pushUp.mark]) {
+        pushUp = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum,
+                            false);
+        if (!state.factsByMark[pushUp.mark]) {
+            throw new Error("No pushUp found for " + JSON.stringify(arguments));
+        }
     }
-    return pushup;
+    
+    return {pushUp: function(pusp, work) {
+/*
+        var pusp2 = clone(pusp);
+        var work2 = clone(work);
+*/
+        return oldPushUp.pushUp(pusp, work); // TODO: PICKUP
+    }};
 }
 
 function queryDetach(params) {
@@ -406,15 +419,17 @@ function apply(work, workPath, fact, factPath) {
     while (pusp.goalPath.length > 0) {
         checkInvariant();
         var goalArgNum = pusp.goalPath.pop();
-        var goalTerm = work.Skin.TermNames[zpath(pusp.goal, pusp.goalPath)[0]];
+        var goalParent = zpath(pusp.goal, pusp.goalPath);
+        var goalTerm = work.Skin.TermNames[goalParent[0]];
+        var goalTermArity = goalParent.length;
         pusp.goalPath.push(goalArgNum);
         var toolArgNum = pusp.toolPath.pop();
         var toolTerm = work.Skin.TermNames[zpath(pusp.tool, pusp.toolPath)[0]];
         pusp.toolPath.push(toolArgNum);
 
-        var query = [goalTerm, goalArgNum, toolTerm,
-                     pusp.toolPath[pusp.toolPath.length - 1]];
-        queryPushUp(query).pushUp(pusp, work);
+        queryPushUp(goalTerm, goalArgNum, goalTermArity, toolTerm,
+                     pusp.toolPath[pusp.toolPath.length - 1]).
+            pushUp(pusp, work);
 
     }
     checkInvariant();
@@ -675,6 +690,78 @@ TODO_PUSHUPMAP[[["&and;",2],["&rarr;",1]]] = {
         pusp.toolPath = [1];
     }
 };
+
+// goalOp is an goalOpArity-arg term.
+// goalArg is in 1...goalOpArity, specifying which argchild the goal is
+// toolOp is the name of a 2-arg binary term
+// toolArg is 1 or 2, specifying one of the args of the tool on the stack.
+// the current goal's paren'ts [goalArg] equals the current tool's [toolArg]
+// we want to replace it with the tool's other arg.
+// isContra tells whether the tool args will be reversed in order.
+function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
+    this.goalOp = goalOp;
+    this.goalArg = goalArg;
+    this.goalOpArity = goalOpArity;
+    this.toolOp = toolOp;
+    this.toolArg = toolArg;
+    this.isContra = isContra;
+    // Goal's parent: [goalOp, g0, g1, ..., gGoalArg=Goal, ...]
+    // Tool: [toolOp, otherToolArg, tToolArg=Goal]
+    // new goal: [goalOp, g0, g1, ..., otherToolArg, ...]
+    // pushup: [rarr, [toolOp, otherToolArg, Goal],
+    //                [toolOp, [goalOp, ...Goal...],          // isContra swaps
+    //                         [goalOp, ...otherToolArg...]]] // these two 
+    var tmpFact = new Fact;
+    var termNames = [];
+    var rarrN = tmpFact.nameTerm("&rarr;");
+    var toolN = tmpFact.nameTerm(toolOp);
+    var goalN = tmpFact.nameTerm(goalOp);
+    //var stmt = [rarrN, [toolN, 0, 1], [toolN, [goalN, ...], [goalN, ...]]]
+    var arr1 =                                  [goalN];
+    var arr2 =                                                [goalN];
+    var nextVar = 2;
+    for (var i = 1; i < goalOpArity; i++) {
+        if (i != goalArg) {
+            arr1[i] = arr2[i] = nextVar++;
+        }
+    }
+    arr1[goalArg] = toolArg - 1;
+    arr2[goalArg] = 2 - toolArg;
+    var stmt =  [rarrN, [toolN, 0, 1], [toolN,
+                                        isContra ? arr2 : arr1,
+                                        isContra ? arr1 : arr2]];
+    tmpFact.setStmt(stmt);
+    this.mark = tmpFact.getMark();
+}
+PushUp.prototype = new PushUp();
+PushUp.prototype.pushUp = function(pusp, work) {
+    pusp.newSteps.push(pusp.tool[1]);
+    pusp.newSteps.push(pusp.tool[2]);
+    pusp.goalPath.pop();
+    var goalParent = zpath(pusp.goal, pusp.goalPath);
+    var goalN = work.nameTerm(this.goalOp);
+    var arr1 = [goalN];
+    var arr2 = [goalN];
+    for (var i = 1; i < this.goalOpArity; i++) {
+        if (i == this.goalArg) {
+            arr1.push(pusp.tool[this.toolArg]);
+            arr2.push(pusp.tool[2 - this.toolArg]);
+        } else {
+            var arg = goalParent[i];
+            pusp.newSteps.push(arg);
+            arr1.push(arg);
+            arr2.push(arg);
+        }
+    }
+    var pushupFact = sfbm(this.mark);
+    pusp.newSteps.push(nameDep(work, pushupFact));
+    pusp.newSteps.push(nameDep(work, axmp));
+    var toolN = work.nameTerm(this.toolOp);
+    pusp.tool = [toolN,
+                 this.isContra ? arr2 : arr1,
+                 this.isContra ? arr1 : arr2];
+    pusp.toolPath = [this.isContra ? 2 : 1];
+}
 
 function ground(work, dirtFact) {
     // verify that the hyp is an instance of the dirt
@@ -1180,6 +1267,7 @@ thms.Equivalate = saveGoal();
   applyArrow([0,1], thms.con12, 1);
   applyArrow([], thms.idie, 0);
   thms.con12bi = save();
+DEBUG=true
 /*
   startWith(thms.dfanbi);
   applyArrow([1,0,1,0], thms.dfanbi, 0);
@@ -1191,7 +1279,7 @@ thms.Equivalate = saveGoal();
   applyArrow([0], thms.ancombi, 0);
   applyArrow([1,1], thms.ancombi, 0);
   thms.anass = save();
-
+/*
 
   startWith(thms.imprt);
   applyArrow([], thms.conj, 0);
