@@ -500,10 +500,10 @@ var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
 var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
 var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
 var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
-var axmp =  sfbm('[[1,[0,1,0]],0,[]];["&rarr;"]');
+var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
 
 TODO_DETACHMAP[["&rarr;",[2]]] = {
-    mark:'[[1,[0,1,0]],0,[]];["&rarr;"]',
+    mark:'[[0,[0,0,1]],1,[]];["&rarr;"]',
     detach: function(pusp, work) {
         var detachFact = sfbm(this.mark);
         pusp.newSteps.push(nameDep(work, detachFact));
@@ -634,17 +634,12 @@ function ground(work, dirtFact) {
     return work;
 }
 
-// Reorders variables so that they appear in first-used order.
+// Reorders terms/variables so that they appear in first-used order.
 // Removes no-longer-used dummies.
 // Renames remaining variable Skins to Vn
-// TODO: doesn't handle freemap, currently
-// TODO: reorder termnames
 // TODO: sort deps alphabetically?
 function canonicalize(work) {
     var out = new Fact();
-    if (work.Core[Fact.CORE_FREE] && work.Core[Fact.CORE_FREE].length > 0) {
-        throw new Error("TODO");
-    }
     function mapTerm(t) {
         return out.nameTerm(work.Skin.TermNames[t]);
     }
@@ -660,16 +655,18 @@ function canonicalize(work) {
             return exp;
         }
     }
+    for (var i = 0; i < work.Core[Fact.CORE_HYPS].length; i++) {
+        out.Core[Fact.CORE_HYPS][i] = mapExp(work.Core[Fact.CORE_HYPS][i]);
+        out.Skin.HypNames[i] = "Hyps." + i;
+    }
     out.setStmt(mapExp(work.Core[Fact.CORE_STMT]));
     if (DEBUG) {
         console.log("\nwork=" + JSON.stringify(work) +
                     "\nfact=" +JSON.stringify(out));
     }
-    out.setFree([]); // XXX
-    for (var i = 0; i < work.Core[Fact.CORE_HYPS].length; i++) {
-        out.Core[Fact.CORE_HYPS][i] = mapExp(work.Core[Fact.CORE_HYPS][i]);
-        out.Skin.HypNames[i] = "Hyps." + i;
-    }
+    out.setFree(work.Core[Fact.CORE_FREE].map(function(f) {
+        return f.map(mapExp);}));
+
     out.setProof(work.Tree.Proof.map(mapExp));
     out.setCmd(work.Tree.Cmd);
     out.setName(fingerprint(out.getMark()));
@@ -1153,6 +1150,7 @@ startWith(thms.bibi1)
 applyArrow([1,0], thms.bicom, 0);
 save();
 
+
 var landOr = getLand("land_or.js");
 
   // Level 6
@@ -1220,6 +1218,9 @@ applyArrow([1,1], thms.df_or, 0);
   thms.orcom = save();
 
 
+interfaceText.txt += '\nvar (k v0 v1)\n'; //TODO: should be auto
+interfaceText.txt += '\nterm (k (&forall; v0 V1))\n'; //TODO: should be auto
+//var landForall = getLand("land_forall.js");
 
   /*
   // ==== END import from orcat_test.js ====
@@ -1289,34 +1290,69 @@ try {
 /*
   ==== Things to be proved ====
 
+[],[rarr,[forall,z,[harr,A,B]],[rarr,[forall,z,A],[forall,z,B]]],[]
+[],[rarr,[forall,z,[harr,A,B]],[harr,[forall,z,A],[forall,z,B]]],[]
+[],[rarr,[forall,z,[harr,A,B]],[harr,[forall,z,B],[forall,z,A]]],[]
+[],[rarr,[not,[forall,z,[not,[equals,a,b]]]],[not,[forall,z,[not,[equals,b,b]]]]],[]
+[],[equals,a,a],[]
+[],[exist,z,[equals,z,a]],[[a,z]]
+[],[rarr,[equals,a,b],[rarr,[equals,a,c],[equals,c,b]]],[]
+[],[rarr,[equals,a,b],[equals,b,a]],[]
+[],[harr,[equals,a,b],[equals,b,a]],[]
+[],[rarr,[and,[forall,z,A],[exist,z,B]],[exist,z,[and,A,B]]],[]
+[],[rarr,[forall,z,[and,A,B]],[forall,z,A]],[]
+[],[rarr,[forall,z,[and,A,B]],[and,[forall,z,A],[forall,z,B]]],[]
+[],[harr,[forall,z,[and,A,B]],[and,[forall,z,A],[forall,z,B]]],[]
+[],[rarr,[and,[forall,z,[forall,y,[rarr,[equals,z,y],[rarr,A,B]]]],[forall,z,A]],[forall,z,[forall,y,[rarr,[equals,z,y],B]]]],[[A,y]]
+[],[rarr,[exist,z,A],A],[[A,z]]
+[],[rarr,[exist,z,A],A],[[A,z]]
+[],[rarr,A,[exist,z,A]],[]
+[],[harr,[harr,A,B],[harr,[not,B],[not,A]]],[]
+[],[harr,[forall,z,[not,A]],[not,[exist,z,A]]],[]
+[],[rarr,[forall,z,A],[exist,z,A]],[]
+[],[harr,[forall,z,[forall,y,A]],[forall,y,[forall,z,A]]],[]
+[],[rarr,[forall,z,[rarr,A,B]],[rarr,[exist,z,A],[exist,z,B]]],[]
+[],[rarr,[forall,z,[harr,A,B]],[harr,[forall,z,[not,B]],[forall,z,[not,A]]]],[]
+[],[rarr,[forall,z,[harr,A,B]],[harr,[exist,z,A],[exist,z,B]]],[]
+[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[rarr,A,B]]]],[rarr,[forall,z,A],[forall,z,B]]],[[A,y],[B,y]]
+[],[rarr,[exist,z,A],A],[[A,z]]
+[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[rarr,A,B]]]],[rarr,[forall,z,A],[forall,y,B]]],[[A,y],[B,z]]
 
+[],[rarr,[rarr,A,B],[rarr,[rarr,B,A],[harr,A,B]]],[]
+[],[harr,[and,[rarr,A,B],[rarr,A,C]],[rarr,A,[and,B,C]]],[]
 
+[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[harr,A,B]]]],[harr,[forall,z,A],[forall,y,B]]],[[A,y],[B,z]]
+[],[rarr,[equals,a,b],[equals,[plus,c,a],[plus,c,b]]],[]
+[],[forall,z,[rarr,[equals,z,a],[equals,[plus,[Oslash],z],[plus,[Oslash],a]]]],[]
+[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[harr,A,B]]]],[harr,[exist,y,A],[exist,z,B]]],[[A,z],[B,y]]
+[],[rarr,[equals,a,b],[harr,[equals,a,c],[equals,b,c]]],[]
+[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[harr,A,B]]]],[harr,[exist,z,A],[exist,y,B]]],[[A,y],[B,z]]
+[],[rarr,[equals,a,b],[harr,[equals,a,c],[equals,b,c]]],[]
+[],[rarr,[equals,a,b],[harr,[equals,c,a],[equals,c,b]]],[]
+[],[harr,[exist,z,[equals,[plus,a,z],b]],[exist,y,[equals,[plus,a,y],b]]],[[a,y],[a,z],[b,y],[b,z]]
+[],[harr,[exist,z,[equals,[plus,a,z],b]],[exist,y,[equals,[plus,a,y],b]]],[[a,y],[a,z],[b,y],[b,z]]
+[],[rarr,[rarr,[equals,a,[Oslash]],[equals,[plus,[Oslash],[Oslash]],a]],[rarr,[equals,a,[Oslash]],[equals,[plus,[Oslash],a],a]]],[]
+[],[rarr,[equals,[plus,[Oslash],[Oslash]],[Oslash]],[rarr,[equals,a,[Oslash]],[equals,[plus,[Oslash],a],a]]],[]
+[],[rarr,[forall,z,[rarr,[forall,y,[rarr,[equals,y,z],[equals,[plus,[Oslash],y],y]]],[forall,y,[rarr,[equals,y,[sect,z]],[equals,[plus,[Oslash],y],y]]]]],[forall,y,[equals,[plus,[Oslash],y],y]]],[]
+[],[rarr,[equals,[plus,[Oslash],[sect,a]],b],[rarr,[equals,c,[sect,a]],[equals,[plus,[Oslash],c],b]]],[]
+[rarr,[equals,a,b],[harr,[equals,[plus,[Oslash],a],a],[equals,[plus,[Oslash],b],b]]],[],[]
+[rarr,[equals,a,[sect,[plus,[Oslash],b]]],[rarr,[equals,[plus,[Oslash],b],b],[equals,a,[sect,b]]]],[],[]
+[rarr,[equals,[plus,[Oslash],a],a],[equals,[plus,[Oslash],[sect,a]],[sect,a]]],[],[]
+[rarr,[equals,[plus,[Oslash],a],a],[rarr,[equals,a,b],[equals,[plus,[Oslash],b],b]]],[],[]
+[rarr,[equals,[plus,[Oslash],a],a],[forall,z,[rarr,[equals,z,[sect,a]],[equals,[plus,[Oslash],z],z]]]],[[a,z]],[]
+[rarr,[rarr,[equals,a,a],A],A],[],[]
+[rarr,[exist,z,A],[rarr,[forall,z,[rarr,A,B]],[exist,z,B]]],[],[]
+[harr,[exist,z,[equals,[plus,[Oslash],z],z]],[exist,y,[equals,[plus,[Oslash],y],y]]],[],[]
+[equals,[plus,[Oslash],z],z],[],[]
+[le,a,a],[],[]
+[equals,a,a],[],[]
+[rarr,[rarr,[exist,z,[equals,z,a]],A],A],[[a,z]],[]
+[rarr,[forall,z,[rarr,[equals,z,a],A]],[exist,z,[and,[equals,z,a],A]]],[[a,z]],[]
+[rarr,[forall,z,[forall,y,[rarr,[equals,y,[Oslash]],[harr,A,B]]]],[rarr,[forall,z,[forall,y,[rarr,[equals,y,z],[harr,A,C]]]],[rarr,[forall,z,[forall,y,[rarr,[equals,y,[sect,z]],[harr,A,D]]]],[rarr,[forall,z,[forall,y,[rarr,[equals,y,a],[harr,A,E]]]],[rarr,B,[rarr,[forall,z,[rarr,C,D]],E]]]]]],[[A,z],[B,y],[C,y],[D,y],[E,y],[a,y]],[]
+[rarr,[and,[harr,A,B],[harr,A,C]],[harr,B,C]],[],[]
+[rarr,[and,[equals,a,b],[equals,c,d]],[harr,[equals,a,c],[equals,b,d]]],[],[]
+[rarr,[rarr,[forall,z,[forall,y,[rarr,[equals,a,b],[harr,[equals,[plus,[plus,c,d],a],[plus,c,[plus,d,a]]],[equals,[plus,[plus,c,d],b],[plus,c,[plus,d,b]]]]]]],A],A],[],[]
+[],[rarr,[rarr,[forall,z,[rarr,A,A]],B],B],[]
+[],[equals,[plus,[plus,a,b],c],[plus,a,[plus,b,c]]],[]
 
-
-  {Core:[[],[rarr,0,[or,1,0]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,0,[or,0,1]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[rarr,0,1],[rarr,[or,0,2],[or,1,2]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[harr,0,1],[harr,[or,0,2],[or,1,2]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[rarr,0,1],[rarr,[or,2,0],[or,2,1]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[harr,0,1],[harr,[or,2,0],[or,2,1]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[harr,[or,0,1],[or,1,0]],[]],
-  Skin:{TermNames:[""]}},
-
-  {Core:[[],
-  [rarr,[forall,0,[harr,1,2]],[rarr,[forall,0,1],[forall,0,2]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,1],[forall,0,2]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[forall,0,[harr,1,2]],[harr,[forall,0,2],[forall,0,1]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[not,[forall,0,[not,[equals,1,2]]]],[not,[forall,0,[not,[equals,2,2]]]]],[]],
-  Skin:{TermNames:[""]}},
-  {Core:[[],[equals,0,0],[]],
-  Skin:{TermNames:[""]}},
 */
