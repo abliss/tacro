@@ -2,6 +2,7 @@ var Fs = require('fs');
 var Bencode = require('bencode');
 var Crypto = require('crypto');
 var Fact = require('../../caghni/js/fact.js'); //XXX
+var Async = require('async');
 
 var lands = [];
 var state = {};
@@ -52,7 +53,7 @@ function getLand(filename) {
         fact.Tree.Cmd = "stmt";
 
         fact = land.addFact(fact);
-        fact.toGhilbert(state, appendTo(interfaceText));
+        ifaceCtx.append(state, fact);
     }
 
     if (land.axioms) land.axioms.forEach(addAxiom);
@@ -481,19 +482,11 @@ function specifyDummy(work, dummyPath, newTerm, newTermArity) {
 }
 
 // TODO: should be generated
-var interfaceText = {txt:'kind (k)\n' +
-                     'tvar (k V0 V1 V2 V3 V4)\n' +
-                     'term (k (&rarr; V0 V1))\n\n'};
-
-var outstanding = 0;
-function appendTo(strptr) {
-    outstanding++;
-    return function(err, txt) {
-        if (err) throw new Error(err);
-        strptr.txt += txt;
-        outstanding--;
-    }
-}
+var ifaceCtx = new Context();
+ifaceCtx.
+    append('kind (k)\n').
+    append('tvar (k V0 V1 V2 V3 V4)\n').
+    append('term (k (&rarr; V0 V1))\n\n');
 
 var landRarr = getLand("land_rarr.js");
 var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
@@ -684,10 +677,37 @@ function canonicalize(work) {
 }
 
 
+// A container to collect async serializations
+function Context() {
+    var txt = "";
+    var that = this;
+    var outstanding = 0;
+    var waitingCb = null;
+    var queue = Async.queue(function(task, cb) {
+        if (typeof task == "string") {
+            txt += task;
+            process.nextTick(cb);
+        } else {
+            task.toGhilbert(state, function(err, ghTxt) {
+                txt += ghTxt;
+                cb(err);
+            });
+        }
+    },1);
+    this.append = function(x) { queue.push(x); return that;}
+    this.toString = function(cb) {
+        if (queue.idle()) {
+            cb(null, txt);
+        } else {
+            queue.drain = function() {
+                cb(null, txt);
+            };
+        }
+    }
+}
 
-
-var ghilbertText = {txt:'import (TMP tmp2.ghi () "")\n' +
-    'tvar (k V0 V1 V2 V3 V4 V5)\n\n'};
+var proofCtx = new Context().append('import (TMP tmp2.ghi () "")\n').
+    append('tvar (k V0 V1 V2 V3 V4 V5)\n\n');
 startNextGoal();
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
@@ -713,7 +733,7 @@ function startNextGoal() {
 }
 function saveGoal() {
     state.land.addFact(state.work);
-    state.work.toGhilbert(state, appendTo(ghilbertText));
+    proofCtx.append(state.work);
     state.goal++;
     return state.work;
 }
@@ -786,7 +806,7 @@ thms.contract = pm243;
 
 // Level 2
 
-interfaceText.txt += '\nterm (k (&not; V0))\n'; //TODO: should be auto
+    ifaceCtx.append('\nterm (k (&not; V0))\n'); //TODO: should be auto
 var landNot = getLand("land_not.js");
 
 thms.Transpose = sfbm('[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]');
@@ -1218,8 +1238,8 @@ applyArrow([1,1], thms.df_or, 0);
   thms.orcom = save();
 
 
-interfaceText.txt += '\nvar (k v0 v1)\n'; //TODO: should be auto
-interfaceText.txt += '\nterm (k (&forall; v0 V1))\n'; //TODO: should be auto
+ifaceCtx.append('\nvar (k v0 v1 v2 v3)\n'); //TODO: should be auto
+ifaceCtx.append('\nterm (k (&forall; v0 V1))\n'); //TODO: should be auto
 //var landForall = getLand("land_forall.js");
 
   /*
@@ -1240,17 +1260,7 @@ var UrlCtx = {
     }
 }
 
-while (outstanding > 0) {
-    throw "yield";
-}
-UrlCtx.files["tmp2.ghi"] = interfaceText.txt;
-UrlCtx.files["tmp2.gh"] = ghilbertText.txt;
 
-
-if (DEBUG) {
-    console.log("==== IFACE ====\n" + interfaceText.txt);
-    console.log("==== PROOF ====\n" + ghilbertText.txt);
-}
 function run(url_context, url, context) {
     var scanner = new GH.Scanner(url_context.resolve(url).split(/\r?\n/));
     while (true) {
@@ -1270,22 +1280,24 @@ function run(url_context, url, context) {
     }
     return false;
 }
-
 var verifyCtx = new GH.VerifyCtx(UrlCtx, run);
-if (DEBUG) {
-    console.log("#### AXIOMS");
-    console.log(UrlCtx.files["tmp2.ghi"]);
-    console.log("#### PROOFS");
-    console.log(UrlCtx.files["tmp2.gh"]);
-}
-
-try {
-    run(UrlCtx, "tmp2.gh", verifyCtx);
-} catch (e) {
-    console.log(e.toString());
-    throw(new Error(e));
-}
-
+    
+Async.parallel(
+    {iface:ifaceCtx.toString, proof:proofCtx.toString},
+    function(results) {
+        UrlCtx.files["tmp2.ghi"] = results.iface;
+        UrlCtx.files["tmp2.gh"] = results.proof;
+        if (DEBUG) {
+            console.log("==== IFACE ====\n" + results.iface);
+            console.log("==== PROOF ====\n" + results.proof);
+        }
+        try {
+            run(UrlCtx, "tmp2.gh", verifyCtx);
+        } catch (e) {
+            console.log(e.toString());
+            throw(new Error(e));
+        }
+    });
 
 /*
   ==== Things to be proved ====
