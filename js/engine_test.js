@@ -749,7 +749,7 @@ function save() {
     return state.work;
 }
 
-// %%% BEGIN import from orcat_test.js
+// ==== BEGIN import from orcat_test.js ====
 startWith(thms.Simplify);
 applyArrow([], thms.imim1, 0);
 thms.himp1 = save();
@@ -839,7 +839,6 @@ thms.dfand = save();
 var landHarr = getLand("land_and.js");
 startNextGoal();
 state.work = ground(state.work, thms.dfand);
-state.land.addFact(state.work);
 thms.Conjoin = saveGoal();
 
 //scheme.setBinding(not, 0, scheme.RIGHT(), thms.con3); // TODO
@@ -937,7 +936,6 @@ thms.dfbi = save();
 
 startNextGoal();
 state.work = ground(state.work, thms.dfbi);
-state.land.addFact(state.work);
 thms.Equivalate = saveGoal();
 
 //  scheme.setEquivalence(exports.wff, harr); // TODO
@@ -1135,16 +1133,15 @@ state.work = apply(state.work, [], thms.conj, [2]);
 state.work = ground(state.work, thms.imprt);
 thms.impexp = saveGoal();
 
-/*
-  startWith(thms.imprt);
-  applyArrow([], thms.conj, 0);
-  applyArrow([1], thms.defbi2, 0);
-  applyArrow([0,0], thms.imim2, 0);
-  applyArrow([0,0,0], thms.conj, 1);
-  applyArrow([], thms.idie, 0);
-  thms.impexp = save();
- */
-/*
+
+  // startWith(thms.imprt);
+  // applyArrow([], thms.conj, 0);
+  // applyArrow([1], thms.defbi2, 0);
+  // applyArrow([0,0], thms.imim2, 0);
+  // applyArrow([0,0,0], thms.conj, 1);
+  // applyArrow([], thms.idie, 0);
+  // thms.impexp = save();
+
   startWith(thms.defbi1);
   applyArrow([], thms.conj, 0);
   applyArrow([1], thms.defbi2, 0);
@@ -1152,21 +1149,31 @@ thms.impexp = saveGoal();
   applyArrow([], thms.idie, 0);
   thms.dfbi3 = save();
 
+startWith(thms.bibi1)
+applyArrow([1,0], thms.bicom, 0);
+save();
+
+var landOr = getLand("land_or.js");
+
   // Level 6
 
-  startWith(thms.biid); 
-  proofState = proofState.specify([1], exports.rarr);
-  proofState = proofState.specify([1,0], exports.not);
-  thms.df_or = defthm('&or;');
+startNextGoal();
+state.work = ground(state.work, thms.biid);
+thms.df_or = saveGoal();
+
+  // startWith(thms.biid); 
+  // proofState = proofState.specify([1], exports.rarr);
+  // proofState = proofState.specify([1,0], exports.not);
+  // thms.df_or = defthm('&or;');
 
 
-  startWith(thms.df_or);
+startWith(thms.df_or);  applyArrow([],thms.bicom,0);
   applyArrow([], thms.bi2, 0);
   applyArrow([0], thms.Simplify, 1);
   thms.or2 = save();
   // GHT.Thms['or2'] = T(O("->"),TV("wff -53792),T(O("or"),TV("wff -53793),TV("wff -53792)));
 
-  startWith(thms.df_or);
+  startWith(thms.df_or);  applyArrow([],thms.bicom,0);
   applyArrow([], thms.bi2, 0);
   applyArrow([0], thms.con3bi, 0);
   applyArrow([0], thms.Simplify, 1);
@@ -1175,47 +1182,47 @@ thms.impexp = saveGoal();
 
   startWith(thms.imim2);
   applyArrow([1,0], thms.con3bi, 1);
-  applyArrow([1,0], thms.df_or, 1);
+applyArrow([1,0], thms.df_or, 0);
   applyArrow([1,1], thms.con3bi, 0);
   applyArrow([1,1,1], thms.nnbi, 1);
-  applyArrow([1,1], thms.df_or, 1);
+applyArrow([1,1], thms.df_or, 0);
   applyArrow([0,0], thms.nnbi, 1);
   thms.orim1 = save();
 
   startWith(thms.imbi1);
-  applyArrow([1,0], thms.df_or, 1);
-  applyArrow([1,1], thms.df_or, 1);
+  applyArrow([1,0], thms.df_or, 0);
+  applyArrow([1,1], thms.df_or, 0);
   applyArrow([0], thms.notbi, 1);
   thms.orbi1 = save();
 //  scheme.setEquivalenceThm(theory.operator("or"), 0, thms.orbi1);
 //  scheme.setBinding(theory.operator("or"), 0, scheme.LEFT(), thms.orim1);
 
   startWith(thms.imim2);
-  applyArrow([1,0], thms.df_or, 1);
-  applyArrow([1,1], thms.df_or, 1);
+  applyArrow([1,0], thms.df_or, 0);
+  applyArrow([1,1], thms.df_or, 0);
   thms.orim2 = save();
 
   startWith(thms.imbi1);
   applyArrow([1,0], thms.con3bi, 1);
   applyArrow([1,1], thms.con3bi, 1);
-  applyArrow([1,0], thms.df_or, 1);
-  applyArrow([1,1], thms.df_or, 1);
+  applyArrow([1,0], thms.df_or, 0);
+  applyArrow([1,1], thms.df_or, 0);
   applyArrow([0], thms.notbi, 1);
   thms.orbi2 = save();
-  scheme.setEquivalenceThm(theory.operator("or"), 1, thms.orbi2);
-  scheme.setBinding(theory.operator("or"), 1, scheme.LEFT(), thms.orim2);
+//  scheme.setEquivalenceThm(theory.operator("or"), 1, thms.orbi2);
+//  scheme.setBinding(theory.operator("or"), 1, scheme.LEFT(), thms.orim2);
 
 
   startWith(thms.con3bi);
-  applyArrow([1], thms.df_or, 1);
-  applyArrow([0], thms.df_or, 1);
+  applyArrow([1], thms.df_or, 0);
+  applyArrow([0], thms.df_or, 0);
   applyArrow([1,1], thms.nnbi, 1);
   thms.orcom = save();
 
 
 
   /*
-  // %%% END import from orcat_test.js
+  // ==== END import from orcat_test.js ====
   */
 
 
@@ -1300,8 +1307,7 @@ try {
   Skin:{TermNames:[""]}},
   {Core:[[],[harr,[or,0,1],[or,1,0]],[]],
   Skin:{TermNames:[""]}},
-  {Core:[[],[rarr,[harr,0,1],[harr,[harr,2,0],[harr,1,2]]],[]],
-  Skin:{TermNames:[""]}},
+
   {Core:[[],
   [rarr,[forall,0,[harr,1,2]],[rarr,[forall,0,1],[forall,0,2]]],[]],
   Skin:{TermNames:[""]}},
