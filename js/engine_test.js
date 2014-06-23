@@ -127,6 +127,45 @@ function newDummy() {
     return "DUMMY_" + Math.random(); //XXX
 }
 
+function undummy(workOrExp, dummyMap) {
+    function replaceDummies(x) {
+        // TODO: handle freemap dummies correctly!
+        if (Array.isArray(x)) {
+            for (var i = 1; i < x.length; i++) {
+                x[i] = replaceDummies(x[i]);
+            }
+            return x;
+        } else if ((typeof x == 'number') || (typeof x == 'string')) {
+            while (dummyMap[x] != undefined) {
+                x = dummyMap[x];
+            }
+            return Array.isArray(x) ? replaceDummies(x) : x;
+        } else {
+            throw new Error("hmm")
+        }
+    }
+    if (DEBUG) {
+        for (var v in dummyMap) if (dummyMap.hasOwnProperty(v)) {
+            console.log("#XXXX Dummy:" + v + "=> " + JSON.stringify(dummyMap[v]));
+        }
+    }
+    if ((typeof workOrExp == 'number') || Array.isArray(workOrExp)) {
+        return replaceDummies(workOrExp);
+    } else {
+        workOrExp.Core[Fact.CORE_STMT] = replaceDummies(
+            workOrExp.Core[Fact.CORE_STMT])
+        workOrExp.Core[Fact.CORE_HYPS] =
+            workOrExp.Core[Fact.CORE_HYPS].map(replaceDummies);
+        workOrExp.Tree.Proof =
+            workOrExp.Tree.Proof.map(replaceDummies);
+        // TODO: undummy freemap
+        if (DEBUG) {
+            console.log("#XXXX Work undummied: " + JSON.stringify(workOrExp));
+        }
+        return workOrExp;
+    }
+}
+
 // Returns a list of mandatory hypotheses (i.e., values for each var) of the
 // fact, such that the named subexpression of the fact's stmt matches the named
 // subexpression of the work's first hyp.
@@ -137,21 +176,23 @@ function newDummy() {
 //     constraint.
 function getMandHyps(work, hypPath, fact, stmtPath) {
     var debugPath = [];
-    // from fact vars to work exps
-    var varMap = {};
-    var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
-    var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
-    if ((workExp == undefined) || (factExp == undefined)) {
-        throw new Error("Undefined!\n" + JSON.stringify(work) + "\n" +
-                        JSON.stringify(hypPath) + "\n" +
-                        JSON.stringify(fact) + 
-                        JSON.stringify(stmtPath));
-    }
     var nonDummy = {};
     var dummyMap = {};
     eachVarOnce(work.Core[Fact.CORE_STMT], function(v) {
         nonDummy[v] = v;
     });
+    // from fact vars to work exps
+    var varMap = {};
+    var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
+    var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
+    if (workExp == undefined) {
+        throw new Error("Bad work path:\n" + hypPath + "\n" +
+                        JSON.stringify(work));
+    }
+    if (factExp == undefined) {
+        throw new Error("Bad fact path:\n" + stmtPath + "\n" +
+                        JSON.stringify(fact));
+    }
     function assertEqual(msgTag, thing1, thing2) {
         if (thing1 !== thing2) {
             throw new Error("Unification error: " + msgTag + " @ " +
@@ -284,41 +325,10 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         }
     }
     recurse(workExp, factExp, false);
-    function replaceDummies(x) {
-        // TODO: handle freemap dummies correctly!
-        if (Array.isArray(x)) {
-            for (var i = 1; i < x.length; i++) {
-                x[i] = replaceDummies(x[i]);
-            }
-            return x;
-        } else if ((typeof x == 'number') || (typeof x == 'string')) {
-            while (dummyMap[x] != undefined) {
-                x = dummyMap[x];
-            }
-            return Array.isArray(x) ? replaceDummies(x) : x;
-        } else {
-            throw new Error("hmm")
-        }
-    }
-    if (DEBUG) {
-        console.log("#XXXX Work now: " + JSON.stringify(work));
-        
-        for (var v in dummyMap) if (dummyMap.hasOwnProperty(v)) {
-            console.log("#XXXX Dummy:" + v + "=> " + JSON.stringify(dummyMap[v]));
-            
-        }
-    }
-    work.Core[Fact.CORE_STMT] = replaceDummies(work.Core[Fact.CORE_STMT])
-    work.Core[Fact.CORE_HYPS] = work.Core[Fact.CORE_HYPS].map(replaceDummies);
-    work.Tree.Proof = work.Tree.Proof.map(replaceDummies);
-     // TODO: undummy freemap
-    if (DEBUG) {
-        console.log("#XXXX Work undummied: " + JSON.stringify(work));
-    }
-
+    undummy(work, dummyMap);
     //console.log("Unified: " + JSON.stringify(varMap));
     for (x in varMap) if (varMap.hasOwnProperty(x)) {
-        varMap[x] = replaceDummies(varMap[x]);
+        varMap[x] = undummy(varMap[x], dummyMap);
     }
     return varMap;
 }
@@ -443,6 +453,31 @@ function apply(work, workPath, fact, factPath) {
     // #. renumber all the vars
     // #. Add explanatory comments to Skin.Delimiters
     return work;
+}
+
+// Replace a dummy variable with a new exp containing the given term and some
+// new dummy variables.
+function specifyDummy(work, dummyPath, newTerm, newTermArity) {
+    // TODO: duplicated code
+    var nonDummy = {};
+    var dummyMap = {};
+    eachVarOnce(work.Core[Fact.CORE_STMT], function(v) {
+        nonDummy[v] = v;
+    });
+    var workExp = zpath(work.Core[Fact.CORE_HYPS][0], dummyPath);
+    if (workExp == undefined) {
+        throw new Error("Bad work path:\n" + dummyPath + "\n" +
+                        JSON.stringify(work));
+    }
+    if (nonDummy[workExp]) {
+        throw new Error("Var " + workExp + " is no dummy!");
+    }
+    var newExp = [work.nameTerm(newTerm)];
+    for (var i = 0; i < newTermArity; i++) {
+        newExp.push(work.nameVar(newDummy()));
+    }
+    dummyMap[workExp] = newExp;
+    return undummy(work, dummyMap);
 }
 
 // TODO: should be generated
@@ -1077,8 +1112,8 @@ thms.Equivalate = saveGoal();
   applyArrow([0,1], thms.con12, 1);
   applyArrow([], thms.idie, 0);
   thms.con12bi = save();
-DEBUG=true
-/*
+
+
   startWith(thms.dfanbi);
   applyArrow([1,0,1,0], thms.dfanbi, 0);
   applyArrow([1,0,1], thms.nnbi, 1);
@@ -1089,8 +1124,18 @@ DEBUG=true
   applyArrow([0], thms.ancombi, 0);
   applyArrow([1,1], thms.ancombi, 0);
   thms.anass = save();
-/*
 
+startNextGoal();
+state.work = apply(state.work, [], thms.idie, [2]);
+state.work = specifyDummy(state.work, [1,1], "&rarr;", 2);
+state.work = apply(state.work, [1,1,1], thms.conj, [1]);
+state.work = apply(state.work, [1,1], thms.imim2, [2]);
+state.work = apply(state.work, [2], thms.defbi2, [2]);
+state.work = apply(state.work, [], thms.conj, [2]);
+state.work = ground(state.work, thms.imprt);
+thms.impexp = saveGoal();
+
+/*
   startWith(thms.imprt);
   applyArrow([], thms.conj, 0);
   applyArrow([1], thms.defbi2, 0);
@@ -1098,7 +1143,8 @@ DEBUG=true
   applyArrow([0,0,0], thms.conj, 1);
   applyArrow([], thms.idie, 0);
   thms.impexp = save();
-
+ */
+/*
   startWith(thms.defbi1);
   applyArrow([], thms.conj, 0);
   applyArrow([1], thms.defbi2, 0);
