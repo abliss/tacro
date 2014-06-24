@@ -337,6 +337,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
 
 
 function queryPushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum) {
+    // TODO: memoize
     // Try covariant first, then contravariant if not found.
     var p = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
     if (!state.factsByMark[p.mark]) {
@@ -536,6 +537,9 @@ function Context() {
             cb(err);
         });
     },1);
+    this.length = function() {
+        return facts.length;
+    }
     this.append = function(x) {
         if (!x || !x.Core) {
             throw new Error("Bad fact: " + JSON.stringify(x));
@@ -756,7 +760,24 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
     var stmt =  [rarrN, [toolN, 0, 1], [toolN,
                                         isContra ? arr2 : arr1,
                                         isContra ? arr1 : arr2]];
-    tmpFact.setStmt(stmt);
+    if (goalOp == '&forall;') { // TODO XXX HACK
+        this.grease = function(pusp, work) {
+            var x = pusp.newSteps.pop();
+            var b = pusp.newSteps.pop();
+            var a = pusp.newSteps.pop();
+            pusp.newSteps.push(x);
+            pusp.newSteps.push(nameDep(work,
+                                       sfbm('[[0],[0,1,0],[]];["&forall;"]')));
+            pusp.newSteps.push(x);
+            pusp.newSteps.push(a);
+            pusp.newSteps.push(b);
+        };
+        stmt[1] = [goalN, 2, stmt[1]];
+        tmpFact.setStmt(stmt);
+        tmpFact = canonicalize(tmpFact);
+    } else {
+        tmpFact.setStmt(stmt);
+    }
     this.mark = tmpFact.getMark();
 }
 PushUp.prototype = new PushUp();
@@ -779,6 +800,7 @@ PushUp.prototype.pushUp = function(pusp, work) {
             arr2.push(arg);
         }
     }
+    this.grease(pusp, work);
     var pushupFact = sfbm(this.mark);
     pusp.newSteps.push(nameDep(work, pushupFact));
     pusp.newSteps.push(nameDep(work, axmp));
@@ -787,6 +809,10 @@ PushUp.prototype.pushUp = function(pusp, work) {
                  this.isContra ? arr2 : arr1,
                  this.isContra ? arr1 : arr2];
     pusp.toolPath = [this.isContra ? 2 : 1];
+}
+PushUp.prototype.grease = function(pusp, work) {
+    // Called after the pushupFact's mandyhps have been appended to
+    // pusp.newSteps, but before the fact itself is appended. no-op by default.
 }
 
 function ground(work, dirtFact) {
@@ -1552,17 +1578,18 @@ applyArrow([1,0],"harr_rarr_A_B_rarr_not_B_not_A",0)
 applyArrow([1,1],"harr_rarr_A_B_rarr_not_B_not_A",0)
 applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
 saveAs("harr_harr_A_B_harr_not_B_not_A") //undefined
-/*
+
 startWith("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B")
 applyArrow([0,1],"harr_harr_A_B_harr_not_B_not_A",1)
 saveAs("rarr_forall_z_harr_A_B_harr_forall_z_not_B_forall_z_not_A") //undefined
+
 
 
   /*
   // ==== END import from orcat_test.js ====
   */
 
-
+console.log("proved " + proofCtx.length() + " thms.");
 // ==== Verify ====
 GH = global.GH = {};
 global.log = console.log;
