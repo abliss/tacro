@@ -16,9 +16,7 @@ var z=0, y=1, x=2, A=3, B=4, C=5, D=6, E=7;
          Skin:{TermNames:["&rarr;","&not;","&forall;"]}},
         {Core:[[],[0,0,[1,1,0]],[[0,1]]],
          Skin:{TermNames:["&rarr;","&forall;"]}},
-    ],
-    inferences:[
-        {Core:[[0],[0,1,0],[]],
+        {Core:[[0],[0,1,0],[]], // generify
          Skin:{TermNames:["&forall;"]}},
     ],
     goals:[

@@ -57,7 +57,6 @@ function getLand(filename) {
     }
 
     if (land.axioms) land.axioms.forEach(addAxiom);
-    if (land.inferences) land.inferences.forEach(addAxiom);
     lands.push(land);
     state.land = land;
     state.goal = 0;
