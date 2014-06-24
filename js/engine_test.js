@@ -487,7 +487,9 @@ function Context() {
     var txt = "";
     var that = this;
     var isIface = null;
+    // 0 .. highest var number seen
     var maxVar = [];
+    // terms seen in this context
     var myTerms = {};
     
     var queue = Async.queue(function(task, cb) {
@@ -504,92 +506,92 @@ function Context() {
         return this;
     }
 
-    this.check = function() {
-        // map from term to array of Booleans for isBinding (null, true, false)
-        var terms = that.terms;
-        console.log("TERMS: " + JSON.stringify(terms));
-        // 0 .. highest var number seen
-        function checkFact(fact) {
-            var factVarIsBinding = [];
-            // A context must have only stmts or only thms/defthms. This sets
-            // isIface to true or false (assuming facts is nonempty), and throws
-            // up if they are mixed.
-            if (fact.Tree.Cmd == 'stmt') {
-                if (isIface == null) {
-                    isIface = true;
-                } else if (!isIface) {
-                    throw new Error("Stmt encountered:" + JSON.stringify(fact));
-                }
-            } else {
-                if (isIface == null) {
-                    isIface = false;
-                } else if (isIface) {
-                    throw new Error("Thm encountered:" + JSON.stringify(fact));
-                }
+
+    function checkFact(fact, termsAreDone) {
+        var factVarIsBinding = [];
+        // A context must have only stmts or only thms/defthms. This sets
+        // isIface to true or false (assuming facts is nonempty), and throws
+        // up if they are mixed.
+        if (fact.Tree.Cmd == 'stmt') {
+            if (isIface == null) {
+                isIface = true;
+            } else if (!isIface) {
+                throw new Error("Stmt encountered:" + JSON.stringify(fact));
             }
-            // Check the terms and vars of this fact, populating terms/ maxVar.
-            // Returns true if exp was an binding var, false if array or Tvar,
-            // otherwise null.
-            function checkExp(exp) {
-                if (Array.isArray(exp) && (exp.length > 0)) {
-                    var tn = fact.Skin.TermNames[exp[0]];
-                    if (!terms.hasOwnProperty(tn)) terms[tn] = [];
-                    myTerms[tn] = true;
-                    for (var i = 0; i < exp.length - 1; i++) {
-                        var arg = exp[i+1];
-                        if (terms[tn].length < i) {
-                            terms[tn][i] = null;
-                        }
-                        // Positive termness in an arg constrains the term.
-                        if (checkExp(arg) == false) {
-                            if (terms[tn][i] == true) {
-                                throw new Error("term arg mismatch");
-                            } else {
-                                terms[tn][i] = false;
-                            }
-                        }
-                        // Positive bindingness from the term constrains var arg
-                        if (terms[tn][i] == true) {
-                            if (typeof arg == 'number') {
-                                if (factVarIsBinding[arg] == false) {
-                                    throw new Error("Var bind mismatch");
-                                } else {
-                                    factVarIsBinding[arg] = true;
-                                }
-                            } else {
-                                throw new Error("Term found, mismatch");
-                            }
+        } else {
+            if (isIface == null) {
+                isIface = false;
+            } else if (isIface) {
+                throw new Error("Thm encountered:" + JSON.stringify(fact));
+            }
+        }
+        // Check the terms and vars of this fact, populating terms/ maxVar.
+        // Returns true if exp was an binding var, false if array or Tvar,
+        // otherwise null.
+        function checkExp(exp) {
+            if (Array.isArray(exp) && (exp.length > 0)) {
+                var tn = fact.Skin.TermNames[exp[0]];
+                if (!that.terms.hasOwnProperty(tn)) that.terms[tn] = [];
+                myTerms[tn] = true;
+                var termArgIsTerm = that.terms[tn];
+                for (var i = 0; i < exp.length - 1; i++) {
+                    var arg = exp[i+1];
+                    if (termArgIsTerm.length < i) {
+                        termArgIsTerm[i] = null;
+                    }
+                    // Positive termness in an arg constrains the term.
+                    if (checkExp(arg) == false) {
+                        if (termArgIsTerm[i] == false) {
+                            throw new Error("term arg mismatch");
+                        } else {
+                            termArgIsTerm[i] = true;
                         }
                     }
-                    return false;
-                } else if (typeof exp == 'number') {
-                    if (exp >= maxVar.length) maxVar[exp] = exp;
-                    return factVarIsBinding[exp];
-                } else {
-                    // Strings in proof require no checking
-                    return null;
+                    // Positive (or presumptive) bindingness from the term
+                    // constrains var arg
+                    if ((termArgIsTerm[i] == false) ||
+                        (termsAreDone && (termArgIsTerm[i] == null))) {
+                        if (typeof arg == 'number') {
+                            if (factVarIsBinding[arg] == false) {
+                                throw new Error("Var bind mismatch");
+                            } else {
+                                factVarIsBinding[arg] = true;
+                            }
+                        } else {
+                            throw new Error("Term found, mismatch");
+                        }
+                    }
                 }
+                return false;
+            } else if (typeof exp == 'number') {
+                if (exp >= maxVar.length) maxVar[exp] = exp;
+                return factVarIsBinding[exp];
+            } else {
+                // Strings in proof require no checking
+                return null;
             }
-            function checkFreemap(fm) {
-                factVarIsBinding[fm[0]] = false;
-                fm.slice(1).forEach(function(v) {
-                    factVarIsBinding[v] = true;
-                });
-            }
-            fact.Core[Fact.CORE_FREE].forEach(checkFreemap);
-            fact.Core[Fact.CORE_HYPS].forEach(checkExp);
-            checkExp(fact.Core[Fact.CORE_STMT]);
-            if (fact.Tree.Proof) {
-                fact.Tree.Proof.forEach(checkExp);
-            }
-            // TODO: we might need to propagate these changes by running through
-            // again. E.g. suppose var 0 is only passed to a new term in the
-            // stmt; but in the proof it is passed to a term known to be binding
-            // on that arg. Then the var doesn't get marked binding until the
-            // proof check, but this should be propagated up to the new term.
-            // This might cascade...
         }
-
+        function checkFreemap(fm) {
+            factVarIsBinding[fm[0]] = false;
+            fm.slice(1).forEach(function(v) {
+                factVarIsBinding[v] = true;
+            });
+        }
+        fact.Core[Fact.CORE_FREE].forEach(checkFreemap);
+        fact.Core[Fact.CORE_HYPS].forEach(checkExp);
+        checkExp(fact.Core[Fact.CORE_STMT]);
+        if (fact.Tree.Proof) {
+            fact.Tree.Proof.forEach(checkExp);
+        }
+        // TODO: we might need to propagate these changes by running through
+        // again. E.g. suppose var 0 is only passed to a new term in the
+        // stmt; but in the proof it is passed to a term known to be binding
+        // on that arg. Then the var doesn't get marked binding until the
+        // proof check, but this should be propagated up to the new term.
+        // This might cascade...
+        return factVarIsBinding;
+    }
+    this.inferTerms = function() {
         facts.forEach(checkFact);
     }
     this.toString = function(cb) {
@@ -600,18 +602,25 @@ function Context() {
         txt += " var (k " + maxVar.map(function(v) { return "v"+v;}).join(" ");
         txt += ")\n";
 
-        var terms = that.terms;
         if (isIface) {
             for (var t in myTerms) if (myTerms.hasOwnProperty(t)) {
+                var termArgIsTerm = that.terms[t];
                 txt += "term (k (" + t;
-                for (var i = 0; i < terms[t].length; i++) {
-                    txt += " " + (terms[t][i] ? "v" : "V") + i;
+                for (var i = 0; i < termArgIsTerm.length; i++) {
+                    txt += " " + (termArgIsTerm[i] ? "V" : "v") + i;
                 }
                 txt += "))\n";
             }
         }
         
         txt += "\n";
+
+        facts.forEach(function(fact) {
+            var factVarIsBinding = checkFact(fact, true);
+            for (var i = 0; i < fact.Skin.VarNames.length; i++) {
+                fact.Skin.VarNames[i] = (factVarIsBinding[i] ? "v" : "V") + i;
+            }
+        });
         
         queue.drain = function() {
             cb(null, txt);
@@ -621,6 +630,8 @@ function Context() {
 }
 
 Context.prototype = new Context();
+// terms seen in any context: map from array of Booleans for isTermVar
+// (null, true, false) 
 Context.prototype.terms = {};
 
 var proofCtx = new Context();
@@ -1346,7 +1357,7 @@ applyArrow([1,1], thms.df_or, 0);
   thms.orcom = save();
 
 
-//var landForall = getLand("land_forall.js");
+var landForall = getLand("land_forall.js");
 
   /*
   // ==== END import from orcat_test.js ====
@@ -1389,8 +1400,8 @@ function run(url_context, url, context) {
 
 var verifyCtx = new GH.VerifyCtx(UrlCtx, run);
 DEBUG=true
-ifaceCtx.check();
-proofCtx.check();
+ifaceCtx.inferTerms();
+proofCtx.inferTerms();
 Async.parallel(
     {iface:ifaceCtx.toString, proof:proofCtx.toString},
     function(err, results) {
