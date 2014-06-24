@@ -232,7 +232,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
         return undefined;
     }
     function mapVarTo(factVarName, workExp) {
-        // Check freemap. TODO: untested 
+        // Check freemap. TODO: untested
         var free = getFreeList(factVarName);
         if (free) {
             assertNotFree(workExp, free);
@@ -276,13 +276,13 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                     assertEqual("mappedA", factSubExp, workSubExp)
                 }
                 if (!nonDummy[workSubExp]) {
-                    if (factSubExp != workSubExp) { 
+                    if (factSubExp != workSubExp) {
                         dummyMap[workSubExp] = factSubExp;
                     }
                 } else if (!nonDummy[factSubExp]) {
-                    if (factSubExp != workSubExp) { 
+                    if (factSubExp != workSubExp) {
                         dummyMap[factSubExp] = workSubExp;
-                    }                
+                    }
                 } else {
                     assertEqual("mapped", factSubExp, workSubExp);
                 }
@@ -298,7 +298,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                                 JSON.stringify(factSubExp));
             }
             if (!Array.isArray(workSubExp)) {
-                // Work is var, Fact is exp. 
+                // Work is var, Fact is exp.
                 if (nonDummy[workSubExp]) {
                     assertEqual("shrug", workSubExp, factSubExp); //XXX
                 } else {
@@ -406,7 +406,7 @@ function apply(work, workPath, fact, factPath) {
         if (DEBUG) {
             console.log("Check invariant: \n" +
                         JSON.stringify(zpath(pusp.tool, pusp.toolPath)) +
-                        "\n" + 
+                        "\n" +
                         JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
             console.log("XXXX pusp: ", JSON.stringify(pusp));
         }
@@ -441,13 +441,13 @@ function apply(work, workPath, fact, factPath) {
 
     // #. compute new preimage and update Hyps.0
     // TODO: hardcoded for now
-    
+
     // don't delete any steps
     pusp.newSteps.unshift(0);
     // keep the "hyps.0".
     pusp.newSteps.unshift(1);
     work.Tree.Proof.splice.apply(work.Tree.Proof, pusp.newSteps);
-    
+
 
     // TODO:
     // #. update DV list
@@ -481,12 +481,151 @@ function specifyDummy(work, dummyPath, newTerm, newTermArity) {
     return undummy(work, dummyMap);
 }
 
-// TODO: should be generated
+// A container to queue and collect async serializations
+function Context() {
+    var facts = [];
+    var txt = "";
+    var that = this;
+    var isIface = null;
+    var maxVar = [];
+    var myTerms = {};
+    
+    var queue = Async.queue(function(task, cb) {
+        task.toGhilbert(state, function(err, ghTxt) {
+            txt += ghTxt;
+            cb(err);
+        });
+    },1);
+    this.append = function(x) {
+        if (!x || !x.Core) {
+            throw new Error("Bad fact: " + JSON.stringify(x));
+        }
+        facts.push(x);
+        return this;
+    }
+
+    this.check = function() {
+        // map from term to array of Booleans for isBinding (null, true, false)
+        var terms = that.terms;
+        console.log("TERMS: " + JSON.stringify(terms));
+        // 0 .. highest var number seen
+        function checkFact(fact) {
+            var factVarIsBinding = [];
+            // A context must have only stmts or only thms/defthms. This sets
+            // isIface to true or false (assuming facts is nonempty), and throws
+            // up if they are mixed.
+            if (fact.Tree.Cmd == 'stmt') {
+                if (isIface == null) {
+                    isIface = true;
+                } else if (!isIface) {
+                    throw new Error("Stmt encountered:" + JSON.stringify(fact));
+                }
+            } else {
+                if (isIface == null) {
+                    isIface = false;
+                } else if (isIface) {
+                    throw new Error("Thm encountered:" + JSON.stringify(fact));
+                }
+            }
+            // Check the terms and vars of this fact, populating terms/ maxVar.
+            // Returns true if exp was an binding var, false if array or Tvar,
+            // otherwise null.
+            function checkExp(exp) {
+                if (Array.isArray(exp) && (exp.length > 0)) {
+                    var tn = fact.Skin.TermNames[exp[0]];
+                    if (!terms.hasOwnProperty(tn)) terms[tn] = [];
+                    myTerms[tn] = true;
+                    for (var i = 0; i < exp.length - 1; i++) {
+                        var arg = exp[i+1];
+                        if (terms[tn].length < i) {
+                            terms[tn][i] = null;
+                        }
+                        // Positive termness in an arg constrains the term.
+                        if (checkExp(arg) == false) {
+                            if (terms[tn][i] == true) {
+                                throw new Error("term arg mismatch");
+                            } else {
+                                terms[tn][i] = false;
+                            }
+                        }
+                        // Positive bindingness from the term constrains var arg
+                        if (terms[tn][i] == true) {
+                            if (typeof arg == 'number') {
+                                if (factVarIsBinding[arg] == false) {
+                                    throw new Error("Var bind mismatch");
+                                } else {
+                                    factVarIsBinding[arg] = true;
+                                }
+                            } else {
+                                throw new Error("Term found, mismatch");
+                            }
+                        }
+                    }
+                    return false;
+                } else if (typeof exp == 'number') {
+                    if (exp >= maxVar.length) maxVar[exp] = exp;
+                    return factVarIsBinding[exp];
+                } else {
+                    // Strings in proof require no checking
+                    return null;
+                }
+            }
+            function checkFreemap(fm) {
+                factVarIsBinding[fm[0]] = false;
+                fm.slice(1).forEach(function(v) {
+                    factVarIsBinding[v] = true;
+                });
+            }
+            fact.Core[Fact.CORE_FREE].forEach(checkFreemap);
+            fact.Core[Fact.CORE_HYPS].forEach(checkExp);
+            checkExp(fact.Core[Fact.CORE_STMT]);
+            if (fact.Tree.Proof) {
+                fact.Tree.Proof.forEach(checkExp);
+            }
+            // TODO: we might need to propagate these changes by running through
+            // again. E.g. suppose var 0 is only passed to a new term in the
+            // stmt; but in the proof it is passed to a term known to be binding
+            // on that arg. Then the var doesn't get marked binding until the
+            // proof check, but this should be propagated up to the new term.
+            // This might cascade...
+        }
+
+        facts.forEach(checkFact);
+    }
+    this.toString = function(cb) {
+        txt += isIface ? "kind (k)\n" : 'import (TMP tmp2.ghi () "")\n';
+
+        txt += "tvar (k " + maxVar.map(function(v) { return "V"+v;}).join(" ");
+        txt += ")\n";
+        txt += " var (k " + maxVar.map(function(v) { return "v"+v;}).join(" ");
+        txt += ")\n";
+
+        var terms = that.terms;
+        if (isIface) {
+            for (var t in myTerms) if (myTerms.hasOwnProperty(t)) {
+                txt += "term (k (" + t;
+                for (var i = 0; i < terms[t].length; i++) {
+                    txt += " " + (terms[t][i] ? "v" : "V") + i;
+                }
+                txt += "))\n";
+            }
+        }
+        
+        txt += "\n";
+        
+        queue.drain = function() {
+            cb(null, txt);
+        }
+        queue.push(facts);
+    }
+}
+
+Context.prototype = new Context();
+Context.prototype.terms = {};
+
+var proofCtx = new Context();
 var ifaceCtx = new Context();
-ifaceCtx.
-    append('kind (k)\n').
-    append('tvar (k V0 V1 V2 V3 V4)\n').
-    append('term (k (&rarr; V0 V1))\n\n');
+
 
 var landRarr = getLand("land_rarr.js");
 var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
@@ -548,7 +687,7 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
     // new goal: [goalOp, g0, g1, ..., otherToolArg, ...]
     // pushup: [rarr, [toolOp, otherToolArg, Goal],
     //                [toolOp, [goalOp, ...Goal...],          // isContra swaps
-    //                         [goalOp, ...otherToolArg...]]] // these two 
+    //                         [goalOp, ...otherToolArg...]]] // these two
     var tmpFact = new Fact;
     var termNames = [];
     var rarrN = tmpFact.nameTerm("&rarr;");
@@ -618,11 +757,11 @@ function ground(work, dirtFact) {
     newSteps.push(nameDep(work, dirtFact));
 
     // remove hyp step
-    work.Tree.Proof.shift(); 
+    work.Tree.Proof.shift();
     // Replace with proof of hyp instance
     work.Tree.Proof.unshift.apply(work.Tree.Proof, newSteps);
     if (DEBUG) {console.log("#XXXX Work before canon:" + JSON.stringify(work));}
-    
+
     work = canonicalize(work);
     return work;
 }
@@ -669,7 +808,7 @@ function canonicalize(work) {
     if (work.Tree.Definiendum != undefined) {
         out.Tree.Definiendum = mapTerm(work.Tree.Definiendum);
     }
-    
+
     for (var n = 0; n < out.Skin.VarNames.length; n++) {
         out.Skin.VarNames[n] = "V" + n;
     }
@@ -677,41 +816,7 @@ function canonicalize(work) {
 }
 
 
-// A container to collect async serializations
-function Context() {
-    var txt = "";
-    var that = this;
-    var outstanding = 0;
-    var waitingCb = null;
-    var queue = Async.queue(function(task, cb) {
-        if (typeof task == "string") {
-            txt += task;
-            process.nextTick(cb);
-        } else {
-            task.toGhilbert(state, function(err, ghTxt) {
-                txt += ghTxt;
-                cb(err);
-            });
-        }
-    },1);
-    this.append = function(x) {
-        if ((typeof x != "string") && !x.toGhilbert) {
-            throw new Error("Can only append string or fact");
-        }
-        queue.push(x); return that;}
-    this.toString = function(cb) {
-        if (queue.idle()) {
-            cb(null, txt);
-        } else {
-            queue.drain = function() {
-                cb(null, txt);
-            };
-        }
-    }
-}
 
-var proofCtx = new Context().append('import (TMP tmp2.ghi () "")\n').
-    append('tvar (k V0 V1 V2 V3 V4 V5)\n\n');
 startNextGoal();
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
 state.work = apply(state.work, [2,2], pm243, [2]);
@@ -810,7 +915,6 @@ thms.contract = pm243;
 
 // Level 2
 
-    ifaceCtx.append('\nterm (k (&not; V0))\n'); //TODO: should be auto
 var landNot = getLand("land_not.js");
 
 thms.Transpose = sfbm('[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]');
@@ -1183,7 +1287,7 @@ startNextGoal();
 state.work = ground(state.work, thms.biid);
 thms.df_or = saveGoal();
 
-  // startWith(thms.biid); 
+  // startWith(thms.biid);
   // proofState = proofState.specify([1], exports.rarr);
   // proofState = proofState.specify([1,0], exports.not);
   // thms.df_or = defthm('&or;');
@@ -1242,8 +1346,6 @@ applyArrow([1,1], thms.df_or, 0);
   thms.orcom = save();
 
 
-ifaceCtx.append('\nvar (k v0 v1 v2 v3)\n'); //TODO: should be auto
-ifaceCtx.append('\nterm (k (&forall; v0 V1))\n'); //TODO: should be auto
 //var landForall = getLand("land_forall.js");
 
   /*
@@ -1284,8 +1386,11 @@ function run(url_context, url, context) {
     }
     return false;
 }
+
 var verifyCtx = new GH.VerifyCtx(UrlCtx, run);
-    
+DEBUG=true
+ifaceCtx.check();
+proofCtx.check();
 Async.parallel(
     {iface:ifaceCtx.toString, proof:proofCtx.toString},
     function(err, results) {
