@@ -91,7 +91,7 @@ function startWork(fact) {
     function nameVar(varNum) {
         work.Skin.VarNames[varNum] = "V" + varNum;
     }
-    eachVarOnce(work.Core[Fact.CORE_STMT], nameVar);
+    eachVarOnce([work.Core[Fact.CORE_STMT]], nameVar);
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
@@ -109,19 +109,20 @@ function zpath(exp, path) {
     return a;
 }
 
-// Visits each var exactly once, in left-to-right depth-first order
-function eachVarOnce(exp, cb, seen) {
-    seen = seen || {};
-    if (!Array.isArray(exp)) {
-        if (!seen[exp]) {
-            seen[exp] = 1;
-            cb(exp);
-        }
-    } else {
-        for (var i = 1; i < exp.length; i++) {
-            eachVarOnce(exp[i], cb, seen);
+// Visits each var in each exp exactly once, in left-to-right depth-first order
+function eachVarOnce(exps, cb, seen) {
+    function visit(exp) {
+        seen = seen || {};
+        if (!Array.isArray(exp)) {
+            if (!seen[exp]) {
+                seen[exp] = 1;
+                cb(exp);
+            }
+        } else {
+            exp.slice(1).forEach(visit);
         }
     }
+    exps.forEach(visit);
 }
 
 function newDummy() {
@@ -175,23 +176,17 @@ function undummy(workOrExp, dummyMap) {
 //     no assignment.
 // @throws an error if the unification is impossible or would violate a Free
 //     constraint.
-// TODO: HACK: or you can give a factHypPath instead.
-function getMandHyps(work, hypPath, fact, stmtPath, factHypPath) {
+function getMandHyps(work, hypPath, fact, stmtPath) {
     var debugPath = [];
     var nonDummy = {};
     var dummyMap = {};
-    eachVarOnce(work.Core[Fact.CORE_STMT], function(v) {
+    eachVarOnce([work.Core[Fact.CORE_STMT]], function(v) {
         nonDummy[v] = v;
     });
     // from fact vars to work exps
     var varMap = {};
     var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
-    var factExp;
-    if (stmtPath !== null) {
-        factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
-    } else {
-        factExp = zpath(fact.Core[Fact.CORE_STMT], factHypPath);
-    }
+    var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
     if (workExp == undefined) {
         throw new Error("Bad work path:\n" + hypPath + "\n" +
                         JSON.stringify(work));
@@ -265,6 +260,7 @@ function getMandHyps(work, hypPath, fact, stmtPath, factHypPath) {
 
 
         if ((hypPath.length == 0) &&
+            (stmtPath != null) &&
             (stmtPath.length == 0) &&
             Array.isArray(workSubExp) &&
             (workSubExp[0] == work.Tree.Definiendum)) {
@@ -362,7 +358,7 @@ function queryDetach(params) {
     return detach;
 }
 
-function globalSub(fact, varMap, work) {
+function globalSub(fact, varMap, work, exp) {
     function mapper(x) {
         if (Array.isArray(x) && (x.length > 0)) {
             var out = x.slice(1).map(mapper);
@@ -375,7 +371,8 @@ function globalSub(fact, varMap, work) {
             return varMap[x];
         }
     }
-    return mapper(fact.Core[Fact.CORE_STMT]);
+    if (exp == undefined) exp = fact.Core[Fact.CORE_STMT];
+    return mapper(exp);
 }
 function applyFact(work, workPath, fact, factPath) {
     var varMap = getMandHyps(work, workPath, fact, factPath);
@@ -386,7 +383,7 @@ function applyFact(work, workPath, fact, factPath) {
 
     pusp.newSteps = [];
     if (DEBUG) console.log("Vars from " + JSON.stringify(fact));
-    eachVarOnce(fact.Core[Fact.CORE_STMT], function(v) {
+    eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
         var newV = varMap[v];
         if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
         if (newV == undefined) {
@@ -463,15 +460,38 @@ function applyFact(work, workPath, fact, factPath) {
 }
 
 function applyInference(work, infFact) {
-    PICKUP()
+    var varMap = getMandHyps(work, [], infFact, []);
+    if (DEBUG) {console.log("# Inf MandHyps: " + JSON.stringify(varMap));}
+    var newSteps = [];
+    // Need a mandhyp step for each var appearing in the stmt which does NOT
+    // appear in the hyps.
+    var varToStepIndex = {};
+    eachVarOnce([infFact.Core[Fact.CORE_STMT]], function(v) {
+        var newV = varMap[v];
+        if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
+        if (newV == undefined) {
+            newV = work.nameVar(newDummy()); // XXX HACK
+            varMap[v] = newV;
+        }
+        if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
+        varToStepIndex[v] = newSteps.length;
+        newSteps.push(newV);
+    });
+    eachVarOnce(infFact.Core[Fact.CORE_HYPS], function(v) {
+        if (varToStepIndex.hasOwnProperty(v)) {
+            newSteps[varToStepIndex[v]] = ""; // TODO: should clean these out.
+        }
+    });
 
-    var varMap = getMandHyps(work, [], infFact, );
-    if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
-
-    var newSteps = [work.Tree.Proof[0]];
+    // preserve "hyps.0"
+    newSteps.unshift(work.Tree.Proof.shift());
     newSteps.push(nameDep(work, infFact));
-    newSteps.push.apply(work.Tree.Proof.slice(1));
-    
+    newSteps.push.apply(newSteps, work.Tree.Proof);
+    work.setProof(newSteps);
+    var newHyp = globalSub(infFact, varMap, work, infFact.Core[Fact.CORE_HYPS][0]);
+    if (DEBUG) {console.log("# Inf newHyp: " + JSON.stringify(newHyp));}
+    work.setHyps([newHyp]);
+    return work;
 }
 // Replace a dummy variable with a new exp containing the given term and some
 // new dummy variables.
@@ -479,7 +499,7 @@ function specifyDummy(work, dummyPath, newTerm, newTermArity) {
     // TODO: duplicated code
     var nonDummy = {};
     var dummyMap = {};
-    eachVarOnce(work.Core[Fact.CORE_STMT], function(v) {
+    eachVarOnce([work.Core[Fact.CORE_STMT]], function(v) {
         nonDummy[v] = v;
     });
     var workExp = zpath(work.Core[Fact.CORE_HYPS][0], dummyPath);
@@ -774,7 +794,7 @@ function ground(work, dirtFact) {
     if (DEBUG) {console.log("# ground MandHyps: " + JSON.stringify(varMap));}
     work.Core[Fact.CORE_HYPS].shift();
     var newSteps = [];
-    eachVarOnce(dirtFact.Core[Fact.CORE_STMT], function(v) {
+    eachVarOnce([dirtFact.Core[Fact.CORE_STMT]], function(v) {
         var newV = varMap[v];
         if (newV == undefined) {
             newV = work.nameVar(newDummy()); // XXX HACK
@@ -901,7 +921,6 @@ function parseMark(str) { // parse orcat's thm names
     function recurse() {
         var tok = toks.shift();
         var arity = getArity(tok);
-        console.log("tok " + tok  +" arity " + arity);
         if (arity == -1) {
             return out.nameVar(tok);
         } else {
@@ -931,7 +950,8 @@ function save() {
         if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
         try {
             if (step == generify) {
-                // ??? PICKUP
+                state.work = applyInference(state.work,
+                                            sfbm('[[0],[0,1,0],[]];["&forall;"]'));
             } else if (step.length > 1) {
                 state.work = applyFact(state.work, step[0], step[1], step[2]);
             } else {
@@ -1429,6 +1449,7 @@ generify();
 applyArrow([], thms.axalim, 0);
 applyArrow([1], thms.axalim, 0);
 var tmp = save();
+
 startWith(thms.bi2);
 generify();
 applyArrow([], thms.axalim, 0);
@@ -1439,7 +1460,7 @@ applyArrow([1,0], tmp, 1);
 applyArrow([], 'rarr_rarr_A_rarr_A_B_rarr_A_B', 0);
 applyArrow([1], 'harr_harr_A_B_harr_B_A', 0);
 thms["19.15"] = save();  // (-> (A. x (<-> ph ps)) (<-> (A. x ph) (A. x ps)))
-
+/*
   /*
   // ==== END import from orcat_test.js ====
   */
