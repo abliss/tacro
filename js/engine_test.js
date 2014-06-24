@@ -894,6 +894,9 @@ function saveGoal() {
     return state.work;
 }
 function startWith(fact) {
+    if (typeof fact == 'string') {
+        fact = canonicalize(parseMark(fact));
+    }
     stack = [[fact]];
 }
 function getArity(tok) {
@@ -901,12 +904,16 @@ function getArity(tok) {
     case 'Oslash':
         return 0;
     case 'not':
+    case 'sect':
         return 1;
     case 'rarr':
     case 'harr':
     case 'and':
     case 'or':
     case 'forall':
+    case 'equals':
+    case 'plus':
+    case 'times':
         return 2;
     default:
         return -1;
@@ -915,7 +922,20 @@ function getArity(tok) {
 
 function parseMark(str) { // parse orcat's thm names
     var out = new Fact();
-    if (str[0] == '_') throw new Error("todo");
+    if (str[0] == '_') {
+        if (str[1] != 'd') throw new Error("TODO: " + str);
+        var parts =  str.split("__");
+        var free = parts[0].substr(4);
+        var freeToks = free.split("_");
+        if (freeToks.length % 2 != 0) throw new Error("TODO:" + free);
+        var outFree = [];
+        for (var i = 0; i < freeToks.length; i++) {
+            outFree.push([out.nameVar(freeToks[i++]),out.nameVar(freeToks[i])]);
+        }
+        out.setFree(outFree);
+        console.log("XXXX " + str + "-> " + JSON.stringify(outFree));
+        str = parts[1];
+    }
     var toks = str.split("_");
     function recurse() {
         var tok = toks.shift();
@@ -931,11 +951,11 @@ function parseMark(str) { // parse orcat's thm names
         }
     }
     out.setStmt(recurse());
-    return out.getMark();
+    return out;
 }
 function applyArrow(path, fact, side) {
     if (typeof fact == 'string') {
-        fact = sfbm(parseMark(fact));
+        fact = sfbm(parseMark(fact).getMark());
     }
     stack.unshift([path.map(function(x){return x+1;}), fact, [2 - side]]);
 }
@@ -965,6 +985,34 @@ function save() {
     });
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
     saveGoal();
+    startWith(state.work);
+    return state.work;
+}
+function saveAs(str) {
+    state.work = startWork(canonicalize(parseMark(str)));
+    stack.forEach(function(step) {
+        if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+        try {
+            if (step == generify) {
+                state.work = applyInference(state.work,
+                                            sfbm('[[0],[0,1,0],[]];["&forall;"]'));
+            } else if (step.length > 1) {
+                state.work = applyFact(state.work, step[0], step[1], step[2]);
+            } else {
+                state.work = ground(state.work, step[0]);
+            }
+        } catch (e) {
+            console.log("Error in step " + JSON.stringify(step) +
+                        "\nwork=" + JSON.stringify(state.work));
+            throw(e);
+        }
+
+    });
+    state.land.addFact(state.work);
+    proofCtx.append(state.work);
+
+
+    if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
     startWith(state.work);
     return state.work;
 }
@@ -1459,7 +1507,26 @@ applyArrow([1,0], tmp, 1);
 applyArrow([], 'rarr_rarr_A_rarr_A_B_rarr_A_B', 0);
 applyArrow([1], 'harr_harr_A_B_harr_B_A', 0);
 thms["19.15"] = save();  // (-> (A. x (<-> ph ps)) (<-> (A. x ph) (A. x ps)))
-/*
+
+//exports.scheme.setEquivalenceThm(exports.theory.operator("forall"), 1, thms["19.15"]);
+//exports.scheme.setBinding(exports.theory.operator("forall"), 1, exports.scheme.LEFT(), 'rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B');
+
+// ==== No longer following land goals. ====
+
+startWith("rarr_and_A_B_A")
+generify()
+applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+saveAs("rarr_forall_z_and_A_B_forall_z_A") //undefined
+startWith("rarr_and_A_B_B")
+generify()
+applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
+applyArrow([1,0],"rarr_forall_z_and_A_B_forall_z_A",1)
+applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
+applyArrow([1],"rarr_and_A_B_and_B_A",0)
+saveAs("rarr_forall_z_and_A_B_and_forall_z_A_forall_z_B") //undefined
+
+
   /*
   // ==== END import from orcat_test.js ====
   */
@@ -1500,7 +1567,7 @@ function run(url_context, url, context) {
 }
 
 var verifyCtx = new GH.VerifyCtx(UrlCtx, run);
-DEBUG=true
+
 ifaceCtx.inferTerms();
 proofCtx.inferTerms();
 Async.parallel(
@@ -1588,4 +1655,435 @@ Async.parallel(
 [],[rarr,[rarr,[forall,z,[rarr,A,A]],B],B],[]
 [],[equals,[plus,[plus,a,b],c],[plus,a,[plus,b,c]]],[]
 
+
+==== Imported Proofs: ====
+=> startWith("rarr_harr_A_B_rarr_A_B")
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> saveAs("rarr_forall_z_harr_A_B_rarr_forall_z_A_forall_z_B") //var tmp
+=> startWith("rarr_harr_A_B_rarr_B_A")
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1,1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
+=> applyArrow([1,0],"rarr_forall_z_harr_A_B_rarr_forall_z_A_forall_z_B",1)
+=> applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
+=> applyArrow([1],"harr_harr_A_B_harr_B_A",0)
+=> saveAs("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B") //thms["19.15"]
+=> startWith("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B")
+=> applyArrow([0,1],"harr_harr_A_B_harr_B_A",0)
+=> saveAs("rarr_forall_z_harr_A_B_harr_forall_z_B_forall_z_A") //undefined
+=> startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
+=> applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
+=> applyArrow([],"rarr_rarr_A_B_rarr_not_B_not_A",0)
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([],"rarr_rarr_A_B_rarr_not_B_not_A",0)
+=> saveAs("rarr_not_forall_z_not_equals_a_b_not_forall_z_not_equals_b_b") //var tmp
+=> startWith("_dv_a_z___not_forall_z_not_equals_z_a")
+=> applyArrow([],"rarr_not_forall_z_not_equals_a_b_not_forall_z_not_equals_b_b",0)
+=> applyArrow([0],"_dv_A_z___rarr_A_forall_z_A",1)
+=> applyArrow([],"rarr_not_not_A_A",0)
+=> saveAs("equals_a_a") //undefined
+=> startWith("harr_A_A")
+=> defthm: harr_exist_z_A_not_forall_z_not_A = &exist;
+=> startWith("_dv_a_z___not_forall_z_not_equals_z_a")
+=> applyArrow([],"harr_exist_z_A_not_forall_z_not_A",1)
+=> saveAs("_dv_a_z___exist_z_equals_z_a") //thms.tyex
+=> startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
+=> applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> saveAs("rarr_equals_a_b_rarr_equals_a_c_equals_c_b") //tmp
+=> startWith("equals_a_a")
+=> applyArrow([],"rarr_equals_a_b_rarr_equals_a_c_equals_c_b",0)
+=> saveAs("rarr_equals_a_b_equals_b_a") //tmp
+=> applyArrow([],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
+=> applyArrow([0,0],"rarr_equals_a_b_equals_b_a",0)
+=> applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+=> saveAs("harr_equals_a_b_equals_b_a") //undefined
+=> startWith("harr_exist_z_A_not_forall_z_not_A")
+=> applyArrow([1,0,1,0],"harr_and_A_B_not_rarr_A_not_B",0)
+=> applyArrow([1,0,1],"harr_A_not_not_A",1)
+=> applyArrow([],"rarr_harr_A_B_rarr_B_A",0)
+=> applyArrow([0,0],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([0,0,1],"harr_A_not_not_A",0)
+=> applyArrow([0],"rarr_and_A_B_not_rarr_A_not_B",1)
+=> applyArrow([0,1],"harr_exist_z_A_not_forall_z_not_A",1)
+=> saveAs("rarr_and_forall_z_A_exist_z_B_exist_z_and_A_B") //undefined
+=> startWith("_dv_a_z___not_forall_z_not_equals_z_a")
+=> applyArrow([0,1,0],"rarr_equals_a_b_rarr_equals_a_c_equals_b_c",0)
+=> applyArrow([0,1,0,1],"harr_A_not_not_A",0)
+=> applyArrow([0,1],"harr_and_A_B_not_rarr_A_not_B",1)
+=> startWith("rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B")
+=> startWith("rarr_and_A_B_A")
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> saveAs("rarr_forall_z_and_A_B_forall_z_A") //undefined
+=> startWith("rarr_and_A_B_B")
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1,0],"rarr_forall_z_and_A_B_forall_z_A",1)
+=> applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
+=> applyArrow([1],"rarr_and_A_B_and_B_A",0)
+=> saveAs("rarr_forall_z_and_A_B_and_forall_z_A_forall_z_B") //undefined
+=> startWith("rarr_A_rarr_B_and_A_B")
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
+=> applyArrow([],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
+=> applyArrow([0,1],"rarr_forall_z_and_A_B_and_forall_z_A_forall_z_B",1)
+=> applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+=> applyArrow([],"harr_harr_A_B_harr_B_A",0)
+=> saveAs("harr_forall_z_and_A_B_and_forall_z_A_forall_z_B") //undefined
+=> startWith("harr_forall_z_and_A_B_and_forall_z_A_forall_z_B")
+=> applyArrow([],"rarr_harr_A_B_rarr_B_A",0)
+=> applyArrow([1,1,1],"_dv_A_z___rarr_A_forall_z_A",0)
+=> applyArrow([1,1],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",1)
+=> applyArrow([1,1,1],"harr_and_A_B_and_B_A",0)
+=> applyArrow([1,1,1],"rarr_and_A_rarr_B_C_rarr_B_and_A_C",0)
+=> applyArrow([1,1,1,1],"rarr_and_A_rarr_A_B_B",0)
+=> saveAs("_dv_A_y___rarr_and_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_forall_z_A_forall_z_forall_y_rarr_equals_z_y_B") //undefined
+=> startWith("harr_exist_z_A_not_forall_z_not_A")
+=> applyArrow([],"rarr_harr_A_B_rarr_A_B",0)
+=> applyArrow([1,0],"_dv_A_z___rarr_A_forall_z_A",1)
+=> applyArrow([1],"harr_A_not_not_A",1)
+=> saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
+=> startWith("_dv_A_z___rarr_A_forall_z_A")
+=> applyArrow([],"harr_rarr_A_B_rarr_not_B_not_A",0)
+=> applyArrow([0],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([1],"harr_A_not_not_A",1)
+=> saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
+=> startWith("harr_exist_z_A_not_forall_z_not_A")
+=> applyArrow([],"rarr_harr_A_B_rarr_B_A",0)
+=> applyArrow([0],"rarr_and_A_rarr_A_B_B",1)
+=> applyArrow([0,1],"harr_rarr_A_B_rarr_not_B_not_A",1)
+=> applyArrow([0,1,0],"rarr_forall_z_A_A",0)
+=> applyArrow([0],"harr_and_A_B_and_B_A",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+=> applyArrow([1,0],"harr_A_not_not_A",1)
+=> applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+=> saveAs("rarr_A_exist_z_A") //undefined
+=> startWith("harr_exist_z_A_not_forall_z_not_A")
+=> applyArrow([],"harr_harr_A_B_harr_B_A",0)
+=> startWith("harr_harr_A_B_and_rarr_A_B_rarr_B_A")
+=> applyArrow([1,0],"harr_rarr_A_B_rarr_not_B_not_A",0)
+=> applyArrow([1,1],"harr_rarr_A_B_rarr_not_B_not_A",0)
+=> applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
+=> saveAs("harr_harr_A_B_harr_not_B_not_A") //undefined
+=> startWith("harr_exist_z_A_not_forall_z_not_A")
+=> applyArrow([],"harr_harr_A_B_harr_not_B_not_A",0)
+=> applyArrow([0],"harr_A_not_not_A",1)
+=> saveAs("harr_forall_z_not_A_not_exist_z_A") //undefined
+=> startWith("rarr_forall_z_A_A")
+=> applyArrow([1],"rarr_A_exist_z_A",0)
+=> saveAs("rarr_forall_z_A_exist_z_A") //undefined
+=> startWith("rarr_forall_z_forall_y_A_forall_y_forall_z_A")
+=> applyArrow([],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
+=> applyArrow([0,0],"rarr_forall_z_forall_y_A_forall_y_forall_z_A",0)
+=> applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+=> saveAs("harr_forall_z_forall_y_A_forall_y_forall_z_A") //undefined
+=> startWith("rarr_not_forall_z_A_forall_z_not_forall_z_A")
+=> startWith("rarr_rarr_A_B_rarr_not_B_not_A")
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"harr_rarr_A_B_rarr_not_B_not_A",0)
+=> applyArrow([1,0],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([1,1],"harr_exist_z_A_not_forall_z_not_A",1)
+=> saveAs("rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B") //undefined
+=> startWith("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B")
+=> applyArrow([0,1],"harr_harr_A_B_harr_not_B_not_A",1)
+=> saveAs("rarr_forall_z_harr_A_B_harr_forall_z_not_B_forall_z_not_A") //undefined
+=> applyArrow([1],"harr_harr_A_B_harr_not_B_not_A",0)
+=> applyArrow([1,0],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([1,1],"harr_exist_z_A_not_forall_z_not_A",1)
+=> saveAs("rarr_forall_z_harr_A_B_harr_exist_z_A_exist_z_B") //undefined
+=> startWith("_dv_a_z___exist_z_equals_z_a")
+=> generify()
+=> applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1,1],"harr_and_A_B_and_B_A",0)
+=> applyArrow([1,1],"rarr_and_forall_z_A_exist_z_B_exist_z_and_A_B",0)
+=> applyArrow([1,1,1],"harr_and_A_B_and_B_A",0)
+=> applyArrow([1,1,1],"rarr_and_A_rarr_A_B_B",0)
+=> applyArrow([1,1],"_dv_A_z___rarr_exist_z_A_A",0)
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([0,1,1,1],"rarr_and_A_rarr_A_B_B",1)
+=> applyArrow([0,1,1],"rarr_and_A_rarr_B_C_rarr_B_and_A_C",1)
+=> applyArrow([0,1],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",0)
+=> applyArrow([0,1,0],"_dv_A_z___rarr_A_forall_z_A",1)
+=> applyArrow([0],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> applyArrow([0,1,1,0],"harr_equals_a_b_equals_b_a",0)
+=> saveAs("_dv_A_y_B_y___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_z_B") //undefined
+=> startWith("_dv_A_z___rarr_A_forall_z_A")
+=> applyArrow([],"harr_rarr_A_B_rarr_not_B_not_A",0)
+=> applyArrow([0],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([1],"harr_A_not_not_A",1)
+=> saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
+=> startWith("_dv_a_z___exist_z_equals_z_a")
+=> generify()
+=> applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1,1],"harr_and_A_B_and_B_A",0)
+=> applyArrow([1,1],"rarr_and_forall_z_A_exist_z_B_exist_z_and_A_B",0)
+=> applyArrow([1,1,1],"harr_and_A_B_and_B_A",0)
+=> applyArrow([1,1,1],"rarr_and_A_rarr_A_B_B",0)
+=> applyArrow([1,1],"_dv_A_z___rarr_exist_z_A_A",0)
+=> applyArrow([1],"rarr_rarr_A_B_rarr_rarr_C_A_rarr_C_B",0)
+=> applyArrow([1,0],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",1)
+=> applyArrow([1,0,1],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1,0],"_dv_A_z___rarr_A_forall_z_A",1)
+=> applyArrow([0],"rarr_forall_z_forall_y_A_forall_y_forall_z_A",1)
+=> saveAs("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_y_B") //undefined
+=> startWith("rarr_and_rarr_A_B_rarr_B_A_harr_A_B")
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+=> saveAs("rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B") //undefined
+=> startWith("rarr_and_rarr_A_B_rarr_C_D_rarr_and_A_C_and_B_D")
+=> applyArrow([1,0],"harr_A_and_A_A",1)
+=> applyArrow([],"rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B",0)
+=> applyArrow([0,0],"harr_A_and_A_A",0)
+=> applyArrow([0],"rarr_and_rarr_A_B_rarr_C_D_rarr_and_A_C_and_B_D",1)
+=> applyArrow([0,0,0,1],"rarr_and_A_B_A",0)
+=> applyArrow([0,1,0,1],"rarr_and_A_B_B",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+=> applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+=> applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+=> saveAs("harr_and_rarr_A_B_rarr_A_C_rarr_A_and_B_C") //undefined
+=> startWith("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_y_B")
+=> applyArrow([1],"rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B",0)
+=> applyArrow([1,0],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_y_B",1)
+=> applyArrow([1,0],"harr_forall_z_forall_y_A_forall_y_forall_z_A",0)
+=> applyArrow([1,0,1,1,0],"harr_equals_a_b_equals_b_a",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
+=> applyArrow([0],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",1)
+=> applyArrow([0,1],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",1)
+=> applyArrow([0,1,1],"harr_and_rarr_A_B_rarr_A_C_rarr_A_and_B_C",0)
+=> applyArrow([0,1,1,1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
+=> saveAs("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_forall_z_A_forall_y_B") //undefined
+=> startWith("equals_a_a")
+=> applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
+=> saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
+=> generify()
+=> saveAs("forall_z_rarr_equals_z_a_equals_plus_Oslash_z_plus_Oslash_a") //undefined
+=> startWith("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_forall_z_A_forall_y_B")
+=> applyArrow([1],"rarr_harr_A_B_harr_not_B_not_A",0)
+=> applyArrow([1,1],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([1,0],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([0,1,1,1],"rarr_harr_A_B_harr_not_B_not_A",1)
+=> saveAs("_dv_A_z_B_y___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_y_A_exist_z_B") //undefined
+=> startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
+=> applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1,1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
+=> applyArrow([1,0],"rarr_equals_a_b_rarr_equals_a_c_equals_b_c",1)
+=> applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
+=> applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
+=> saveAs("rarr_equals_a_b_harr_equals_a_c_equals_b_c") //undefined
+=> startWith("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_forall_z_A_forall_y_B")
+=> applyArrow([1],"rarr_harr_A_B_harr_not_B_not_A",0)
+=> applyArrow([1],"harr_harr_A_B_harr_B_A",0)
+=> applyArrow([1,0],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([1,1],"harr_exist_z_A_not_forall_z_not_A",1)
+=> applyArrow([0,1,1,1],"harr_harr_A_B_harr_not_B_not_A",1)
+=> applyArrow([0,1,1,1],"harr_harr_A_B_harr_B_A",0)
+=> saveAs("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B") //undefined
+=> startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
+=> applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
+=> applyArrow([1,1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
+=> applyArrow([1,0],"rarr_equals_a_b_rarr_equals_a_c_equals_b_c",1)
+=> applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
+=> applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
+=> saveAs("rarr_equals_a_b_harr_equals_a_c_equals_b_c") //undefined
+=> applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
+=> applyArrow([1,1],"harr_equals_a_b_equals_b_a",0)
+=> saveAs("rarr_equals_a_b_harr_equals_c_a_equals_c_b") //undefined
+=> startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+=> applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+=> generify()
+=> generify()
+=> applyArrow([1,1,1],"harr_harr_A_B_harr_B_A",0)
+=> applyArrow([],"_dv_A_z_B_y___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_y_A_exist_z_B",0)
+=> defthm: _dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b = &le;
+=> saveAs("_dv_a_y_a_z_b_y_b_z___harr_exist_z_equals_plus_a_z_b_exist_y_equals_plus_a_y_b") //undefined
+=> startWith("_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b")
+=> applyArrow([0],"_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b",0)
+=> saveAs("_dv_a_y_a_z_b_y_b_z___harr_exist_z_equals_plus_a_z_b_exist_y_equals_plus_a_y_b") //undefined
+=> startWith("equals_a_a")
+=> applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_times_a_c_times_b_d",0)
+=> applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+=> generify()
+=> generify()
+=> applyArrow([],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B",0)
+=> defthm: _dv_a_z_b_z___harr_brvbar_a_b_exist_z_equals_times_a_z_b = &brvbar;
+=> startWith("equals_a_a")
+=> applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
+=> applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+=> applyArrow([1],"rarr_harr_A_B_rarr_B_A",0)
+=> applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_rarr_A_B_rarr_A_C",0)
+=> saveAs("rarr_rarr_equals_a_Oslash_equals_plus_Oslash_Oslash_a_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
+=> applyArrow([0,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
+=> applyArrow([0,0],"rarr_harr_A_B_rarr_B_A",0)
+=> applyArrow([0],"rarr_A_rarr_rarr_A_B_B",1)
+=> saveAs("rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
+=> startWith("equals_plus_a_Oslash_a")
+=> applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a",0)
+=> generify()
+=> applyArrow([],"_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A",0)
+=> saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
+=> startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+=> applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+=> applyArrow([1],"rarr_harr_A_B_rarr_B_A",0)
+=> applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> saveAs("rarr_equals_plus_Oslash_sect_a_b_rarr_equals_c_sect_a_equals_plus_Oslash_c_b") //undefined
+=> startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+=> applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+=> applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
+=> applyArrow([1,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
+=> applyArrow([1,0],"rarr_harr_A_B_harr_harr_C_A_harr_C_B",0)
+=> applyArrow([1,0],"rarr_harr_A_B_rarr_A_B",0)
+=> applyArrow([1],"harr_and_A_B_and_B_A",0)
+=> applyArrow([1],"rarr_and_A_rarr_A_B_B",0)
+=> saveAs("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b") //undefined
+=> startWith("rarr_equals_a_b_equals_sect_a_sect_b")
+=> applyArrow([1],"rarr_equals_a_b_rarr_equals_a_c_equals_c_b",0)
+=> applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> saveAs("rarr_equals_a_sect_plus_Oslash_b_rarr_equals_plus_Oslash_b_b_equals_a_sect_b") //undefined
+=> startWith("equals_plus_a_sect_b_sect_plus_a_b")
+=> applyArrow([],"rarr_equals_a_sect_plus_Oslash_b_rarr_equals_plus_Oslash_b_b_equals_a_sect_b",0)
+=> saveAs("rarr_equals_plus_Oslash_a_a_equals_plus_Oslash_sect_a_sect_a") //undefined
+=> startWith("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b")
+=> applyArrow([1],"rarr_harr_A_B_rarr_A_B",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> saveAs("rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b") //undefined
+=> startWith("rarr_equals_plus_Oslash_a_a_equals_plus_Oslash_sect_a_sect_a")
+=> applyArrow([1],"rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b",0)
+=> applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([0],"_dv_A_z___rarr_A_forall_z_A",1)
+=> saveAs("_dv_a_z___rarr_equals_plus_Oslash_a_a_forall_z_rarr_equals_z_sect_a_equals_plus_Oslash_z_z") //undefined
+=> startWith("equals_a_a")
+=> applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
+=> saveAs("rarr_rarr_equals_a_a_A_A") //undefined
+=> startWith("rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B")
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> saveAs("rarr_exist_z_A_rarr_forall_z_rarr_A_B_exist_z_B") //undefined
+=> startWith("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b")
+=> generify()
+=> generify()
+=> applyArrow([],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B",0)
+=> saveAs("harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y") //undefined
+=> startWith("_dv_a_z___exist_z_equals_z_a")
+=> applyArrow([],"rarr_exist_z_A_rarr_forall_z_rarr_A_B_exist_z_B",0)
+=> applyArrow([1],"harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y",0)
+=> applyArrow([1],"_dv_A_z___rarr_exist_z_A_A",0)
+=> applyArrow([1],"_dv_a_z___rarr_equals_plus_Oslash_a_a_forall_z_rarr_equals_z_sect_a_equals_plus_Oslash_z_z",0)
+=> generify()
+=> applyArrow([],"rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y",0)
+=> applyArrow([],"rarr_forall_z_A_A",0)
+=> saveAs("equals_plus_Oslash_z_z") //undefined
+=> startWith("_dv_a_z___exist_z_equals_z_a")
+=> applyArrow([1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
+=> applyArrow([1,1],"equals_plus_a_Oslash_a",0)
+=> applyArrow([],"_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b",1)
+=> saveAs("le_a_a") //undefined
+=> startWith("equals_plus_a_Oslash_a")
+=> applyArrow([0],"equals_plus_a_Oslash_a",0)
+=> saveAs("equals_a_a") //undefined
+=> startWith("_dv_a_z___exist_z_equals_z_a")
+=> applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
+=> saveAs("_dv_a_z___rarr_rarr_exist_z_equals_z_a_A_A") //undefined
+=> startWith("rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B")
+=> applyArrow([0,1],"rarr_rarr_A_B_rarr_A_and_A_B",1)
+=> applyArrow([1],"_dv_a_z___rarr_rarr_exist_z_equals_z_a_A_A",0)
+=> saveAs("_dv_a_z___rarr_forall_z_rarr_equals_z_a_A_exist_z_and_equals_z_a_A") //undefined
+=> startWith("_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A")
+=> applyArrow([0,1,1],"rarr_and_A_rarr_A_B_B",1)
+=> applyArrow([0,1,1,1],"rarr_harr_A_B_rarr_B_A",1)
+=> applyArrow([0,1],"rarr_and_A_rarr_B_C_rarr_B_and_A_C",1)
+=> applyArrow([0,1],"harr_and_A_B_and_B_A",0)
+=> applyArrow([0],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",0)
+=> applyArrow([0,1],"_dv_A_z___rarr_A_forall_z_A",1)
+=> applyArrow([1,0,1,1,1,1],"rarr_and_A_rarr_A_B_B",1)
+=> applyArrow([1,0,1,1,1,1,1],"rarr_harr_A_B_rarr_B_A",1)
+=> applyArrow([1,0,1,1,1],"rarr_and_A_rarr_B_C_rarr_B_and_A_C",1)
+=> applyArrow([1,0,1,1],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",0)
+=> applyArrow([1,0,1,1,0],"_dv_A_z___rarr_A_forall_z_A",1)
+=> applyArrow([1,0,1,1,0],"rarr_and_A_rarr_A_B_B",1)
+=> applyArrow([1,0,1,1],"harr_and_and_A_B_C_and_A_and_B_C",0)
+=> applyArrow([1,0,1,0,1,1],"rarr_A_rarr_rarr_A_B_B",0)
+=> applyArrow([1,0,1,0,1,1,0],"rarr_harr_A_B_rarr_A_B",1)
+=> applyArrow([1,0,1,0,1],"rarr_rarr_A_rarr_B_C_rarr_rarr_A_B_rarr_A_C",0)
+=> applyArrow([1,0,1,0],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1,0,1,0,1],"rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B",0)
+=> applyArrow([1,0,1,0,1],"_dv_a_z___rarr_rarr_exist_z_equals_z_a_A_A",0)
+=> applyArrow([1,0,1,0,1],"_dv_A_z___rarr_exist_z_A_A",0)
+=> applyArrow([1,0,1,0],"rarr_rarr_A_B_rarr_and_A_C_and_B_C",0)
+=> applyArrow([1,0,1],"rarr_A_rarr_rarr_A_B_B",1)
+=> applyArrow([1,0,1,1],"rarr_and_A_B_and_B_A",1)
+=> applyArrow([1,0,1],"harr_and_and_A_B_C_and_A_and_B_C",1)
+=> applyArrow([1,0],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",0)
+=> applyArrow([1,0,0],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",0)
+=> applyArrow([1],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+=> applyArrow([1],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+=> applyArrow([1],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> applyArrow([1,1],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> applyArrow([0],"rarr_forall_z_A_A",1)
+=> applyArrow([1,1,1,1,1,1],"rarr_A_rarr_rarr_A_B_B",0)
+=> applyArrow([1,1,1,1,1,1,0],"rarr_harr_A_B_rarr_A_B",1)
+=> applyArrow([1,1,1,1,1,1],"rarr_rarr_A_B_rarr_rarr_C_A_rarr_C_B",0)
+=> applyArrow([1,1,1,1,1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+=> applyArrow([1,1,1,1],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> applyArrow([1,1,1],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+=> applyArrow([1,1,1,1,1,1],"rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B",0)
+=> applyArrow([1,1,1,1,1,1],"_dv_a_z___rarr_rarr_exist_z_equals_z_a_A_A",0)
+=> applyArrow([1,1,1,1,1,1],"_dv_A_z___rarr_exist_z_A_A",0)
+=> applyArrow([1,1,1,0],"rarr_forall_z_A_A",1)
+=> saveAs("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E") //undefined
+=> startWith("rarr_harr_A_B_harr_harr_A_C_harr_B_C")
+=> applyArrow([1],"rarr_harr_A_B_rarr_A_B",0)
+=> applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
+=> saveAs("rarr_and_harr_A_B_harr_A_C_harr_B_C") //undefined
+=> startWith("rarr_equals_a_b_harr_equals_a_c_equals_b_c")
+=> applyArrow([],"rarr_rarr_A_B_rarr_and_A_C_and_B_C",0)
+=> applyArrow([1,1],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
+=> applyArrow([1,0],"harr_harr_A_B_harr_B_A",0)
+=> applyArrow([1],"rarr_and_harr_A_B_harr_A_C_harr_B_C",0)
+=> saveAs("rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d") //undefined
+=> startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+=> applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
+=> applyArrow([1,0],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
+=> applyArrow([1,1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
+=> applyArrow([1],"rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d",0)
+=> generify()
+=> generify()
+=> applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
+=> saveAs("rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A") //undefined
+=> startWith("rarr_A_A")
+=> generify()
+=> applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
+=> saveAs("rarr_rarr_forall_z_rarr_A_A_B_B") //undefined
+=> startWith("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E")
+=> applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+=> applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+=> applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+=> applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+=> applyArrow([0,0],"equals_plus_a_Oslash_a",0)
+=> applyArrow([0,1,1],"equals_plus_a_Oslash_a",0)
+=> applyArrow([],"rarr_rarr_equals_a_a_A_A",0)
+=> applyArrow([0,1,1,0],"equals_plus_a_sect_b_sect_plus_a_b",0)
+=> applyArrow([0,1,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
+=> applyArrow([0,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
+=> applyArrow([0,1,1],"rarr_equals_a_b_equals_sect_a_sect_b",1)
+=> applyArrow([],"rarr_rarr_forall_z_rarr_A_A_B_B",0)
+=> saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
 */
