@@ -53,7 +53,7 @@ function getLand(filename) {
         fact.Tree.Cmd = "stmt";
 
         fact = land.addFact(fact);
-        ifaceCtx.append(state, fact);
+        ifaceCtx.append(fact);
     }
 
     if (land.axioms) land.axioms.forEach(addAxiom);
@@ -694,7 +694,11 @@ function Context() {
             });
         }
     },1);
-    this.append = function(x) { queue.push(x); return that;}
+    this.append = function(x) {
+        if ((typeof x != "string") && !x.toGhilbert) {
+            throw new Error("Can only append string or fact");
+        }
+        queue.push(x); return that;}
     this.toString = function(cb) {
         if (queue.idle()) {
             cb(null, txt);
@@ -1284,7 +1288,7 @@ var verifyCtx = new GH.VerifyCtx(UrlCtx, run);
     
 Async.parallel(
     {iface:ifaceCtx.toString, proof:proofCtx.toString},
-    function(results) {
+    function(err, results) {
         UrlCtx.files["tmp2.ghi"] = results.iface;
         UrlCtx.files["tmp2.gh"] = results.proof;
         if (DEBUG) {
