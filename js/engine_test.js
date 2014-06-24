@@ -988,17 +988,24 @@ function applyArrow(path, fact, side) {
     stack.unshift([path.map(function(x){return x+1;}), fact, [2 - side]]);
 }
 function generify() {
-    stack.unshift(generify);
+    stack.unshift(function() {
+        state.work = applyInference(state.work,
+                                    sfbm('[[0],[0,1,0],[]];["&forall;"]'));
+    });
 }
-
+function addSpecify(path, term, arity) {
+    stack.unshift(function() {
+        state.work = specifyDummy(state.work, path, term, arity);
+        if (DEBUG) {console.log("# XXXX Work specced: " + JSON.stringify(state.work));}
+    });
+}
 function save() {
     startNextGoal();
     stack.forEach(function(step) {
         if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
         try {
-            if (step == generify) {
-                state.work = applyInference(state.work,
-                                            sfbm('[[0],[0,1,0],[]];["&forall;"]'));
+            if (typeof step == 'function') {
+                step();
             } else if (step.length > 1) {
                 state.work = applyFact(state.work, step[0], step[1], step[2]);
             } else {
@@ -1021,9 +1028,8 @@ function saveAs(str) {
     stack.forEach(function(step) {
         if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
         try {
-            if (step == generify) {
-                state.work = applyInference(state.work,
-                                            sfbm('[[0],[0,1,0],[]];["&forall;"]'));
+            if (typeof step == 'function') {
+                step();
             } else if (step.length > 1) {
                 state.work = applyFact(state.work, step[0], step[1], step[2]);
             } else {
@@ -1448,6 +1454,26 @@ startWith(thms.bibi1)
 applyArrow([1,0], thms.bicom, 0);
 save();
 
+startWith("rarr_and_rarr_A_B_rarr_B_A_harr_A_B")
+applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+//saveAs("rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B") //undefined
+save();
+
+startWith("rarr_and_rarr_A_B_rarr_C_D_rarr_and_A_C_and_B_D")
+applyArrow([1,0],"harr_A_and_A_A",1)
+applyArrow([],"rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B",0)
+applyArrow([0,0],"harr_A_and_A_A",0)
+applyArrow([0],"rarr_and_rarr_A_B_rarr_C_D_rarr_and_A_C_and_B_D",1)
+applyArrow([0,0,0,1],"rarr_and_A_B_A",0)
+addSpecify([1,1,1], "&rarr;", 2);
+applyArrow([0,1,0,1],"rarr_and_A_B_B",0)
+addSpecify([1,2,1], "&rarr;", 2);
+applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
+applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+//saveAs("harr_and_rarr_A_B_rarr_A_C_rarr_A_and_B_C") //undefined
+save();
+
 
 var landOr = getLand("land_or.js");
 
@@ -1715,26 +1741,6 @@ Async.parallel(
 
 
 ==== Imported Proofs: ====
-startWith("rarr_harr_A_B_rarr_A_B")
-generify()
-applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
-applyArrow([1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
-saveAs("rarr_forall_z_harr_A_B_rarr_forall_z_A_forall_z_B") //var tmp
-
-startWith("rarr_harr_A_B_rarr_B_A")
-generify()
-applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
-applyArrow([1],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
-applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
-applyArrow([1,1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
-applyArrow([1,0],"rarr_forall_z_harr_A_B_rarr_forall_z_A_forall_z_B",1)
-applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
-applyArrow([1],"harr_harr_A_B_harr_B_A",0)
-saveAs("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B") //thms["19.15"]
-
-startWith("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B")
-applyArrow([0,1],"harr_harr_A_B_harr_B_A",0)
-saveAs("rarr_forall_z_harr_A_B_harr_forall_z_B_forall_z_A") //undefined
 
 startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
 applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
@@ -1812,29 +1818,10 @@ applyArrow([1,0],"harr_A_not_not_A",1)
 applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
 saveAs("rarr_A_exist_z_A") //undefined
 
-startWith("harr_exist_z_A_not_forall_z_not_A")
-applyArrow([],"harr_harr_A_B_harr_B_A",0)
-startWith("harr_harr_A_B_and_rarr_A_B_rarr_B_A")
-applyArrow([1,0],"harr_rarr_A_B_rarr_not_B_not_A",0)
-applyArrow([1,1],"harr_rarr_A_B_rarr_not_B_not_A",0)
-applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
-saveAs("harr_harr_A_B_harr_not_B_not_A") //undefined
-
-startWith("harr_exist_z_A_not_forall_z_not_A")
-applyArrow([],"harr_harr_A_B_harr_not_B_not_A",0)
-applyArrow([0],"harr_A_not_not_A",1)
-saveAs("harr_forall_z_not_A_not_exist_z_A") //undefined
 
 startWith("rarr_forall_z_A_A")
 applyArrow([1],"rarr_A_exist_z_A",0)
 saveAs("rarr_forall_z_A_exist_z_A") //undefined
-
-startWith("rarr_forall_z_forall_y_A_forall_y_forall_z_A")
-applyArrow([],"rarr_A_rarr_B_and_A_B",0)
-applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
-applyArrow([0,0],"rarr_forall_z_forall_y_A_forall_y_forall_z_A",0)
-applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
-saveAs("harr_forall_z_forall_y_A_forall_y_forall_z_A") //undefined
 
 startWith("rarr_not_forall_z_A_forall_z_not_forall_z_A")
 startWith("rarr_rarr_A_B_rarr_not_B_not_A")
@@ -1894,21 +1881,6 @@ applyArrow([1,0],"_dv_A_z___rarr_A_forall_z_A",1)
 applyArrow([0],"rarr_forall_z_forall_y_A_forall_y_forall_z_A",1)
 saveAs("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_y_B") //undefined
 
-startWith("rarr_and_rarr_A_B_rarr_B_A_harr_A_B")
-applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
-saveAs("rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B") //undefined
-
-startWith("rarr_and_rarr_A_B_rarr_C_D_rarr_and_A_C_and_B_D")
-applyArrow([1,0],"harr_A_and_A_A",1)
-applyArrow([],"rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B",0)
-applyArrow([0,0],"harr_A_and_A_A",0)
-applyArrow([0],"rarr_and_rarr_A_B_rarr_C_D_rarr_and_A_C_and_B_D",1)
-applyArrow([0,0,0,1],"rarr_and_A_B_A",0)
-applyArrow([0,1,0,1],"rarr_and_A_B_B",0)
-applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
-applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
-applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
-saveAs("harr_and_rarr_A_B_rarr_A_C_rarr_A_and_B_C") //undefined
 
 startWith("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_y_B")
 applyArrow([1],"rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B",0)
