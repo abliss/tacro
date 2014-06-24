@@ -205,7 +205,9 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     }
     function assertNotFree(exp, freeMap) {
         if (!Array.isArray(exp)) {
-            assertEqual("free", freeMap[exp], undefined);
+            assertEqual(
+                "free:" + JSON.stringify(exp) + "/" + JSON.stringify(freeMap),
+                freeMap[exp], undefined);
         } else {
             for (var i = 1; i < exp.length; i++) {
                 debugPath.push(i);
@@ -953,7 +955,7 @@ function parseMark(str) { // parse orcat's thm names
     var out = new Fact();
     if (str[0] == '_') {
         if (str[1] != 'd') throw new Error("TODO: " + str);
-        var parts =  str.split("__");
+        var parts =  str.split("___");
         var free = parts[0].substr(4);
         var freeToks = free.split("_");
         if (freeToks.length % 2 != 0) throw new Error("TODO:" + free);
@@ -962,7 +964,8 @@ function parseMark(str) { // parse orcat's thm names
             outFree.push([out.nameVar(freeToks[i++]),out.nameVar(freeToks[i])]);
         }
         out.setFree(outFree);
-        console.log("XXXX " + str + "-> " + JSON.stringify(outFree));
+        if (DEBUG) console.log("Parsed mark" + str + "-> " +
+                               JSON.stringify(outFree) + " and " + parts[1]);
         str = parts[1];
     }
     var toks = str.split("_");
@@ -997,13 +1000,13 @@ function generify() {
 function addSpecify(path, term, arity) {
     stack.unshift(function() {
         state.work = specifyDummy(state.work, path, term, arity);
-        if (DEBUG) {console.log("# XXXX Work specced: " + JSON.stringify(state.work));}
+        if (DEBUG) {console.log("Work specced: " + JSON.stringify(state.work));}
     });
 }
 function save() {
     startNextGoal();
     stack.forEach(function(step) {
-        if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+        if (DEBUG) {console.log("Work now: " + JSON.stringify(state.work));}
         try {
             if (typeof step == 'function') {
                 step();
@@ -1704,6 +1707,13 @@ applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
 //saveAs("rarr_exist_z_A_rarr_forall_z_rarr_A_B_exist_z_B") //undefined
 save();
   
+DEBUG=true
+startWith("harr_exist_z_A_not_forall_z_not_A")
+applyArrow([],"rarr_harr_A_B_rarr_A_B",0)
+applyArrow([1,0],"_dv_A_z___rarr_A_forall_z_A",1)
+applyArrow([1],"harr_A_not_not_A",1)
+saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
+
   /*
   // ==== END import from orcat_test.js ====
   */
@@ -1879,11 +1889,6 @@ applyArrow([1,1,1],"rarr_and_A_rarr_B_C_rarr_B_and_A_C",0)
 applyArrow([1,1,1,1],"rarr_and_A_rarr_A_B_B",0)
 saveAs("_dv_A_y___rarr_and_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_forall_z_A_forall_z_forall_y_rarr_equals_z_y_B") //undefined
 
-startWith("harr_exist_z_A_not_forall_z_not_A")
-applyArrow([],"rarr_harr_A_B_rarr_A_B",0)
-applyArrow([1,0],"_dv_A_z___rarr_A_forall_z_A",1)
-applyArrow([1],"harr_A_not_not_A",1)
-saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
 
 startWith("_dv_A_z___rarr_A_forall_z_A")
 applyArrow([],"harr_rarr_A_B_rarr_not_B_not_A",0)
