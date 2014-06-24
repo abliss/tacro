@@ -175,7 +175,8 @@ function undummy(workOrExp, dummyMap) {
 //     no assignment.
 // @throws an error if the unification is impossible or would violate a Free
 //     constraint.
-function getMandHyps(work, hypPath, fact, stmtPath) {
+// TODO: HACK: or you can give a factHypPath instead.
+function getMandHyps(work, hypPath, fact, stmtPath, factHypPath) {
     var debugPath = [];
     var nonDummy = {};
     var dummyMap = {};
@@ -185,7 +186,12 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     // from fact vars to work exps
     var varMap = {};
     var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
-    var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
+    var factExp;
+    if (stmtPath !== null) {
+        factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
+    } else {
+        factExp = zpath(fact.Core[Fact.CORE_STMT], factHypPath);
+    }
     if (workExp == undefined) {
         throw new Error("Bad work path:\n" + hypPath + "\n" +
                         JSON.stringify(work));
@@ -371,7 +377,7 @@ function globalSub(fact, varMap, work) {
     }
     return mapper(fact.Core[Fact.CORE_STMT]);
 }
-function apply(work, workPath, fact, factPath) {
+function applyFact(work, workPath, fact, factPath) {
     var varMap = getMandHyps(work, workPath, fact, factPath);
     if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
     // If that didn't throw, we can start mutating
@@ -456,6 +462,17 @@ function apply(work, workPath, fact, factPath) {
     return work;
 }
 
+function applyInference(work, infFact) {
+    PICKUP()
+
+    var varMap = getMandHyps(work, [], infFact, );
+    if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
+
+    var newSteps = [work.Tree.Proof[0]];
+    newSteps.push(nameDep(work, infFact));
+    newSteps.push.apply(work.Tree.Proof.slice(1));
+    
+}
 // Replace a dummy variable with a new exp containing the given term and some
 // new dummy variables.
 function specifyDummy(work, dummyPath, newTerm, newTermArity) {
@@ -830,9 +847,9 @@ function canonicalize(work) {
 
 startNextGoal();
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
-state.work = apply(state.work, [2,2], pm243, [2]);
+state.work = applyFact(state.work, [2,2], pm243, [2]);
 // |- (PQR)(PQ)PPR => |- (PQR)(PQ)PR
-state.work = apply(state.work, [2,1], imim1, [1]);
+state.work = applyFact(state.work, [2,1], imim1, [1]);
 // |- (P(QR))((Qr)(Pr))(P(PR)) => |- (PQR)(PQ)PR
 state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
@@ -860,16 +877,63 @@ function saveGoal() {
 function startWith(fact) {
     stack = [[fact]];
 }
+function getArity(tok) {
+    switch(tok) {
+    case 'Oslash':
+        return 0;
+    case 'not':
+        return 1;
+    case 'rarr':
+    case 'harr':
+    case 'and':
+    case 'or':
+    case 'forall':
+        return 2;
+    default:
+        return -1;
+    }
+}
+
+function parseMark(str) { // parse orcat's thm names
+    var out = new Fact();
+    if (str[0] == '_') throw new Error("todo");
+    var toks = str.split("_");
+    function recurse() {
+        var tok = toks.shift();
+        var arity = getArity(tok);
+        console.log("tok " + tok  +" arity " + arity);
+        if (arity == -1) {
+            return out.nameVar(tok);
+        } else {
+            var exp = [out.nameTerm('&' + tok + ';')];
+            for (var i = 0; i < arity; i++) {
+                exp.push(recurse());
+            }
+            return exp;
+        }
+    }
+    out.setStmt(recurse());
+    return out.getMark();
+}
 function applyArrow(path, fact, side) {
+    if (typeof fact == 'string') {
+        fact = sfbm(parseMark(fact));
+    }
     stack.unshift([path.map(function(x){return x+1;}), fact, [2 - side]]);
 }
+function generify() {
+    stack.unshift(generify);
+}
+
 function save() {
     startNextGoal();
     stack.forEach(function(step) {
         if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
         try {
-            if (step.length > 1) {
-                state.work = apply(state.work, step[0], step[1], step[2]);
+            if (step == generify) {
+                // ??? PICKUP
+            } else if (step.length > 1) {
+                state.work = applyFact(state.work, step[0], step[1], step[2]);
             } else {
                 state.work = ground(state.work, step[0]);
             }
@@ -1260,12 +1324,12 @@ thms.Equivalate = saveGoal();
   thms.anass = save();
 
 startNextGoal();
-state.work = apply(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [], thms.idie, [2]);
 state.work = specifyDummy(state.work, [1,1], "&rarr;", 2);
-state.work = apply(state.work, [1,1,1], thms.conj, [1]);
-state.work = apply(state.work, [1,1], thms.imim2, [2]);
-state.work = apply(state.work, [2], thms.defbi2, [2]);
-state.work = apply(state.work, [], thms.conj, [2]);
+state.work = applyFact(state.work, [1,1,1], thms.conj, [1]);
+state.work = applyFact(state.work, [1,1], thms.imim2, [2]);
+state.work = applyFact(state.work, [2], thms.defbi2, [2]);
+state.work = applyFact(state.work, [], thms.conj, [2]);
 state.work = ground(state.work, thms.imprt);
 thms.impexp = saveGoal();
 
@@ -1358,6 +1422,23 @@ applyArrow([1,1], thms.df_or, 0);
 
 
 var landForall = getLand("land_forall.js");
+
+thms.axalim='rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B';
+startWith(thms.bi1);
+generify();
+applyArrow([], thms.axalim, 0);
+applyArrow([1], thms.axalim, 0);
+var tmp = save();
+startWith(thms.bi2);
+generify();
+applyArrow([], thms.axalim, 0);
+applyArrow([1], thms.axalim, 0);
+applyArrow([1], 'rarr_A_rarr_B_and_A_B', 0);
+applyArrow([1,1], 'rarr_and_rarr_A_B_rarr_B_A_harr_A_B', 0);
+applyArrow([1,0], tmp, 1);
+applyArrow([], 'rarr_rarr_A_rarr_A_B_rarr_A_B', 0);
+applyArrow([1], 'harr_harr_A_B_harr_B_A', 0);
+thms["19.15"] = save();  // (-> (A. x (<-> ph ps)) (<-> (A. x ph) (A. x ps)))
 
   /*
   // ==== END import from orcat_test.js ====
