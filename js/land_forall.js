@@ -1,8 +1,4 @@
-1);//  TODO: XXX HACK
-var terms = ["&rarr;","&not;","&and;","&harr;","&or;","&forall;"];
-var rarr=0, not=1, and=2, harr=3, or=4, forall=5;
-var z=0, y=1, x=2, A=3, B=4, C=5, D=6, E=7;
-({
+{
     name:"&forall;",
     depends:["&or;"],  // TODO: figure out a content-addressable scheme
     axioms:[
@@ -20,9 +16,21 @@ var z=0, y=1, x=2, A=3, B=4, C=5, D=6, E=7;
          Skin:{TermNames:["&forall;"]}},
     ],
     goals:[
-        {Core:[[],[rarr,[forall,z,[harr,A,B]],[rarr,[forall,z,A],[forall,z,B]]],[]
-              ], Skin:{TermNames:terms}},
-        {Core:[[],[rarr,[forall,z,[harr,A,B]],[harr,[forall,z,A],[forall,z,B]]],[]
-              ], Skin:{TermNames:terms}},
+        {Core:[[],[0,[1,0,[2,1,2]],[0,[1,0,1],[1,0,2]]],[]],
+         Skin:{TermNames:["&rarr;","&forall;","&harr;"]}},
+        {Core:[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]],
+         Skin:{TermNames:["&rarr;","&forall;","&harr;","&and;"]}},
+        {Core:[[],[0,[1,0,[2,1,2]],[1,0,1]],[]],
+         Skin:{TermNames:["&rarr;","&forall;","&and;"]}},
+        {Core:[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]],
+         Skin:{TermNames:["&rarr;","&forall;","&and;"]}},
+        {Core:[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]],
+         Skin:{TermNames:["&harr;","&forall;","&and;","&rarr;"]}},
+        {Core:[[],[0,[1,0,[1,1,2]],[1,1,[1,0,2]]],[]],
+         Skin:{TermNames:["&harr;","&forall;","&rarr;","&and;"]}},
+        {Core:[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]],
+         Skin:{TermNames:["&harr;","&not;","&rarr;","&and;"]}},
+        {Core:[[],[0,[1,0,[2,1,2]],[2,[1,0,[3,2]],[1,0,[3,1]]]],[]],
+         Skin:{TermNames:["&rarr;","&forall;","&harr;","&not;"]}},
     ],
 }

@@ -1474,6 +1474,11 @@ applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
 //saveAs("harr_and_rarr_A_B_rarr_A_C_rarr_A_and_B_C") //undefined
 save();
 
+startWith("rarr_harr_A_B_harr_harr_A_C_harr_B_C")
+applyArrow([1],"rarr_harr_A_B_rarr_A_B",0)
+applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
+//saveAs("rarr_and_harr_A_B_harr_A_C_harr_B_C") //undefined
+save();
 
 var landOr = getLand("land_or.js");
 
@@ -1570,7 +1575,9 @@ thms["19.15"] = save();  // (-> (A. x (<-> ph ps)) (<-> (A. x ph) (A. x ps)))
 startWith("rarr_and_A_B_A")
 generify()
 applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
-saveAs("rarr_forall_z_and_A_B_forall_z_A") //undefined
+//saveAs("rarr_forall_z_and_A_B_forall_z_A") //undefined
+save();
+
 startWith("rarr_and_A_B_B")
 generify()
 applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
@@ -1578,7 +1585,9 @@ applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
 applyArrow([1,0],"rarr_forall_z_and_A_B_forall_z_A",1)
 applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
 applyArrow([1],"rarr_and_A_B_and_B_A",0)
-saveAs("rarr_forall_z_and_A_B_and_forall_z_A_forall_z_B") //undefined
+//saveAs("rarr_forall_z_and_A_B_and_forall_z_A_forall_z_B") //undefined
+save();
+
 startWith("rarr_A_rarr_B_and_A_B")
 generify()
 applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
@@ -1589,7 +1598,9 @@ applyArrow([1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
 applyArrow([0,1],"rarr_forall_z_and_A_B_and_forall_z_A_forall_z_B",1)
 applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
 applyArrow([],"harr_harr_A_B_harr_B_A",0)
-saveAs("harr_forall_z_and_A_B_and_forall_z_A_forall_z_B") //undefined
+//saveAs("harr_forall_z_and_A_B_and_forall_z_A_forall_z_B") //undefined
+save();
+
 
 
 startWith("rarr_forall_z_forall_y_A_forall_y_forall_z_A")
@@ -1597,17 +1608,23 @@ applyArrow([],"rarr_A_rarr_B_and_A_B",0)
 applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
 applyArrow([0,0],"rarr_forall_z_forall_y_A_forall_y_forall_z_A",0)
 applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
-saveAs("harr_forall_z_forall_y_A_forall_y_forall_z_A") //undefined
+//saveAs("harr_forall_z_forall_y_A_forall_y_forall_z_A") //undefined
+save();
+
 
 startWith("harr_harr_A_B_and_rarr_A_B_rarr_B_A")
 applyArrow([1,0],"harr_rarr_A_B_rarr_not_B_not_A",0)
 applyArrow([1,1],"harr_rarr_A_B_rarr_not_B_not_A",0)
 applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
-saveAs("harr_harr_A_B_harr_not_B_not_A") //undefined
+//saveAs("harr_harr_A_B_harr_not_B_not_A") //undefined
+save();
+
 
 startWith("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B")
 applyArrow([0,1],"harr_harr_A_B_harr_not_B_not_A",1)
-saveAs("rarr_forall_z_harr_A_B_harr_forall_z_not_B_forall_z_not_A") //undefined
+//saveAs("rarr_forall_z_harr_A_B_harr_forall_z_not_B_forall_z_not_A") //undefined
+save();
+
 
 
 
@@ -2101,11 +2118,6 @@ applyArrow([1,1,1,1,1,1],"_dv_a_z___rarr_rarr_exist_z_equals_z_a_A_A",0)
 applyArrow([1,1,1,1,1,1],"_dv_A_z___rarr_exist_z_A_A",0)
 applyArrow([1,1,1,0],"rarr_forall_z_A_A",1)
 saveAs("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E") //undefined
-
-startWith("rarr_harr_A_B_harr_harr_A_C_harr_B_C")
-applyArrow([1],"rarr_harr_A_B_rarr_A_B",0)
-applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
-saveAs("rarr_and_harr_A_B_harr_A_C_harr_B_C") //undefined
 
 startWith("rarr_equals_a_b_harr_equals_a_c_equals_b_c")
 applyArrow([],"rarr_rarr_A_B_rarr_and_A_C_and_B_C",0)

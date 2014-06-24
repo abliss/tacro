@@ -65,5 +65,7 @@
          Skin:{TermNames:["&rarr;","&harr;","&and;"]}},
         {Core:[[],[0,[1,[2,0,1],[2,0,2]],[2,0,[1,1,2]]],[]],
          Skin:{TermNames:["&harr;","&and;","&rarr;"]}},
+        {Core:[[],[0,[1,[2,0,1],[2,0,2]],[2,1,2]],[]],
+         Skin:{"TermNames":["&rarr;","&and;","&harr;"]}}
     ],
 }
