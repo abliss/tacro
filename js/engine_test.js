@@ -570,6 +570,7 @@ function Context() {
 
     function checkFact(fact, ignored, ignored, termsAreDone) {
         var factVarIsBinding = [];
+        factVarIsBinding.sourceFact = fact;
 
         // A context must have only stmts or only thms/defthms. This sets
         // isIface to true or false (assuming facts is nonempty), and throws
@@ -651,21 +652,25 @@ function Context() {
         fact.Core[Fact.CORE_HYPS].forEach(checkExp);
         checkExp(fact.Core[Fact.CORE_STMT]);
         if (fact.Tree.Proof) {
-            for (var i = 0; i < fact.Tree.Proof.length; i++) {
-                var exp = fact.Tree.Proof[i];
-                checkExp(exp);
+            var mandHyps = [];
+            fact.Tree.Proof.forEach(function(step) {
+                checkExp(step);
                 // Now we need to propagate binding results through mandhyps,
                 // for the 'eqid' case.
-                if (termsAreDone && exp.substr && (exp.substr(0,5) == 'Deps.')){
-                    var dep = fact.Tree.Deps[exp.substr(5)];
+                if (!termsAreDone) {
+                    return;
+                }
+                if (!step.substr) {
+                    mandHyps.push(step);
+                } else if (step.substr(0,5) == 'Deps.') {
+                    var dep = fact.Tree.Deps[step.substr(5)];
                     // TODO: this is sloppy
                     var depMark = JSON.stringify(dep[0]) + ";" + JSON.stringify(
                         dep[1].map(function(n){return fact.Skin.TermNames[n]}));
                     var depFvib = that.markToFvib[depMark];
                     if (!depFvib) throw new Error("no fvib for " + depMark);
-                    for (var j = 0; j < depFvib.length; j++) {
+                    mandHyps.forEach(function(mandHyp, j) {
                         if (depFvib[j]) {
-                            var mandHyp = fact.Tree.Proof[i-depFvib.length+j];
                             if (typeof mandHyp != 'number') {
                                 // TODO:  should actually backpropagate this!
                                 throw new Error(
@@ -673,13 +678,16 @@ function Context() {
                                         (i-depFvib.length+j) + " in " +
                                         JSON.stringify(fact) + " to " +
                                         depMark + " of " +
-                                        JSON.stringify(depFvib));
+                                        JSON.stringify(depFvib) + " dep " + 
+                                        JSON.stringify(depFvib.sourceFact)
+                                );
                             }
                             factVarIsBinding[mandHyp] = true;
                         }
+                    });
+                    mandHyps = [];
                     }
-                }
-            }
+            });
         }
         // TODO: we might need to propagate these changes by running through
         // again. E.g. suppose var 0 is only passed to a new term in the
@@ -1839,6 +1847,31 @@ state.work = ground(state.work, "_dv_A_z___exist_z_equals_z_A");
 saveGoal();
 
 //NOTE: Again, you can't stop here, because equals will get binding vars.
+// Here's an ugly XXX HACK to keep that from happening.
+state.work = startWork({Core:[[],[0,[1,0,1],[1,0,1]],[]],
+                        Skin:{TermNames:["&equals;","&rarr;"]}});
+state.work = ground(state.work, "equals_A_A");
+state.land.addFact(state.work);
+proofCtx.append(state.work);
+
+
+
+startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
+applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+//saveAs("rarr_equals_a_b_rarr_equals_a_c_equals_c_b") //tmp
+save();
+
+startWith("equals_a_a")
+applyArrow([],"rarr_equals_a_b_rarr_equals_a_c_equals_c_b",0)
+//saveAs("rarr_equals_a_b_equals_b_a") //tmp
+save();
+
+applyArrow([],"rarr_A_rarr_B_and_A_B",0)
+applyArrow([1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
+applyArrow([0,0],"rarr_equals_a_b_equals_b_a",0)
+applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
+//saveAs("harr_equals_a_b_equals_b_a") //undefined
+save();
 
   /*
   // ==== END import from orcat_test.js ====
@@ -1972,19 +2005,6 @@ Async.parallel(
 ==== Imported Proofs: ====
 
 
-startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
-applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
-saveAs("rarr_equals_a_b_rarr_equals_a_c_equals_c_b") //tmp
-
-startWith("equals_a_a")
-applyArrow([],"rarr_equals_a_b_rarr_equals_a_c_equals_c_b",0)
-saveAs("rarr_equals_a_b_equals_b_a") //tmp
-
-applyArrow([],"rarr_A_rarr_B_and_A_B",0)
-applyArrow([1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
-applyArrow([0,0],"rarr_equals_a_b_equals_b_a",0)
-applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
-saveAs("harr_equals_a_b_equals_b_a") //undefined
 
 
 startWith("harr_forall_z_and_A_B_and_forall_z_A_forall_z_B")
