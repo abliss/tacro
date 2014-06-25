@@ -11,6 +11,7 @@ var TODO_DETACHMAP = {};
 
 var DEBUG = false;
 
+
 state.factsByMark = {};
 function sfbm(mark) {
     var fact = state.factsByMark[mark];
@@ -109,6 +110,7 @@ function zpath(exp, path) {
 }
 
 // Visits each var in each exp exactly once, in left-to-right depth-first order
+// TODO: this is an error-prone api since exps will be confused for an exp
 function eachVarOnce(exps, cb, seen) {
     function visit(exp) {
         seen = seen || {};
@@ -159,7 +161,16 @@ function undummy(workOrExp, dummyMap) {
             workOrExp.Core[Fact.CORE_HYPS].map(replaceDummies);
         workOrExp.Tree.Proof =
             workOrExp.Tree.Proof.map(replaceDummies);
-        // TODO: undummy freemap
+        var oldFreeLists = workOrExp.Core[Fact.CORE_FREE];
+        workOrExp.setFree([]);
+        oldFreeLists.forEach(function(freeList) {
+            var oldTv = freeList.shift();
+            eachVarOnce([replaceDummies(oldTv)], function(newV) {
+                freeList.forEach(function(v) {
+                    workOrExp.ensureFree(newV, replaceDummies(v));
+                });
+            });
+        });
         if (DEBUG) {
             console.log("#XXXX Work undummied: " + JSON.stringify(workOrExp));
         }
@@ -203,45 +214,31 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
                             "\nWant:  " + thing1 + " === " + thing2);
         }
     }
-    function assertNotFree(exp, freeMap) {
-        if (!Array.isArray(exp)) {
-            assertEqual(
-                "free:" + JSON.stringify(exp) + "/" + JSON.stringify(freeMap),
-                freeMap[exp], undefined);
-        } else {
-            for (var i = 1; i < exp.length; i++) {
-                debugPath.push(i);
-                assertNotFree(exp[i], freeMap);
-                debugPath.pop();
-            }
-        }
-    }
-    function getFreeList(factVarName) {
-        var freeMap = fact.Core[Fact.CORE_FREE];
-        if (!freeMap) {
-            return undefined;
-        }
-        // TODO: could be faster.
-        for (var i = 0; i < freeMap.length; i++) {
-            if (freeMap[i][0] === factVarName) {
-                var free = {};
-                freeMap[i].slice(1).forEach(function(v) {
-                    free[v] = 1;
-                });
-                return free;
-            }
-        }
-        return undefined;
+
+    function checkVarMapForFreeness(varMap) {
+        fact.Core[Fact.CORE_FREE].forEach(function(freeList) {
+            var newExp = varMap[freeList[0]];
+            var varsAppearing = {};
+            eachVarOnce([newExp], function(v) {
+                varsAppearing[v] = true; // TODO: what if binding??
+            });
+            freeList.slice(1).forEach(function(freeVar) {
+                var newVar = varMap[freeVar];
+                if (Array.isArray(newVar)) {
+                    // This should not be possible.
+                    throw new Error("Substituting term for binding var?!");
+                }
+                if (varsAppearing[newVar]) {
+                    throw new Error(
+                        "Freeness Violation:\n  Found var " + newV +
+                            " (was " + freeVar +")\n  in exp " +
+                            JSON.stringify(newExp) +
+                            " (was " + freeList[0] +")");
+                }
+            });
+        });
     }
     function mapVarTo(factVarName, workExp) {
-        // Check freemap. TODO: untested
-        var free = getFreeList(factVarName);
-        if (free) {
-            assertNotFree(workExp, free);
-        }
-        if (factVarName == undefined) {
-            throw new Error("undefined varMap to " + JSON.stringify(workExp));
-        }
         varMap[factVarName] = workExp;
     }
     function recurse(workSubExp, factSubExp, alreadyMapped) {
@@ -334,6 +331,7 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
     for (x in varMap) if (varMap.hasOwnProperty(x)) {
         varMap[x] = undummy(varMap[x], dummyMap);
     }
+    checkVarMapForFreeness(varMap);
     return varMap;
 }
 
@@ -456,9 +454,24 @@ function applyFact(work, workPath, fact, factPath) {
     work.Tree.Proof.splice.apply(work.Tree.Proof, pusp.newSteps);
 
 
-    // TODO:
     // #. update DV list
-    // #. renumber all the vars
+    fact.Core[Fact.CORE_FREE].forEach(function(freeList) {
+        var origTermVar = freeList[0];
+        var newExp = varMap[origTermVar];
+        // NOTE: this creates freelists even for binding vars. They will be
+        // omitted in the ghilbert serialization (Context.toString)
+        eachVarOnce([newExp], function(newV) {
+            freeList.slice(1).forEach(function(origBV) {
+                var bV = varMap[origBV];
+                if (newV == bV) {
+                    // Shouldn't happen; this is checked for in mandHyps
+                    throw new Error("Freeness violation!");
+                }
+                work.ensureFree(newV, bV);
+            });
+        });
+    });
+    // TODO:
     // #. Add explanatory comments to Skin.Delimiters
     return work;
 }
@@ -499,6 +512,7 @@ function applyInference(work, infFact) {
 }
 // Replace a dummy variable with a new exp containing the given term and some
 // new dummy variables.
+// TODO: should not allow specifying binding var
 function specifyDummy(work, dummyPath, newTerm, newTermArity) {
     // TODO: duplicated code
     var nonDummy = {};
@@ -532,7 +546,7 @@ function Context() {
     var maxVar = [];
     // terms seen in this context
     var myTerms = {};
-    
+
     var queue = Async.queue(function(task, cb) {
         task.toGhilbert(state, function(err, ghTxt) {
             txt += ghTxt;
@@ -616,7 +630,9 @@ function Context() {
             }
         }
         function checkFreemap(fm) {
-            factVarIsBinding[fm[0]] = false;
+            // We allow binding vars to have freelists even though ghilbert
+            // doesn't.
+            // factVarIsBinding[fm[0]] = false;
             fm.slice(1).forEach(function(v) {
                 factVarIsBinding[v] = true;
             });
@@ -656,7 +672,7 @@ function Context() {
                 txt += "))\n";
             }
         }
-        
+
         txt += "\n";
 
         facts.forEach(function(fact) {
@@ -664,8 +680,11 @@ function Context() {
             for (var i = 0; i < fact.Skin.VarNames.length; i++) {
                 fact.Skin.VarNames[i] = (factVarIsBinding[i] ? "v" : "V") + i;
             }
+            // We allow binding vars to have free lists, but ghilbert doesn't.
+            fact.Core[Fact.CORE_FREE] = fact.Core[Fact.CORE_FREE].filter(
+                function(freeList) { return !factVarIsBinding[freeList[0]]; });
         });
-        
+
         queue.drain = function() {
             cb(null, txt);
         }
@@ -675,7 +694,7 @@ function Context() {
 
 Context.prototype = new Context();
 // terms seen in any context: map from array of Booleans for isTermVar
-// (null, true, false) 
+// (null, true, false)
 Context.prototype.terms = {};
 
 var proofCtx = new Context();
@@ -846,7 +865,8 @@ function ground(work, dirtFact) {
 // Reorders terms/variables so that they appear in first-used order.
 // Removes no-longer-used dummies.
 // Renames remaining variable Skins to Vn
-// TODO: sort deps alphabetically?
+// Consolidates and sort freelists
+// TODO: sort deps alphabetically
 function canonicalize(work) {
     var out = new Fact();
     function mapTerm(t) {
@@ -873,8 +893,13 @@ function canonicalize(work) {
         console.log("\nwork=" + JSON.stringify(work) +
                     "\nfact=" +JSON.stringify(out));
     }
-    out.setFree(work.Core[Fact.CORE_FREE].map(function(f) {
-        return f.map(mapExp);}));
+
+    work.Core[Fact.CORE_FREE].forEach(function(freeList) {
+        var termVar = mapExp(freeList[0]);
+        freeList.slice(1).forEach(function(v) {
+            out.ensureFree(termVar, mapExp(v));
+        });
+    });
 
     out.setProof(work.Tree.Proof.map(mapExp));
     out.setCmd(work.Tree.Cmd);
@@ -1701,18 +1726,18 @@ applyArrow([1,0],"harr_exist_z_A_not_forall_z_not_A",1)
 applyArrow([1,1],"harr_exist_z_A_not_forall_z_not_A",1)
 //saveAs("rarr_forall_z_harr_A_B_harr_exist_z_A_exist_z_B") //undefined
 save();
-    
+
 startWith("rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B")
 applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
 //saveAs("rarr_exist_z_A_rarr_forall_z_rarr_A_B_exist_z_B") //undefined
 save();
-  
-DEBUG=true
+
 startWith("harr_exist_z_A_not_forall_z_not_A")
 applyArrow([],"rarr_harr_A_B_rarr_A_B",0)
 applyArrow([1,0],"_dv_A_z___rarr_A_forall_z_A",1)
 applyArrow([1],"harr_A_not_not_A",1)
-saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
+//saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
+save();
 
   /*
   // ==== END import from orcat_test.js ====
