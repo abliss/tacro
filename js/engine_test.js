@@ -502,7 +502,7 @@ function applyInference(work, infFact) {
             newSteps[varToStepIndex[v]] = ""; // TODO: should clean these out.
         }
     });
-
+    newSteps = newSteps.filter(function(x) { return x !== "";});
     // preserve "hyps.0"
     newSteps.unshift(work.Tree.Proof.shift());
     newSteps.push(nameDep(work, infFact));
@@ -568,8 +568,9 @@ function Context() {
     }
 
 
-    function checkFact(fact, termsAreDone) {
+    function checkFact(fact, ignored, ignored, termsAreDone) {
         var factVarIsBinding = [];
+
         // A context must have only stmts or only thms/defthms. This sets
         // isIface to true or false (assuming facts is nonempty), and throws
         // up if they are mixed.
@@ -626,10 +627,15 @@ function Context() {
                 }
                 return false;
             } else if (typeof exp == 'number') {
-                if (exp >= maxVar.length) maxVar[exp] = exp;
+                if (exp >= maxVar.length) {
+                    maxVar[exp] = exp;
+                }
+                if (exp >= factVarIsBinding.length) {
+                    factVarIsBinding[exp] = null;
+                }
                 return factVarIsBinding[exp];
             } else {
-                // Strings in proof require no checking
+                // Strings of proof handled below
                 return null;
             }
         }
@@ -645,7 +651,35 @@ function Context() {
         fact.Core[Fact.CORE_HYPS].forEach(checkExp);
         checkExp(fact.Core[Fact.CORE_STMT]);
         if (fact.Tree.Proof) {
-            fact.Tree.Proof.forEach(checkExp);
+            for (var i = 0; i < fact.Tree.Proof.length; i++) {
+                var exp = fact.Tree.Proof[i];
+                checkExp(exp);
+                // Now we need to propagate binding results through mandhyps,
+                // for the 'eqid' case.
+                if (termsAreDone && exp.substr && (exp.substr(0,5) == 'Deps.')){
+                    var dep = fact.Tree.Deps[exp.substr(5)];
+                    // TODO: this is sloppy
+                    var depMark = JSON.stringify(dep[0]) + ";" + JSON.stringify(
+                        dep[1].map(function(n){return fact.Skin.TermNames[n]}));
+                    var depFvib = that.markToFvib[depMark];
+                    if (!depFvib) throw new Error("no fvib for " + depMark);
+                    for (var j = 0; j < depFvib.length; j++) {
+                        if (depFvib[j]) {
+                            var mandHyp = fact.Tree.Proof[i-depFvib.length+j];
+                            if (typeof mandHyp != 'number') {
+                                // TODO:  should actually backpropagate this!
+                                throw new Error(
+                                    "Bad mandHyp " + mandHyp + " at " +
+                                        (i-depFvib.length+j) + " in " +
+                                        JSON.stringify(fact) + " to " +
+                                        depMark + " of " +
+                                        JSON.stringify(depFvib));
+                            }
+                            factVarIsBinding[mandHyp] = true;
+                        }
+                    }
+                }
+            }
         }
         // TODO: we might need to propagate these changes by running through
         // again. E.g. suppose var 0 is only passed to a new term in the
@@ -653,6 +687,8 @@ function Context() {
         // on that arg. Then the var doesn't get marked binding until the
         // proof check, but this should be propagated up to the new term.
         // This might cascade...
+        that.markToFvib[fact.getMark()] = factVarIsBinding;
+
         return factVarIsBinding;
     }
     this.inferTerms = function() {
@@ -681,7 +717,7 @@ function Context() {
         txt += "\n";
 
         facts.forEach(function(fact) {
-            var factVarIsBinding = checkFact(fact, true);
+            var factVarIsBinding = checkFact(fact, null, null, true);
             for (var i = 0; i < fact.Skin.VarNames.length; i++) {
                 fact.Skin.VarNames[i] = (factVarIsBinding[i] ? "v" : "V") + i;
             }
@@ -701,6 +737,9 @@ Context.prototype = new Context();
 // terms seen in any context: map from array of Booleans for isTermVar
 // (null, true, false)
 Context.prototype.terms = {};
+// map from mark to factVarIsBinding array
+// This is needed for proofs like 'eqid' where binding vars disappear. Oof.
+Context.prototype.markToFvib = {};
 
 var proofCtx = new Context();
 var ifaceCtx = new Context();
@@ -786,7 +825,7 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
     var stmt =  [rarrN, [toolN, 0, 1], [toolN,
                                         isContra ? arr2 : arr1,
                                         isContra ? arr1 : arr2]];
-    if (goalOp == '&forall;') { // TODO XXX HACK
+    if (goalOp == '&forall;' || goalOp == '&exist;') { // TODO XXX HACK
         this.grease = function(pusp, work) {
             var x = pusp.newSteps.pop();
             var b = pusp.newSteps.pop();
@@ -798,7 +837,7 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
             pusp.newSteps.push(a);
             pusp.newSteps.push(b);
         };
-        stmt[1] = [goalN, 2, stmt[1]];
+        stmt[1] = [tmpFact.nameTerm("&forall;"), 2, stmt[1]];
         tmpFact.setStmt(stmt);
         tmpFact = canonicalize(tmpFact);
     } else {
@@ -911,17 +950,13 @@ function canonicalize(work) {
 
     work.Core[Fact.CORE_FREE].forEach(function(freeList) {
         var termVar = mapExp(freeList[0]);
-        freeList.slice(1).forEach(function(v) {
-            if (varsSeen[v] && varsSeen[termVar]) {
-                out.ensureFree(termVar, mapExp(v));
-            } else {
-                //TODO: XXX HACK: to keep the binding vars binding, put in
-                // no-op freevar clauses which will be stripped out when
-                // serializing for verification.  EUUGH!
-                console.log("WTF " + v  +" => " + mapExp(v));
-                out.ensureFree(mapExp(v), mapExp(v));
-            }
-        });
+        if (varsSeen[termVar]) {
+            freeList.slice(1).forEach(function(v) {
+                if (varsSeen[v]) {
+                    out.ensureFree(termVar, mapExp(v));
+                }
+            });
+        }
     });
 
     out.setProof(work.Tree.Proof.map(mapExp));
@@ -1379,7 +1414,6 @@ thms.Equivalate = saveGoal();
   thms.mpbir = save();
   startWith(thms.defbi1);
 
-
   applyArrow([1,0], thms.anim1, 0);
   applyArrow([1,1], thms.anim1, 0);
   applyArrow([1], thms.defbi2, 0);
@@ -1532,6 +1566,7 @@ applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
 //saveAs("rarr_and_harr_A_B_harr_A_C_harr_B_C") //undefined
 save();
 
+
 var landOr = getLand("land_or.js");
 
   // Level 6
@@ -1598,7 +1633,24 @@ applyArrow([1,1], thms.df_or, 0);
   applyArrow([1,1], thms.nnbi, 1);
   thms.orcom = save();
 
-
+startNextGoal();
+// <-> v v A B C v A v B C
+state.work = applyFact(state.work, [2,2], thms.orcom, [2]);
+// <-> v v A B C v A v C B
+state.work = applyFact(state.work, [2,2], "harr_rarr_not_A_B_or_A_B", [2]);
+// <-> v v A B C v A -> -. C B
+state.work = applyFact(state.work, [2], "harr_rarr_not_A_B_or_A_B", [2]);
+// <-> v v A B C -> -. A -> -. C B
+state.work = applyFact(state.work, [2], "harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",
+                       [2]);
+// <-> v v A B C -> -. C -> -. A B
+state.work = applyFact(state.work, [2], "harr_rarr_not_A_B_or_A_B", [1]);
+// <-> v v A B C v C -> -. A B
+state.work = applyFact(state.work, [2,2], "harr_rarr_not_A_B_or_A_B", [1]);
+// <-> v v A B C v C v A B
+state.work = applyFact(state.work, [2,2], thms.orcom, [2]);
+// <-> v v A B C v v A B C
+thms.orass = saveGoal()
 var landForall = getLand("land_forall.js");
 
 thms.axalim='rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B';
@@ -1772,17 +1824,17 @@ save();
 
 startNextGoal();
 // = A A
-state.work = applyFact(state.work, [], "rarr_rarr_rarr_A_A_B_B", [2]);
-// -> -> B B = A A
-state.work = applyFact(state.work, [1,1], "rarr_equals_a_b_rarr_equals_a_c_equals_b_c", [2]);
-// -> -> = C E -> = C D = E D = A A 
-state.work = applyFact(state.work, [1], "rarr_rarr_A_rarr_A_B_rarr_A_B", [1]);
-// -> = C D = D D = A A 
-state.work = applyFact(state.work, [], "rarr_A_rarr_rarr_A_B_B", [2]);
-// = C A
 state.work = applyFact(state.work, [], "_dv_A_z___rarr_exist_z_A_A", [2]);
-// E. x = x A
-DEBUG=true
+// E. x = A A   (A/x)
+state.work = applyFact(state.work, [2], "rarr_rarr_rarr_A_A_B_B", [2]);
+// E. x -> -> B B = A A
+state.work = applyFact(state.work, [2, 1,1], "rarr_equals_a_b_rarr_equals_a_c_equals_b_c", [2]);
+// E. x -> -> = C E -> = C D = E D = A A
+state.work = applyFact(state.work, [2, 1], "rarr_rarr_A_rarr_A_B_rarr_A_B", [1]);
+// E. x -> = C D = D D = A A
+state.work = applyFact(state.work, [2], "rarr_A_rarr_rarr_A_B_B", [2]);
+// E. x = C A
+
 state.work = ground(state.work, "_dv_A_z___exist_z_equals_z_A");
 saveGoal();
 
@@ -1836,7 +1888,6 @@ Async.parallel(
     function(err, results) {
         UrlCtx.files["tmp2.ghi"] = results.iface;
         UrlCtx.files["tmp2.gh"] = results.proof;
-        DEBUG=true
         if (DEBUG) {
             console.log("==== IFACE ====\n" + results.iface);
             console.log("==== PROOF ====\n" + results.proof);

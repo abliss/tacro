@@ -20,6 +20,7 @@
          Skin:{TermNames:["&rarr;","&harr;","&or;"]}},
         {Core:[[],[0,[1,0,1],[1,1,0]],[]],
          Skin:{TermNames:["&harr;","&or;"]}},
-
+        {Core:[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]],
+         Skin:{TermNames:["&harr;","&or;"]}},
     ],
 }
