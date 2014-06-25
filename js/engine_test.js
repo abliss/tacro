@@ -609,9 +609,10 @@ function Context() {
                         }
                     }
                     // Positive (or presumptive) bindingness from the term
-                    // constrains var arg
-                    if ((termArgIsTerm[i] == false) ||
-                        (termsAreDone && (termArgIsTerm[i] == null))) {
+                    // constrains var arg. TODO:??
+                    if ((termArgIsTerm[i] == false)
+                       || (termsAreDone && (termArgIsTerm[i] == null))
+                       ) {
                         if (typeof arg == 'number') {
                             if (factVarIsBinding[arg] == false) {
                                 throw new Error("Var bind mismatch");
@@ -670,7 +671,8 @@ function Context() {
                 var termArgIsTerm = that.terms[t];
                 txt += "term (k (" + t;
                 for (var i = 0; i < termArgIsTerm.length; i++) {
-                    txt += " " + (termArgIsTerm[i] ? "V" : "v") + i;
+                    // TODO: presumptive binding...???
+                    txt += " " + ((termArgIsTerm[i] == true)? "V" : "v") + i;
                 }
                 txt += "))\n";
             }
@@ -863,8 +865,8 @@ function ground(work, dirtFact) {
     // Replace with proof of hyp instance
     work.Tree.Proof.unshift.apply(work.Tree.Proof, newSteps);
     if (DEBUG) {console.log("#XXXX Work before canon:" + JSON.stringify(work));}
-
     work = canonicalize(work);
+    if (DEBUG) {console.log("#XXXX Work after canon:" + JSON.stringify(work));}
     return work;
 }
 
@@ -900,10 +902,25 @@ function canonicalize(work) {
                     "\nfact=" +JSON.stringify(out));
     }
 
+    // Remove spurious free vars.
+    var varsSeen = {};
+    eachVarOnce(work.Core[Fact.CORE_HYPS],function(v) {
+        varsSeen[v] = true;});
+    eachVarOnce([work.Core[Fact.CORE_STMT]],function(v) {
+        varsSeen[v] = true;});
+
     work.Core[Fact.CORE_FREE].forEach(function(freeList) {
         var termVar = mapExp(freeList[0]);
         freeList.slice(1).forEach(function(v) {
-            out.ensureFree(termVar, mapExp(v));
+            if (varsSeen[v] && varsSeen[termVar]) {
+                out.ensureFree(termVar, mapExp(v));
+            } else {
+                //TODO: XXX HACK: to keep the binding vars binding, put in
+                // no-op freevar clauses which will be stripped out when
+                // serializing for verification.  EUUGH!
+                console.log("WTF " + v  +" => " + mapExp(v));
+                out.ensureFree(mapExp(v), mapExp(v));
+            }
         });
     });
 
@@ -1747,21 +1764,30 @@ save();
 
 var landEquals = getLand("land_equals.js");
 
-DEBUG=true
+
+startWith("_dv_a_z___not_forall_z_not_equals_z_a")
+applyArrow([],"harr_exist_z_A_not_forall_z_not_A",1)
+//saveAs("_dv_a_z___exist_z_equals_z_a") //thms.tyex
+save();
+
 startNextGoal();
 // = A A
 state.work = applyFact(state.work, [], "rarr_rarr_rarr_A_A_B_B", [2]);
 // -> -> B B = A A
 state.work = applyFact(state.work, [1,1], "rarr_equals_a_b_rarr_equals_a_c_equals_b_c", [2]);
-// -> = C E -> = C D = E D = A A 
+// -> -> = C E -> = C D = E D = A A 
 state.work = applyFact(state.work, [1], "rarr_rarr_A_rarr_A_B_rarr_A_B", [1]);
 // -> = C D = D D = A A 
 state.work = applyFact(state.work, [], "rarr_A_rarr_rarr_A_B_B", [2]);
 // = C A
 state.work = applyFact(state.work, [], "_dv_A_z___rarr_exist_z_A_A", [2]);
 // E. x = x A
+DEBUG=true
 state.work = ground(state.work, "_dv_A_z___exist_z_equals_z_A");
 saveGoal();
+
+//NOTE: Again, you can't stop here, because equals will get binding vars.
+
   /*
   // ==== END import from orcat_test.js ====
   */
@@ -1894,25 +1920,6 @@ Async.parallel(
 
 ==== Imported Proofs: ====
 
-startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
-applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
-applyArrow([],"rarr_rarr_A_B_rarr_not_B_not_A",0)
-generify()
-applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
-applyArrow([],"rarr_rarr_A_B_rarr_not_B_not_A",0)
-saveAs("rarr_not_forall_z_not_equals_a_b_not_forall_z_not_equals_b_b") //var tmp
-
-startWith("_dv_a_z___not_forall_z_not_equals_z_a")
-applyArrow([],"rarr_not_forall_z_not_equals_a_b_not_forall_z_not_equals_b_b",0)
-applyArrow([0],"_dv_A_z___rarr_A_forall_z_A",1)
-applyArrow([],"rarr_not_not_A_A",0)
-saveAs("equals_a_a") //undefined
-
-startWith("harr_A_A")
-defthm: harr_exist_z_A_not_forall_z_not_A = &exist;
-startWith("_dv_a_z___not_forall_z_not_equals_z_a")
-applyArrow([],"harr_exist_z_A_not_forall_z_not_A",1)
-saveAs("_dv_a_z___exist_z_equals_z_a") //thms.tyex
 
 startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
 applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
