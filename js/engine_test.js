@@ -377,6 +377,9 @@ function globalSub(fact, varMap, work, exp) {
     return mapper(exp);
 }
 function applyFact(work, workPath, fact, factPath) {
+    if (typeof fact == 'string') {
+        fact = sfbm(parseMark(fact).getMark());
+    }
     var varMap = getMandHyps(work, workPath, fact, factPath);
     if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
     // If that didn't throw, we can start mutating
@@ -837,6 +840,9 @@ PushUp.prototype.grease = function(pusp, work) {
 }
 
 function ground(work, dirtFact) {
+    if (typeof dirtFact == 'string') {
+        dirtFact = sfbm(parseMark(dirtFact).getMark());
+    }
     // verify that the hyp is an instance of the dirt
     var varMap = getMandHyps(work, [], dirtFact, []);
     if (DEBUG) {console.log("# ground MandHyps: " + JSON.stringify(varMap));}
@@ -863,7 +869,7 @@ function ground(work, dirtFact) {
 }
 
 // Reorders terms/variables so that they appear in first-used order.
-// Removes no-longer-used dummies.
+// Removes no-longer-used dummies. // TODO: remove from freemap
 // Renames remaining variable Skins to Vn
 // Consolidates and sort freelists
 // TODO: sort deps alphabetically
@@ -978,19 +984,13 @@ function getArity(tok) { // TODO: ugly hack
 
 function parseMark(str) { // parse orcat's thm names
     var out = new Fact();
+    var freeToks = [];
     if (str[0] == '_') {
         if (str[1] != 'd') throw new Error("TODO: " + str);
         var parts =  str.split("___");
         var free = parts[0].substr(4);
-        var freeToks = free.split("_");
+        freeToks = free.split("_");
         if (freeToks.length % 2 != 0) throw new Error("TODO:" + free);
-        var outFree = [];
-        for (var i = 0; i < freeToks.length; i++) {
-            outFree.push([out.nameVar(freeToks[i++]),out.nameVar(freeToks[i])]);
-        }
-        out.setFree(outFree);
-        if (DEBUG) console.log("Parsed mark" + str + "-> " +
-                               JSON.stringify(outFree) + " and " + parts[1]);
         str = parts[1];
     }
     var toks = str.split("_");
@@ -1008,6 +1008,12 @@ function parseMark(str) { // parse orcat's thm names
         }
     }
     out.setStmt(recurse());
+    var outFree = [];
+    for (var i = 0; i < freeToks.length; i++) {
+        outFree.push([out.nameVar(freeToks[i++]),out.nameVar(freeToks[i])]);
+    }
+    out.setFree(outFree);
+
     return out;
 }
 function applyArrow(path, fact, side) {
@@ -1739,6 +1745,23 @@ applyArrow([1],"harr_A_not_not_A",1)
 //saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
 save();
 
+var landEquals = getLand("land_equals.js");
+
+DEBUG=true
+startNextGoal();
+// = A A
+state.work = applyFact(state.work, [], "rarr_rarr_rarr_A_A_B_B", [2]);
+// -> -> B B = A A
+state.work = applyFact(state.work, [1,1], "rarr_equals_a_b_rarr_equals_a_c_equals_b_c", [2]);
+// -> = C E -> = C D = E D = A A 
+state.work = applyFact(state.work, [1], "rarr_rarr_A_rarr_A_B_rarr_A_B", [1]);
+// -> = C D = D D = A A 
+state.work = applyFact(state.work, [], "rarr_A_rarr_rarr_A_B_B", [2]);
+// = C A
+state.work = applyFact(state.work, [], "_dv_A_z___rarr_exist_z_A_A", [2]);
+// E. x = x A
+state.work = ground(state.work, "_dv_A_z___exist_z_equals_z_A");
+saveGoal();
   /*
   // ==== END import from orcat_test.js ====
   */
@@ -1787,6 +1810,7 @@ Async.parallel(
     function(err, results) {
         UrlCtx.files["tmp2.ghi"] = results.iface;
         UrlCtx.files["tmp2.gh"] = results.proof;
+        DEBUG=true
         if (DEBUG) {
             console.log("==== IFACE ====\n" + results.iface);
             console.log("==== PROOF ====\n" + results.proof);
@@ -1915,11 +1939,6 @@ applyArrow([1,1,1,1],"rarr_and_A_rarr_A_B_B",0)
 saveAs("_dv_A_y___rarr_and_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_forall_z_A_forall_z_forall_y_rarr_equals_z_y_B") //undefined
 
 
-startWith("_dv_A_z___rarr_A_forall_z_A")
-applyArrow([],"harr_rarr_A_B_rarr_not_B_not_A",0)
-applyArrow([0],"harr_exist_z_A_not_forall_z_not_A",1)
-applyArrow([1],"harr_A_not_not_A",1)
-saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
 
 
 
@@ -1942,11 +1961,6 @@ applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
 applyArrow([0,1,1,0],"harr_equals_a_b_equals_b_a",0)
 saveAs("_dv_A_y_B_y___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_z_B") //undefined
 
-startWith("_dv_A_z___rarr_A_forall_z_A")
-applyArrow([],"harr_rarr_A_B_rarr_not_B_not_A",0)
-applyArrow([0],"harr_exist_z_A_not_forall_z_not_A",1)
-applyArrow([1],"harr_A_not_not_A",1)
-saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
 
 startWith("_dv_a_z___exist_z_equals_z_a")
 generify()
