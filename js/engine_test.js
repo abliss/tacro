@@ -613,6 +613,14 @@ function Context() {
                         if (termArgIsTerm[i] == false) {
                             throw new Error("term arg mismatch");
                         } else {
+                            if (((tn == "&forall;") || (tn == "&exist;")) &&
+                                (i == 0)) {
+                                // TODO: XXX HACK
+                                throw new Error("WRONG!\n" +
+                                                JSON.stringify(fact) + "\nin:"+
+                                                JSON.stringify(exp) + "\nfvib"+
+                                                JSON.stringify(factVarIsBinding));
+                            }
                             termArgIsTerm[i] = true;
                         }
                     }
@@ -647,7 +655,9 @@ function Context() {
             }
         }
         function checkFreemap(fm) {
-            factVarIsBinding[fm[0]] = false;
+            // We allow term vars at the front of freelists, even though
+            // ghilbert doesn't.
+            //factVarIsBinding[fm[0]] = false;
             fm.slice(1).forEach(function(v) {
                 factVarIsBinding[v] = true;
             });
@@ -1141,7 +1151,7 @@ function saveAs(str) {
             } else if (step.length > 1) {
                 state.work = applyFact(state.work, step[0], step[1], step[2]);
             } else {
-                if (GROUNDDEBUG) DEBUG=GROUNDDEBUG
+                if (GROUNDDEBUG) DEBUG = GROUNDDEBUG
                 state.work = ground(state.work, step[0]);
             }
         } catch (e) {
@@ -2082,12 +2092,14 @@ applyArrow([0,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
 applyArrow([0,0],"rarr_harr_A_B_rarr_B_A",0)
 applyArrow([0],"rarr_A_rarr_rarr_A_B_B",1)
 saveAs("rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
-/*
+
+
 startWith("equals_plus_a_Oslash_a")
 applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a",0)
 generify()
 applyArrow([],"_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A",0)
-saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
+var tmp = saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
+console.log("=>" + tmp.getMark());
 
 startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
 applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
@@ -2136,7 +2148,7 @@ generify()
 generify()
 applyArrow([],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B",0)
 saveAs("harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y") //undefined
-
+/*
 startWith("_dv_a_z___exist_z_equals_z_a")
 applyArrow([],"rarr_exist_z_A_rarr_forall_z_rarr_A_B_exist_z_B",0)
 applyArrow([1],"harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y",0)
@@ -2197,7 +2209,7 @@ Async.parallel(
         UrlCtx.files["tmp2.gh"] = results.proof;
         if (DEBUG) {
             console.log("==== IFACE ====\n" + results.iface);
-            // console.log("==== PROOF ====\n" + results.proof);
+            console.log("==== PROOF ====\n" + results.proof.substr(300000));
         }
         try {
             run(UrlCtx, "tmp2.gh", verifyCtx);
