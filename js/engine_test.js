@@ -275,18 +275,21 @@ function getMandHyps(work, hypPath, fact, stmtPath) {
 
         if (!Array.isArray(factSubExp)) {
             if (alreadyMapped) {
-                if (Array.isArray(workSubExp)) {
-                    assertEqual("mappedA", factSubExp, workSubExp)
-                }
-                if (!nonDummy[workSubExp]) {
-                    if (factSubExp != workSubExp) {
-                        dummyMap[workSubExp] = factSubExp;
-                    }
-                } else if (!nonDummy[factSubExp]) {
+                if (!nonDummy[factSubExp]) {
                     if (factSubExp != workSubExp) {
                         dummyMap[factSubExp] = workSubExp;
                     }
+                } else if (Array.isArray(workSubExp)) {
+                    // A mapped, nondummy, nonarray var should be an array exp.
+                    // This isn't going to work.
+                    assertEqual("mappedA", factSubExp, workSubExp)
+                } else if (!nonDummy[workSubExp]) {
+                    if (factSubExp != workSubExp) {
+                        dummyMap[workSubExp] = factSubExp;
+                    }
                 } else {
+                    // A mapped, nondummy, nonarray var should be a nondummy,
+                    // nonarray var. They'd better be the same.
                     assertEqual("mapped", factSubExp, workSubExp);
                 }
             } else {
@@ -1081,7 +1084,9 @@ function parseMark(str) { // parse orcat's thm names
         outFree.push([out.nameVar(freeToks[i++]),out.nameVar(freeToks[i])]);
     }
     out.setFree(outFree);
-
+    if (DEBUG) {
+        console.log("Parsed: " + str + " to " + JSON.stringify(out));
+    }
     return out;
 }
 function applyArrow(path, fact, side) {
@@ -1136,7 +1141,7 @@ function saveAs(str) {
             } else if (step.length > 1) {
                 state.work = applyFact(state.work, step[0], step[1], step[2]);
             } else {
-                if (GROUNDDEBUG) DEBUG=true
+                if (GROUNDDEBUG) DEBUG=GROUNDDEBUG
                 state.work = ground(state.work, step[0]);
             }
         } catch (e) {
@@ -2061,9 +2066,7 @@ startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
 saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
 
-// NOTE: can't stop here
-
-
+// NOTE: can't stop here or plus infers binding 
 generify()
 saveAs("forall_z_rarr_equals_z_a_equals_plus_Oslash_z_plus_Oslash_a") //undefined
 
@@ -2074,12 +2077,12 @@ applyArrow([1],"rarr_harr_A_B_rarr_B_A",0)
 applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_rarr_A_B_rarr_A_C",0)
 saveAs("rarr_rarr_equals_a_Oslash_equals_plus_Oslash_Oslash_a_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
 
-/*
+startWith("rarr_rarr_equals_a_Oslash_equals_plus_Oslash_Oslash_a_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
 applyArrow([0,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
 applyArrow([0,0],"rarr_harr_A_B_rarr_B_A",0)
 applyArrow([0],"rarr_A_rarr_rarr_A_B_B",1)
 saveAs("rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
-
+/*
 startWith("equals_plus_a_Oslash_a")
 applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a",0)
 generify()
@@ -2116,6 +2119,7 @@ startWith("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b")
 applyArrow([1],"rarr_harr_A_B_rarr_A_B",0)
 applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
 saveAs("rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b") //undefined
+
 
 startWith("rarr_equals_plus_Oslash_a_a_equals_plus_Oslash_sect_a_sect_a")
 applyArrow([1],"rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b",0)
@@ -2193,7 +2197,7 @@ Async.parallel(
         UrlCtx.files["tmp2.gh"] = results.proof;
         if (DEBUG) {
             console.log("==== IFACE ====\n" + results.iface);
-            console.log("==== PROOF ====\n" + results.proof);
+            // console.log("==== PROOF ====\n" + results.proof);
         }
         try {
             run(UrlCtx, "tmp2.gh", verifyCtx);
