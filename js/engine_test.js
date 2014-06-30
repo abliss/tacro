@@ -809,6 +809,25 @@ TODO_DETACHMAP[["&harr;",[1]]] = {
     }
 };
 
+function getParentArrow(goalOp, toolOp) { // TODO: XXX HACK
+    switch(goalOp) {
+    case "&rarr;":
+    case "&not;":
+    case "&and;":
+    case "&or;":
+    case "&forall;":
+    case "&exist;":
+        return toolOp == "&harr;" ? toolOp : "&rarr;";
+    case "&equals;":
+    case "&harr;":
+        return "&harr;";
+    case "&Oslash;":
+    case "&sect;":
+    case "&plus;":
+    case "&times;":
+        return "&equals;";
+    }
+}
 
 // goalOp is an goalOpArity-arg term.
 // goalArg is in 1...goalOpArity, specifying which argchild the goal is
@@ -835,7 +854,7 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
     var rarrN = tmpFact.nameTerm("&rarr;");
     var toolN = tmpFact.nameTerm(toolOp);
     var goalN = tmpFact.nameTerm(goalOp);
-    //var stmt = [rarrN, [toolN, 0, 1], [toolN, [goalN, ...], [goalN, ...]]]
+    //var stmt = [rarrN, [toolN, 0, 1], [?????, [goalN, ...], [goalN, ...]]]
     var arr1 =                                  [goalN];
     var arr2 =                                                [goalN];
     var nextVar = 2;
@@ -846,7 +865,8 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
     }
     arr1[goalArg] = toolArg - 1;
     arr2[goalArg] = 2 - toolArg;
-    var stmt =  [rarrN, [toolN, 0, 1], [toolN,
+    var parentArrowN = tmpFact.nameTerm(getParentArrow(goalOp, toolOp));
+    var stmt =  [rarrN, [toolN, 0, 1], [parentArrowN,
                                         isContra ? arr2 : arr1,
                                         isContra ? arr1 : arr2]];
     if (goalOp == '&forall;' || goalOp == '&exist;') { // TODO XXX HACK
@@ -893,8 +913,8 @@ PushUp.prototype.pushUp = function(pusp, work) {
     var pushupFact = sfbm(this.mark);
     pusp.newSteps.push(nameDep(work, pushupFact));
     pusp.newSteps.push(nameDep(work, axmp));
-    var toolN = work.nameTerm(this.toolOp);
-    pusp.tool = [toolN,
+    var parentArrowN = work.nameTerm(getParentArrow(this.goalOp, this.toolOp));
+    pusp.tool = [parentArrowN,
                  this.isContra ? arr2 : arr1,
                  this.isContra ? arr1 : arr2];
     pusp.toolPath = [this.isContra ? 2 : 1];
@@ -2018,6 +2038,7 @@ applyArrow([1],"rarr_and_harr_A_B_harr_A_C_harr_B_C",0)
  saveAs("rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d") //undefined
 
 
+
 var landOslash = getLand("land_Oslash.js");
 // No goals. :(
 
@@ -2099,7 +2120,6 @@ applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals
 generify()
 applyArrow([],"_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A",0)
 var tmp = saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
-console.log("=>" + tmp.getMark());
 
 startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
 applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
@@ -2148,16 +2168,34 @@ generify()
 generify()
 applyArrow([],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B",0)
 saveAs("harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y") //undefined
-/*
-startWith("_dv_a_z___exist_z_equals_z_a")
-applyArrow([],"rarr_exist_z_A_rarr_forall_z_rarr_A_B_exist_z_B",0)
-applyArrow([1],"harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y",0)
-applyArrow([1],"_dv_A_z___rarr_exist_z_A_A",0)
-applyArrow([1],"_dv_a_z___rarr_equals_plus_Oslash_a_a_forall_z_rarr_equals_z_sect_a_equals_plus_Oslash_z_z",0)
+
+
+startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
+applyArrow([1,0],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
+applyArrow([1,1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
+applyArrow([1],"rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d",0)
 generify()
-applyArrow([],"rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y",0)
-applyArrow([],"rarr_forall_z_A_A",0)
-saveAs("equals_plus_Oslash_z_z") //undefined
+generify()
+applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
+saveAs("rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A") //undefined
+
+startWith("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E")
+
+applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+applyArrow([0,0],"equals_plus_a_Oslash_a",0)
+applyArrow([0,1,1],"equals_plus_a_Oslash_a",0)
+   addSpecify([1,2], "&plus;", 2);
+applyArrow([],"rarr_rarr_equals_a_a_A_A",0)
+applyArrow([0,1,1,0],"equals_plus_a_sect_b_sect_plus_a_b",0)
+applyArrow([0,1,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
+applyArrow([0,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
+applyArrow([0,1,1],"rarr_equals_a_b_equals_sect_a_sect_b",1)
+applyArrow([],"rarr_rarr_forall_z_rarr_A_A_B_B",0)
+saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
 
   /*
   // ==== END import from orcat_test.js ====
@@ -2220,72 +2258,6 @@ Async.parallel(
     });
 
 /*
-  ==== Things to be proved ====
-
-[],[rarr,[forall,z,[harr,A,B]],[rarr,[forall,z,A],[forall,z,B]]],[]
-[],[rarr,[forall,z,[harr,A,B]],[harr,[forall,z,A],[forall,z,B]]],[]
-[],[rarr,[forall,z,[harr,A,B]],[harr,[forall,z,B],[forall,z,A]]],[]
-[],[rarr,[not,[forall,z,[not,[equals,a,b]]]],[not,[forall,z,[not,[equals,b,b]]]]],[]
-[],[equals,a,a],[]
-[],[exist,z,[equals,z,a]],[[a,z]]
-[],[rarr,[equals,a,b],[rarr,[equals,a,c],[equals,c,b]]],[]
-[],[rarr,[equals,a,b],[equals,b,a]],[]
-[],[harr,[equals,a,b],[equals,b,a]],[]
-[],[rarr,[and,[forall,z,A],[exist,z,B]],[exist,z,[and,A,B]]],[]
-[],[rarr,[forall,z,[and,A,B]],[forall,z,A]],[]
-[],[rarr,[forall,z,[and,A,B]],[and,[forall,z,A],[forall,z,B]]],[]
-[],[harr,[forall,z,[and,A,B]],[and,[forall,z,A],[forall,z,B]]],[]
-[],[rarr,[and,[forall,z,[forall,y,[rarr,[equals,z,y],[rarr,A,B]]]],[forall,z,A]],[forall,z,[forall,y,[rarr,[equals,z,y],B]]]],[[A,y]]
-[],[rarr,[exist,z,A],A],[[A,z]]
-[],[rarr,[exist,z,A],A],[[A,z]]
-[],[rarr,A,[exist,z,A]],[]
-[],[harr,[harr,A,B],[harr,[not,B],[not,A]]],[]
-[],[harr,[forall,z,[not,A]],[not,[exist,z,A]]],[]
-[],[rarr,[forall,z,A],[exist,z,A]],[]
-[],[harr,[forall,z,[forall,y,A]],[forall,y,[forall,z,A]]],[]
-[],[rarr,[forall,z,[rarr,A,B]],[rarr,[exist,z,A],[exist,z,B]]],[]
-[],[rarr,[forall,z,[harr,A,B]],[harr,[forall,z,[not,B]],[forall,z,[not,A]]]],[]
-[],[rarr,[forall,z,[harr,A,B]],[harr,[exist,z,A],[exist,z,B]]],[]
-[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[rarr,A,B]]]],[rarr,[forall,z,A],[forall,z,B]]],[[A,y],[B,y]]
-[],[rarr,[exist,z,A],A],[[A,z]]
-[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[rarr,A,B]]]],[rarr,[forall,z,A],[forall,y,B]]],[[A,y],[B,z]]
-
-[],[rarr,[rarr,A,B],[rarr,[rarr,B,A],[harr,A,B]]],[]
-[],[harr,[and,[rarr,A,B],[rarr,A,C]],[rarr,A,[and,B,C]]],[]
-
-[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[harr,A,B]]]],[harr,[forall,z,A],[forall,y,B]]],[[A,y],[B,z]]
-[],[rarr,[equals,a,b],[equals,[plus,c,a],[plus,c,b]]],[]
-[],[forall,z,[rarr,[equals,z,a],[equals,[plus,[Oslash],z],[plus,[Oslash],a]]]],[]
-[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[harr,A,B]]]],[harr,[exist,y,A],[exist,z,B]]],[[A,z],[B,y]]
-[],[rarr,[equals,a,b],[harr,[equals,a,c],[equals,b,c]]],[]
-[],[rarr,[forall,z,[forall,y,[rarr,[equals,z,y],[harr,A,B]]]],[harr,[exist,z,A],[exist,y,B]]],[[A,y],[B,z]]
-[],[rarr,[equals,a,b],[harr,[equals,a,c],[equals,b,c]]],[]
-[],[rarr,[equals,a,b],[harr,[equals,c,a],[equals,c,b]]],[]
-[],[harr,[exist,z,[equals,[plus,a,z],b]],[exist,y,[equals,[plus,a,y],b]]],[[a,y],[a,z],[b,y],[b,z]]
-[],[harr,[exist,z,[equals,[plus,a,z],b]],[exist,y,[equals,[plus,a,y],b]]],[[a,y],[a,z],[b,y],[b,z]]
-[],[rarr,[rarr,[equals,a,[Oslash]],[equals,[plus,[Oslash],[Oslash]],a]],[rarr,[equals,a,[Oslash]],[equals,[plus,[Oslash],a],a]]],[]
-[],[rarr,[equals,[plus,[Oslash],[Oslash]],[Oslash]],[rarr,[equals,a,[Oslash]],[equals,[plus,[Oslash],a],a]]],[]
-[],[rarr,[forall,z,[rarr,[forall,y,[rarr,[equals,y,z],[equals,[plus,[Oslash],y],y]]],[forall,y,[rarr,[equals,y,[sect,z]],[equals,[plus,[Oslash],y],y]]]]],[forall,y,[equals,[plus,[Oslash],y],y]]],[]
-[],[rarr,[equals,[plus,[Oslash],[sect,a]],b],[rarr,[equals,c,[sect,a]],[equals,[plus,[Oslash],c],b]]],[]
-[rarr,[equals,a,b],[harr,[equals,[plus,[Oslash],a],a],[equals,[plus,[Oslash],b],b]]],[],[]
-[rarr,[equals,a,[sect,[plus,[Oslash],b]]],[rarr,[equals,[plus,[Oslash],b],b],[equals,a,[sect,b]]]],[],[]
-[rarr,[equals,[plus,[Oslash],a],a],[equals,[plus,[Oslash],[sect,a]],[sect,a]]],[],[]
-[rarr,[equals,[plus,[Oslash],a],a],[rarr,[equals,a,b],[equals,[plus,[Oslash],b],b]]],[],[]
-[rarr,[equals,[plus,[Oslash],a],a],[forall,z,[rarr,[equals,z,[sect,a]],[equals,[plus,[Oslash],z],z]]]],[[a,z]],[]
-[rarr,[rarr,[equals,a,a],A],A],[],[]
-[rarr,[exist,z,A],[rarr,[forall,z,[rarr,A,B]],[exist,z,B]]],[],[]
-[harr,[exist,z,[equals,[plus,[Oslash],z],z]],[exist,y,[equals,[plus,[Oslash],y],y]]],[],[]
-[equals,[plus,[Oslash],z],z],[],[]
-[le,a,a],[],[]
-[equals,a,a],[],[]
-[rarr,[rarr,[exist,z,[equals,z,a]],A],A],[[a,z]],[]
-[rarr,[forall,z,[rarr,[equals,z,a],A]],[exist,z,[and,[equals,z,a],A]]],[[a,z]],[]
-[rarr,[forall,z,[forall,y,[rarr,[equals,y,[Oslash]],[harr,A,B]]]],[rarr,[forall,z,[forall,y,[rarr,[equals,y,z],[harr,A,C]]]],[rarr,[forall,z,[forall,y,[rarr,[equals,y,[sect,z]],[harr,A,D]]]],[rarr,[forall,z,[forall,y,[rarr,[equals,y,a],[harr,A,E]]]],[rarr,B,[rarr,[forall,z,[rarr,C,D]],E]]]]]],[[A,z],[B,y],[C,y],[D,y],[E,y],[a,y]],[]
-[rarr,[and,[harr,A,B],[harr,A,C]],[harr,B,C]],[],[]
-[rarr,[and,[equals,a,b],[equals,c,d]],[harr,[equals,a,c],[equals,b,d]]],[],[]
-[rarr,[rarr,[forall,z,[forall,y,[rarr,[equals,a,b],[harr,[equals,[plus,[plus,c,d],a],[plus,c,[plus,d,a]]],[equals,[plus,[plus,c,d],b],[plus,c,[plus,d,b]]]]]]],A],A],[],[]
-[],[rarr,[rarr,[forall,z,[rarr,A,A]],B],B],[]
-[],[equals,[plus,[plus,a,b],c],[plus,a,[plus,b,c]]],[]
 
 
 ==== Imported Proofs: ====
@@ -2323,32 +2295,5 @@ startWith("equals_plus_a_Oslash_a")
 applyArrow([0],"equals_plus_a_Oslash_a",0)
 saveAs("equals_a_a") //undefined
 
-
-
-
-startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
-applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
-applyArrow([1,0],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
-applyArrow([1,1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
-applyArrow([1],"rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d",0)
-generify()
-generify()
-applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
-saveAs("rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A") //undefined
-
-startWith("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E")
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([0,0],"equals_plus_a_Oslash_a",0)
-applyArrow([0,1,1],"equals_plus_a_Oslash_a",0)
-applyArrow([],"rarr_rarr_equals_a_a_A_A",0)
-applyArrow([0,1,1,0],"equals_plus_a_sect_b_sect_plus_a_b",0)
-applyArrow([0,1,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
-applyArrow([0,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
-applyArrow([0,1,1],"rarr_equals_a_b_equals_sect_a_sect_b",1)
-applyArrow([],"rarr_rarr_forall_z_rarr_A_A_B_B",0)
-saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
 
 */
