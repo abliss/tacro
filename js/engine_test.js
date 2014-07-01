@@ -116,19 +116,26 @@ function zpath(exp, path) {
     return a;
 }
 
+var pushUpMemo = {};
 function queryPushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum) {
-    // TODO: memoize
-    // Try covariant first, then contravariant if not found.
-    var p = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
-    if (!state.factsByMark[p.mark]) {
-        var q= new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, false);
-        if (!state.factsByMark[q.mark]) {
-            throw new Error("No pushUp found for " + JSON.stringify(arguments) +
-                            "; tried\n" + p.mark + " and\n" + q.mark);
+    var query = [goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum];
+
+    if (!pushUpMemo[query]) {
+        // TODO: memoize
+        // Try covariant first, then contravariant if not found.
+        var p = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
+        if (!state.factsByMark[p.mark]) {
+            var q= new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, false);
+            if (!state.factsByMark[q.mark]) {
+                throw new Error("No pushUp found for " + JSON.stringify(arguments) +
+                                "; tried\n" + p.mark + " and\n" + q.mark);
+            }
+            p = q;
         }
-        p = q;
+        pushUpMemo[query] = p;
+        console.log(p.mark + " For query " + query);
     }
-    return p;
+    return pushUpMemo[query];
 }
 
 function queryDetach(params) {
@@ -1786,8 +1793,6 @@ startWith("_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b")
 applyArrow([0],"_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b",0)
 saveAs("_dv_a_y_a_z_b_y_b_z___harr_exist_z_equals_plus_a_z_b_exist_y_equals_plus_a_y_b") //undefined
 
-
-
 startWith("_dv_a_z___exist_z_equals_z_a")
 applyArrow([1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
 applyArrow([1,1],"equals_plus_a_Oslash_a",0)
@@ -1797,6 +1802,44 @@ saveAs("le_a_a") //undefined
 startWith("equals_plus_a_Oslash_a")
 applyArrow([0],"equals_plus_a_Oslash_a",0)
 saveAs("equals_a_a") //undefined
+
+
+PushUp Notes:
+
+| [[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 1,3,&rarr;   | 1 |
+| [[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 1,3,&rarr;   | 2 |
+| [[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 2,3,&rarr;   | 1 |
+| [[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 2,3,&rarr;   | 2 |
+| [[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 1,3,&rarr;   | 1 |
+| [[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 1,3,&rarr;   | 2 |
+| [[],[0,[0,0,1],[0,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 2,3,&rarr;   | 1 |
+| [[],[0,[0,0,1],[0,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 2,3,&rarr;   | 2 |
+| [[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 1,3,&harr;   | 1 |
+| [[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 1,3,&harr;   | 2 |
+| [[],[0,[1,0,1],[1,[0,2,0],[0,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 2,3,&harr;   | 1 |
+| [[],[0,[1,0,1],[1,[0,2,0],[0,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 2,3,&harr;   | 2 |
+| [[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 1,3,&harr;   | 1 |
+| [[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 1,3,&harr;   | 2 |
+| [[],[0,[1,0,1],[1,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 2,3,&harr;   | 1 |
+| [[],[0,[1,0,1],[1,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 2,3,&harr;   | 2 |
+| [[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]]       | ["&rarr;","&harr;","&and;"]              | For query &and;    | 1,3,&harr;   | 2 |
+| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&equals;","&plus;"]           | For query &plus;   | 2,3,&equals; | 2 |
+| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&and;"]              | For query &and;    | 2,3,&harr;   | 1 |
+| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&and;"]              | For query &and;    | 2,3,&harr;   | 2 |
+| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&or;"]               | For query &or;     | 2,3,&harr;   | 1 |
+| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&or;"]               | For query &or;     | 2,3,&harr;   | 2 |
+| [[],[0,[1,0,1],[2,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&equals;","&harr;"]           | For query &equals; | 1,3,&equals; | 2 |
+| [[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&equals;","&harr;"]           | For query &equals; | 2,3,&equals; | 2 |
+| [[],[0,[0,0,1],[0,[1,1],[1,0]]],[]]           | ["&rarr;","&not;"]                       | For query &not;    | 1,2,&rarr;   | 1 |
+| [[],[0,[0,0,1],[0,[1,1],[1,0]]],[]]           | ["&rarr;","&not;"]                       | For query &not;    | 1,2,&rarr;   | 2 |
+| [[],[0,[1,0,1],[1,[2,1],[2,0]]],[]]           | ["&rarr;","&harr;","&not;"]              | For query &not;    | 1,2,&harr;   | 1 |
+| [[],[0,[1,0,1],[1,[2,1],[2,0]]],[]]           | ["&rarr;","&harr;","&not;"]              | For query &not;    | 1,2,&harr;   | 2 |
+| [[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;"]                    | For query &forall; | 2,3,&rarr;   | 1 |
+| [[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;"]                    | For query &forall; | 2,3,&rarr;   | 2 |
+| [[],[0,[1,0,[0,1,2]],[0,[2,0,1],[2,0,2]]],[]] | ["&rarr;","&forall;","&exist;"]          | For query &exist;  | 2,3,&rarr;   | 2 |
+| [[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;","&harr;"]           | For query &forall; | 2,3,&harr;   | 1 |
+| [[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;","&harr;"]           | For query &forall; | 2,3,&harr;   | 2 |
+| [[],[0,[1,0,[2,1,2]],[2,[3,0,1],[3,0,2]]],[]] | ["&rarr;","&forall;","&harr;","&exist;"] | For query &exist;  | 2,3,&harr;   | 2 |
 
 
 */
