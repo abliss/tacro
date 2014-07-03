@@ -40,7 +40,7 @@ scheme.onAddFact = function(fact) {
 		var harr = fact.Skin.TermNames[1];
 		var rarrAxmp = this.detachMemo[[rarr, [2]]];
 		if (rarrAxmp) {
-			scheme.detachMemo[[harr,[2]]] = {
+			this.detachMemo[[harr,[2]]] = {
 				fact: fact,
 				detach: function(pusp, work) {
 					pusp.newSteps.push(pusp.tool[1]);
@@ -58,7 +58,7 @@ scheme.onAddFact = function(fact) {
 		var harr = fact.Skin.TermNames[1];
 		var rarrAxmp = this.detachMemo[[rarr, [2]]];
 		if (rarrAxmp) {
-			scheme.detachMemo[[harr,[1]]] = {
+			this.detachMemo[[harr,[1]]] = {
 				fact: fact,
 				detach: function(pusp, work) {
 					pusp.newSteps.push(pusp.tool[1]);
@@ -69,6 +69,18 @@ scheme.onAddFact = function(fact) {
 					work.Core[Fact.CORE_HYPS][0] = pusp.tool[2];
 				}
 			}
+		}
+	} else if (coreStr == "[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]") {
+//| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       
+//| ["&rarr;","&equals;","&plus;"]
+//| For query &plus;   | 2,3,&equals; | 2 |
+		var tn = fact.Skin.TermNames;
+		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
+		if (rarrAxmp) {
+			this.pushUpMemo[[tn[2], 2, 3, tn[1], 2]] = 
+				new PushUp(rarrAxmp.fact, tn[2], 2, 3, tn[1], 2, true);
+			this.pushUpMemo[[tn[2], 2, 3, tn[1], 1]] = 
+				new PushUp(rarrAxmp.fact, tn[2], 2, 3, tn[1], 1, false);
 		}
 	}
 };
@@ -171,13 +183,12 @@ function zpath(exp, path) {
 scheme.queryPushUp = function(goalOp, goalArgNum, goalOpArity,
 							  toolOp, toolArgNum) {
     var query = [goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum];
-
     if (!this.pushUpMemo[query]) {
         // TODO: memoize
         // Try covariant first, then contravariant if not found.
-        var p = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
+        var p = new PushUp(axmp, goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
         if (!state.factsByMark[p.mark]) {
-            var q= new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, false);
+            var q= new PushUp(axmp, goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, false);
             if (!state.factsByMark[q.mark]) {
                 throw new Error("No pushUp found for " + JSON.stringify(arguments) +
                                 "; tried\n" + p.mark + " and\n" + q.mark);
@@ -463,23 +474,24 @@ function getParentArrow(goalOp, toolOp) { // TODO: XXX HACK
 // toolArg is 1 or 2, specifying one of the args of the tool on the stack.
 // the current goal's paren'ts [goalArg] equals the current tool's [toolArg]
 // we want to replace it with the tool's other arg.
-// isContra tells whether the tool args will be reversed in order.
-function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
+// isCovar tells whether the tool args will be reversed in order.
+function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar) {
+	this.axMp = axMp;
     this.goalOp = goalOp;
     this.goalArg = goalArg;
     this.goalOpArity = goalOpArity;
     this.toolOp = toolOp;
     this.toolArg = toolArg;
-    this.isContra = isContra;
+    this.isCovar = isCovar;
     // Goal's parent: [goalOp, g0, g1, ..., gGoalArg=Goal, ...]
     // Tool: [toolOp, otherToolArg, tToolArg=Goal]
     // new goal: [goalOp, g0, g1, ..., otherToolArg, ...]
     // pushup: [rarr, [toolOp, otherToolArg, Goal],
-    //                [toolOp, [goalOp, ...Goal...],          // isContra swaps
+    //                [toolOp, [goalOp, ...Goal...],          // isCovar swaps
     //                         [goalOp, ...otherToolArg...]]] // these two
-    var tmpFact = new Fact;
+    var tmpFact = new Fact();
     var termNames = [];
-    var rarrN = tmpFact.nameTerm("&rarr;");
+    var rarrN = tmpFact.nameTerm(this.axMp.Skin.TermNames[0]);
     var toolN = tmpFact.nameTerm(toolOp);
     var goalN = tmpFact.nameTerm(goalOp);
     //var stmt = [rarrN, [toolN, 0, 1], [?????, [goalN, ...], [goalN, ...]]]
@@ -495,8 +507,8 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
     arr2[goalArg] = 2 - toolArg;
     var parentArrowN = tmpFact.nameTerm(getParentArrow(goalOp, toolOp));
     var stmt =  [rarrN, [toolN, 0, 1], [parentArrowN,
-                                        isContra ? arr2 : arr1,
-                                        isContra ? arr1 : arr2]];
+                                        isCovar ? arr2 : arr1,
+                                        isCovar ? arr1 : arr2]];
     if (goalOp == '&forall;' || goalOp == '&exist;') { // TODO XXX HACK
         this.grease = function(pusp, work) {
             var x = pusp.newSteps.pop();
@@ -516,8 +528,8 @@ function PushUp(goalOp, goalArg, goalOpArity, toolOp, toolArg, isContra) {
         tmpFact.setStmt(stmt);
     }
     this.mark = tmpFact.getMark();
-}
-PushUp.prototype = new PushUp();
+};
+PushUp.prototype = {};
 PushUp.prototype.pushUp = function(pusp, work) {
     pusp.newSteps.push(pusp.tool[1]);
     pusp.newSteps.push(pusp.tool[2]);
@@ -540,12 +552,12 @@ PushUp.prototype.pushUp = function(pusp, work) {
     this.grease(pusp, work);
     var pushupFact = sfbm(this.mark);
     pusp.newSteps.push(nameDep(work, pushupFact));
-    pusp.newSteps.push(nameDep(work, axmp));
+    pusp.newSteps.push(nameDep(work, this.axMp));
     var parentArrowN = work.nameTerm(getParentArrow(this.goalOp, this.toolOp));
     pusp.tool = [parentArrowN,
-                 this.isContra ? arr2 : arr1,
-                 this.isContra ? arr1 : arr2];
-    pusp.toolPath = [this.isContra ? 2 : 1];
+                 this.isCovar ? arr2 : arr1,
+                 this.isCovar ? arr1 : arr2];
+    pusp.toolPath = [this.isCovar ? 2 : 1];
 }
 PushUp.prototype.grease = function(pusp, work) {
     // Called after the pushupFact's mandyhps have been appended to
