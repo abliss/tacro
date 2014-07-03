@@ -8,7 +8,6 @@ var Engine = require('./engine.js');
 var lands = [];
 var state = {};
 
-var TODO_DETACHMAP = {};
 
 var DEBUG = false;
 var GROUNDDEBUG = false;
@@ -20,12 +19,64 @@ function sfbm(mark) {
     return fact;
 }
 
-var scheme = {queryPushUp:queryPushUp, queryDetach:queryDetach};
+var scheme = {};
+scheme.pushUpMemo = {};
+scheme.detachMemo = {};
+scheme.onAddFact = function(fact) {
+	var coreStr = JSON.stringify(fact.Core);
+	if (coreStr == "[[0,[0,0,1]],1,[]]") {
+		// ax-mp
+		var rarr = fact.Skin.TermNames[0];
+		this.detachMemo[[rarr,[2]]] = {
+			fact: fact,
+			detach: function(pusp, work) {
+				pusp.newSteps.push(nameDep(work, this.fact));
+				work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
+			}
+		};
+	} else if (coreStr == "[[],[0,[1,0,1],[0,0,1]],[]]") {
+		// bi1
+		var rarr = fact.Skin.TermNames[0];
+		var harr = fact.Skin.TermNames[1];
+		var rarrAxmp = this.detachMemo[[rarr, [2]]];
+		if (rarrAxmp) {
+			scheme.detachMemo[[harr,[2]]] = {
+				fact: fact,
+				detach: function(pusp, work) {
+					pusp.newSteps.push(pusp.tool[1]);
+					pusp.newSteps.push(pusp.tool[2]);
+					pusp.newSteps.push(nameDep(work, this.fact));
+					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
+					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
+					work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
+				}
+			}
+		}
+	} else if (coreStr == "[[],[0,[1,0,1],[0,1,0]],[]]") {
+		// bi2
+		var rarr = fact.Skin.TermNames[0];
+		var harr = fact.Skin.TermNames[1];
+		var rarrAxmp = this.detachMemo[[rarr, [2]]];
+		if (rarrAxmp) {
+			scheme.detachMemo[[harr,[1]]] = {
+				fact: fact,
+				detach: function(pusp, work) {
+					pusp.newSteps.push(pusp.tool[1]);
+					pusp.newSteps.push(pusp.tool[2]);
+					pusp.newSteps.push(nameDep(work, this.fact));
+					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
+					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
+					work.Core[Fact.CORE_HYPS][0] = pusp.tool[2];
+				}
+			}
+		}
+	}
+};
 
 function applyFact(work, workPath, fact, factPath) {
-        if (typeof fact == 'string') {
-            fact = sfbm(parseMark(fact).getMark());
-        }
+    if (typeof fact == 'string') {
+        fact = sfbm(parseMark(fact).getMark());
+    }
     return Engine.applyFact(work, workPath, fact, factPath, scheme);
 }
 function ground(work, dirtFact) {
@@ -62,6 +113,7 @@ function getLand(filename) {
             console.log("# Canonically: " + JSON.stringify(fact));
         }
         state.factsByMark[fact.getMark()] = fact;
+		scheme.onAddFact(fact);
         return fact;
     }
     function addAxiom(fact) {
@@ -116,11 +168,11 @@ function zpath(exp, path) {
     return a;
 }
 
-var pushUpMemo = {};
-function queryPushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum) {
+scheme.queryPushUp = function(goalOp, goalArgNum, goalOpArity,
+							  toolOp, toolArgNum) {
     var query = [goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum];
 
-    if (!pushUpMemo[query]) {
+    if (!this.pushUpMemo[query]) {
         // TODO: memoize
         // Try covariant first, then contravariant if not found.
         var p = new PushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
@@ -132,15 +184,15 @@ function queryPushUp(goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum) {
             }
             p = q;
         }
-        pushUpMemo[query] = p;
+        this.pushUpMemo[query] = p;
         console.log(p.mark + " For query " + query);
     }
-    return pushUpMemo[query];
+    return this.pushUpMemo[query];
 }
 
-function queryDetach(params) {
+scheme.queryDetach = function(params) {
     // TODO
-    var detach = TODO_DETACHMAP[params];
+    var detach = this.detachMemo[params];
     if (!detach) {
         throw new Error("No detach found for " + JSON.stringify(params));
     }
@@ -384,38 +436,6 @@ var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
 
 
 
-TODO_DETACHMAP[["&rarr;",[2]]] = {
-    mark:'[[0,[0,0,1]],1,[]];["&rarr;"]',
-    detach: function(pusp, work) {
-        var detachFact = sfbm(this.mark);
-        pusp.newSteps.push(nameDep(work, detachFact));
-        work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
-    }
-};
-TODO_DETACHMAP[["&harr;",[2]]] = {
-    mark:'[[],[0,[1,0,1],[0,0,1]],[]];["&rarr;","&harr;"]',
-    detach: function(pusp, work) {
-        var detachFact = sfbm(this.mark);
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.newSteps.push(nameDep(work, detachFact));
-        pusp.newSteps.push(nameDep(work, axmp)); // XXX
-        pusp.newSteps.push(nameDep(work, axmp)); // XXX
-        work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
-    }
-};
-TODO_DETACHMAP[["&harr;",[1]]] = {
-    mark:'[[],[0,[1,0,1],[0,1,0]],[]];["&rarr;","&harr;"]',
-    detach: function(pusp, work) {
-        var detachFact = sfbm(this.mark);
-        pusp.newSteps.push(pusp.tool[1]);
-        pusp.newSteps.push(pusp.tool[2]);
-        pusp.newSteps.push(nameDep(work, detachFact));
-        pusp.newSteps.push(nameDep(work, axmp)); // XXX
-        pusp.newSteps.push(nameDep(work, axmp)); // XXX
-        work.Core[Fact.CORE_HYPS][0] = pusp.tool[2];
-    }
-};
 
 function getParentArrow(goalOp, toolOp) { // TODO: XXX HACK
     switch(goalOp) {
