@@ -118,6 +118,30 @@ scheme.onAddFact = function(fact) {
 			this.pushUpMemo[[tn[map.z], 2, 3, tn[map.x], 1]] =
 				new PushUp(rarrAxmp.fact, tn[map.z], 2, 3, tn[map.x], 1, false);
 		}
+	} else if (map = match(fact.Core,
+						   [[],[0,["x",0,1],["y",["z",1,2],["z",0,2]]],[]])) {
+		//[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"] For query &rarr;,1,3,&rarr;,1
+		var tn = fact.Skin.TermNames;
+		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
+		if (rarrAxmp) {
+			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 1]] =
+				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 1, true);
+			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 2]] =
+				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 2, false);
+		}
+	} else if (map = match(fact.Core,
+						   [[],[0,["x",0,1],["y",["z",0,2],["z",1,2]]],[]])) {
+		//[[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]];["&rarr;","&and;"] For query &and;,1,3,&rarr;,1
+		//[[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]];["&rarr;","&harr;"] For query &harr;,1,3,&harr;,2
+		//[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]];["&rarr;","&harr;","&and;"] For query &and;,1,3,&harr;,2
+		var tn = fact.Skin.TermNames;
+		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
+		if (rarrAxmp) {
+			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 1]] =
+				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 1, false);
+			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 2]] =
+				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 2, true);
+		}
 	}
 };
 
