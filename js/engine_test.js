@@ -213,10 +213,10 @@ scheme.onAddFact = function(fact) {
 	}
 	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 2]] =
 		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   2, isCov, parentArrow, grease);
+				   2, isCov, parentArrow, grease, fact.getMark());
 	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 1]] =
 		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   1, !isCov, parentArrow, grease);
+				   1, !isCov, parentArrow, grease, fact.getMark());
 };
 
 function applyFact(work, workPath, fact, factPath) {
@@ -318,25 +318,13 @@ scheme.queryPushUp = function(goalOp, goalArgNum, goalOpArity,
 							  toolOp, toolArgNum) {
     var query = [goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum];
     if (!this.pushUpMemo[query]) {
-        // TODO: memoize
-        // Try covariant first, then contravariant if not found.
-        var p = new PushUp(axmp, goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, true);
-        if (!state.factsByMark[p.mark]) {
-            var q= new PushUp(axmp, goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum, false);
-            if (!state.factsByMark[q.mark]) {
-                throw new Error("No pushUp found for " + JSON.stringify(arguments) +
-                                "; tried\n" + p.mark + " and\n" + q.mark);
-            }
-            p = q;
-        }
-        this.pushUpMemo[query] = p;
-        console.log("Missed fact " + p.mark + " For query " + query);
+		throw new Error("pushUp not found! Check commit d2a748c for how this " +
+						" used to work.");
     }
     return this.pushUpMemo[query];
 }
 
 scheme.queryDetach = function(params) {
-    // TODO
     var detach = this.detachMemo[params];
     if (!detach) {
         throw new Error("No detach found for " + JSON.stringify(params));
@@ -568,26 +556,6 @@ Context.prototype.terms = {};
 // This is needed for proofs like 'eqid' where binding vars disappear. Oof.
 Context.prototype.markToFvib = {};
 
-function getParentArrow(goalOp, toolOp) { // TODO: XXX HACK
-    switch(goalOp) {
-    case "&rarr;":
-    case "&not;":
-    case "&and;":
-    case "&or;":
-    case "&forall;":
-    case "&exist;":
-        return toolOp == "&harr;" ? toolOp : "&rarr;";
-    case "&equals;":
-    case "&harr;":
-        return "&harr;";
-    case "&Oslash;":
-    case "&sect;":
-    case "&plus;":
-    case "&times;":
-        return "&equals;";
-    }
-}
-
 // goalOp is an goalOpArity-arg term.
 // goalArg is in 1...goalOpArity, specifying which argchild the goal is
 // toolOp is the name of a 2-arg binary term
@@ -596,7 +564,7 @@ function getParentArrow(goalOp, toolOp) { // TODO: XXX HACK
 // we want to replace it with the tool's other arg.
 // isCovar tells whether the tool args will be reversed in order.
 function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
-				parentArrow, grease) {
+				parentArrow, grease, mark) {
 	this.axMp = axMp;
     this.goalOp = goalOp;
     this.goalArg = goalArg;
@@ -604,56 +572,9 @@ function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
     this.toolOp = toolOp;
     this.toolArg = toolArg;
     this.isCovar = isCovar;
-	if (!parentArrow) parentArrow = getParentArrow(goalOp, toolOp);
 	this.parentArrow = parentArrow;
 	this.grease = grease;
-
-    // Goal's parent: [goalOp, g0, g1, ..., gGoalArg=Goal, ...]
-    // Tool: [toolOp, otherToolArg, tToolArg=Goal]
-    // new goal: [goalOp, g0, g1, ..., otherToolArg, ...]
-    // pushup: [rarr, [toolOp, otherToolArg, Goal],
-    //                [toolOp, [goalOp, ...Goal...],          // isCovar swaps
-    //                         [goalOp, ...otherToolArg...]]] // these two
-    var tmpFact = new Fact();
-    var termNames = [];
-    var rarrN = tmpFact.nameTerm(this.axMp.Skin.TermNames[0]);
-    var toolN = tmpFact.nameTerm(toolOp);
-    var goalN = tmpFact.nameTerm(goalOp);
-    //var stmt = [rarrN, [toolN, 0, 1], [?????, [goalN, ...], [goalN, ...]]]
-    var arr1 =                                  [goalN];
-    var arr2 =                                                [goalN];
-    var nextVar = 2;
-    for (var i = 1; i < goalOpArity; i++) {
-        if (i != goalArg) {
-            arr1[i] = arr2[i] = nextVar++;
-        }
-    }
-    arr1[goalArg] = toolArg - 1;
-    arr2[goalArg] = 2 - toolArg;
-    var parentArrowN = tmpFact.nameTerm(parentArrow);
-    var stmt =  [rarrN, [toolN, 0, 1], [parentArrowN,
-                                        isCovar ? arr2 : arr1,
-                                        isCovar ? arr1 : arr2]];
-    if (goalOp == '&forall;' || goalOp == '&exist;') { // TODO XXX HACK
-		if (!this.grease) this.grease = function(pusp, work) {
-            var x = pusp.newSteps.pop();
-            var b = pusp.newSteps.pop();
-            var a = pusp.newSteps.pop();
-            pusp.newSteps.push(x);
-            pusp.newSteps.push(nameDep(work,
-                                       sfbm('[[0],[0,1,0],[]];["&forall;"]')));
-            pusp.newSteps.push(x);
-            pusp.newSteps.push(a);
-            pusp.newSteps.push(b);
-        };
-
-        stmt[1] = [tmpFact.nameTerm("&forall;"), 2, stmt[1]];
-        tmpFact.setStmt(stmt);
-        tmpFact = Engine.canonicalize(tmpFact);
-    } else {
-        tmpFact.setStmt(stmt);
-    }
-    this.mark = tmpFact.getMark();
+	this.mark = mark;
 };
 PushUp.prototype = {};
 PushUp.prototype.pushUp = function(pusp, work) {
