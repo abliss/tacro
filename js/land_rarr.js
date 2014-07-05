@@ -8,6 +8,9 @@
         // NB: instead of the usual Simp+Frege basis for positive propositional
         // calculus,we use one of Hilbert's because it provides the necessary
         // "binding theorems" for rarr over itself.
+        // ax-mp
+        {Core:[[1,[0,1,0]],0,[]],
+         Skin:{TermNames:["&rarr;"]}},
         // ax1
         {Core:[[],[0,0,[0,1,0]],[]],
          Skin:{TermNames:["&rarr;"]}},
@@ -19,9 +22,6 @@
          Skin:{TermNames:["&rarr;"]}},
         // pm2.43
         {Core:[[],[0,[0,0,[0,0,1]],[0,0,1]],[]],
-         Skin:{TermNames:["&rarr;"]}},
-        // ax-mp
-        {Core:[[1,[0,1,0]],0,[]],
          Skin:{TermNames:["&rarr;"]}},
     ],
     goals:[

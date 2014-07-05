@@ -108,6 +108,8 @@ scheme.onAddFact = function(fact) {
 		//| [[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]]
 		//| ["&rarr;","&equals;","&harr;"]
 		//| For query &equals; | 2,3,&equals; | 2 |
+		//| [[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"] For query &rarr;,2,3,&rarr;,2
+
 		var tn = fact.Skin.TermNames;
 		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
 		if (rarrAxmp) {
@@ -468,20 +470,6 @@ Context.prototype.terms = {};
 // This is needed for proofs like 'eqid' where binding vars disappear. Oof.
 Context.prototype.markToFvib = {};
 
-var proofCtx = new Context();
-var ifaceCtx = new Context();
-
-
-var landRarr = getLand("land_rarr.js");
-var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
-var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
-var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
-var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
-var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
-
-
-
-
 function getParentArrow(goalOp, toolOp) { // TODO: XXX HACK
     switch(goalOp) {
     case "&rarr;":
@@ -599,7 +587,15 @@ PushUp.prototype.grease = function(pusp, work) {
 }
 
 
+var proofCtx = new Context();
+var ifaceCtx = new Context();
 
+var landRarr = getLand("land_rarr.js");
+var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
+var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
+var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
+var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
+var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
 
 
 startNextGoal();
