@@ -213,10 +213,10 @@ scheme.onAddFact = function(fact) {
 	}
 	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 2]] =
 		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   2, isCov, parentArrow, grease, fact.getMark());
+				   2, isCov, parentArrow, grease, fact);
 	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 1]] =
 		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   1, !isCov, parentArrow, grease, fact.getMark());
+				   1, !isCov, parentArrow, grease, fact);
 };
 
 function applyFact(work, workPath, fact, factPath) {
@@ -564,7 +564,7 @@ Context.prototype.markToFvib = {};
 // we want to replace it with the tool's other arg.
 // isCovar tells whether the tool args will be reversed in order.
 function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
-				parentArrow, grease, mark) {
+				parentArrow, grease, fact) {
 	this.axMp = axMp;
     this.goalOp = goalOp;
     this.goalArg = goalArg;
@@ -574,7 +574,7 @@ function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
     this.isCovar = isCovar;
 	this.parentArrow = parentArrow;
 	this.grease = grease;
-	this.mark = mark;
+	this.fact = fact;
 };
 PushUp.prototype = {};
 PushUp.prototype.pushUp = function(pusp, work) {
@@ -597,8 +597,7 @@ PushUp.prototype.pushUp = function(pusp, work) {
         }
     }
 	if (this.grease) this.grease(pusp, work);
-    var pushupFact = sfbm(this.mark);
-    pusp.newSteps.push(nameDep(work, pushupFact));
+    pusp.newSteps.push(nameDep(work, this.fact));
     pusp.newSteps.push(nameDep(work, this.axMp));
     var parentArrowN = work.nameTerm(this.parentArrow);
     pusp.tool = [parentArrowN,
