@@ -1,5 +1,5 @@
 var Fact = require('../../caghni/js/fact.js'); //XXX
-var Crypto = require('crypto');
+//var Crypto = require('crypto');
 
 // This engine assists in authoring proofs by working backwards from a target
 // goal. The exported methods operate on a "workspace", i.e. a Fact whose
@@ -99,9 +99,12 @@ var Crypto = require('crypto');
     }
 
     function fingerprint(obj) {
+		return obj
+		/*
         var hash = Crypto.createHash('sha1');
         hash.update(JSON.stringify(obj));
         return "sha1-" + hash.digest('hex');
+		*/
     }
 
     function nameDep(workFact, depFact) {
