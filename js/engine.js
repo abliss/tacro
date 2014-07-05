@@ -23,9 +23,8 @@ var Bencode = require('bencode');
 		pushUpMemo : {},
 		detachMemo : {},
 		greaseMemo : {},
-		queryPushUp:  function(goalOp, goalArgNum, goalOpArity,
-							   toolOp, toolArgNum) {
-			var query =[goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum];
+		queryPushUp:  function(goalOp, goalArgNum, toolOp, toolArgNum) {
+			var query = [goalOp, goalArgNum, toolOp, toolArgNum];
 			if (!this.pushUpMemo[query]) {
 				throw new Error("pushUp not found! Check commit d2a748c " +
 								"for how this used to work.");
@@ -42,54 +41,44 @@ var Bencode = require('bencode');
 		}
 	};
 
+	// A data structure for keeping in the scheme.
 	// goalOp is an goalOpArity-arg term.
 	// goalArg is in 1...goalOpArity, specifying which argchild the goal is
-	// toolOp is the name of a 2-arg binary term
+	// (unused: toolOp is the name of a 2-arg binary term)
 	// toolArg is 1 or 2, specifying one of the args of the tool on the stack.
 	// the current goal's paren'ts [goalArg] equals the current tool's [toolArg]
 	// we want to replace it with the tool's other arg.
 	// isCovar tells whether the tool args will be reversed in order.
-	function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg,
+	function PushUp(axMp, goalOp, goalArg, goalOpArity, toolArg,
 					isCovar, parentArrow, grease, fact) {
-		this.axMp = axMp;
-		this.goalOp = goalOp;
-		this.goalArg = goalArg;
-		this.goalOpArity = goalOpArity;
-		this.toolOp = toolOp;
-		this.toolArg = toolArg;
-		this.isCovar = isCovar;
-		this.parentArrow = parentArrow;
-		this.grease = grease;
-		this.fact = fact;
-	};
-	PushUp.prototype = {};
-	PushUp.prototype.pushUp = function(pusp, work) {
-		pusp.newSteps.push(pusp.tool[1]);
-		pusp.newSteps.push(pusp.tool[2]);
-		pusp.goalPath.pop();
-		var goalParent = zpath(pusp.goal, pusp.goalPath);
-		var goalN = work.nameTerm(this.goalOp);
-		var arr1 = [goalN];
-		var arr2 = [goalN];
-		for (var i = 1; i < this.goalOpArity; i++) {
-			if (i == this.goalArg) {
-				arr1.push(pusp.tool[this.toolArg]);
-				arr2.push(pusp.tool[3 - this.toolArg]);
-			} else {
-				var arg = goalParent[i];
-				pusp.newSteps.push(arg);
-				arr1.push(arg);
-				arr2.push(arg);
+		this.pushUp = function(pusp, work) {
+			pusp.newSteps.push(pusp.tool[1]);
+			pusp.newSteps.push(pusp.tool[2]);
+			pusp.goalPath.pop();
+			var goalParent = zpath(pusp.goal, pusp.goalPath);
+			var goalN = work.nameTerm(goalOp);
+			var arr1 = [goalN];
+			var arr2 = [goalN];
+			for (var i = 1; i < goalOpArity; i++) {
+				if (i == goalArg) {
+					arr1.push(pusp.tool[toolArg]);
+					arr2.push(pusp.tool[3 - toolArg]);
+				} else {
+					var arg = goalParent[i];
+					pusp.newSteps.push(arg);
+					arr1.push(arg);
+					arr2.push(arg);
+				}
 			}
+			if (grease) grease(pusp, work);
+			pusp.newSteps.push(nameDep(work, fact));
+			pusp.newSteps.push(nameDep(work, axMp));
+			var parentArrowN = work.nameTerm(parentArrow);
+			pusp.tool = [parentArrowN,
+						 isCovar ? arr2 : arr1,
+						 isCovar ? arr1 : arr2];
+			pusp.toolPath = [isCovar ? 2 : 1];
 		}
-		if (this.grease) this.grease(pusp, work);
-		pusp.newSteps.push(nameDep(work, this.fact));
-		pusp.newSteps.push(nameDep(work, this.axMp));
-		var parentArrowN = work.nameTerm(this.parentArrow);
-		pusp.tool = [parentArrowN,
-					 this.isCovar ? arr2 : arr1,
-					 this.isCovar ? arr1 : arr2];
-		pusp.toolPath = [this.isCovar ? 2 : 1];
 	}
 
 
@@ -429,13 +418,12 @@ var Bencode = require('bencode');
             var goalArgNum = pusp.goalPath.pop();
             var goalParent = zpath(pusp.goal, pusp.goalPath);
             var goalTerm = work.Skin.TermNames[goalParent[0]];
-            var goalTermArity = goalParent.length;
             pusp.goalPath.push(goalArgNum);
             var toolArgNum = pusp.toolPath.pop();
             var toolTerm = work.Skin.TermNames[zpath(pusp.tool, pusp.toolPath)[0]];
             pusp.toolPath.push(toolArgNum);
 
-            scheme.queryPushUp(goalTerm, goalArgNum, goalTermArity, toolTerm,
+            scheme.queryPushUp(goalTerm, goalArgNum, toolTerm,
                         pusp.toolPath[pusp.toolPath.length - 1]).
                 pushUp(pusp, work);
 
@@ -709,20 +697,21 @@ var Bencode = require('bencode');
 		var terms = fact.Skin.TermNames;
 		var detacher = scheme.detachMemo[[terms[0], [2]]];
 		var grease = null;
-		
+
 		if ((stmt.length != 3) || (stmt[0] != 0) || !detacher) {
-			// Root operation must be some version of implication -- i.e., something
-			// we can detach.
+			// Root operation must be some version of implication -- i.e.,
+			// something we can detach.
 			return;
 		}
 		if (detacher.fact.Core[Fact.CORE_HYPS].length == 0) {
-			// TODO: right now this only works with ->/axmp, but it should work with
-			// anything that can be detached. Detacher.detach() should return
-			// pusp.tool[1] instead of putting it directly into the hyps.
+			// TODO: right now this only works with ->/axmp, but it should work
+			// with anything that can be detached. Detacher.detach() should
+			// return pusp.tool[1] instead of putting it directly into the hyps.
 			return
 		}
-		
-		if (!Array.isArray(stmt[1]) || (stmt[1].length != 3) || (stmt[1][1] != 0)) {
+
+		if (!Array.isArray(stmt[1]) ||
+			(stmt[1].length != 3) || (stmt[1][1] != 0)) {
 			// Antecedent must be a binary operation on two args
 			return;
 		}
@@ -758,15 +747,15 @@ var Bencode = require('bencode');
 			// Not a valid pushUp
 			return;
 		}
-		
-		
+
+
 		if (!Array.isArray(stmt[2]) || (stmt[2].length != 3) ||
 			(!Array.isArray(stmt[2][1])) || (!Array.isArray(stmt[2][2])) ||
 			(stmt[2][1].length != stmt[2][2].length) ||
 			(stmt[2][1][0] != stmt[2][2][0])
 		   ) {
-			// Consequent must be an binary operation on two terms identical except
-			// for the replacement of the antecedent args
+			// Consequent must be an binary operation on two terms identical
+			// except for the replacement of the antecedent args
 			return;
 		}
 		var parentArrow = terms[stmt[2][0]];
@@ -790,8 +779,8 @@ var Bencode = require('bencode');
 				}
 				whichArg = i;
 				if (arg1 + arg2 != anteArg1 + anteArg2) {
-					// Corresponding arg in other term must be the other of the two
-					// antecedent args
+					// Corresponding arg in other term must be the other of the
+					// two antecedent args
 					return;
 				}
 				break;
@@ -802,12 +791,11 @@ var Bencode = require('bencode');
 				}
 			}
 		}
-		scheme.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 2]] =
-			new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-					   2, isCov, parentArrow, grease, fact);
-		scheme.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 1]] =
-			new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-					   1, !isCov, parentArrow, grease, fact);
+		for (var i = 1; i <= 2; i++) {
+			scheme.pushUpMemo[[childArrow, whichArg, anteArrow, i]] =
+				new PushUp(detacher.fact, childArrow, whichArg, childArity,
+						   i, (i == 2 ? isCov : !isCov),
+						   parentArrow, grease, fact);
+		}
 	};
-
 })(module);
