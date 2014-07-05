@@ -48,182 +48,12 @@ function match(exp, pattern, map) {
 	}
 }
 
-var scheme = {};
-scheme.pushUpMemo = {};
-scheme.detachMemo = {};
-scheme.greaseMemo = {};
-scheme.onAddFact = function(fact) {
-	var that = this;
-	var coreStr = JSON.stringify(fact.Core);
-	var rarr, harr, rarr, rarrAxmp;
-	// First, detect detachment theorems
-	if (coreStr == "[[0,[0,0,1]],1,[]]") {
-		// ax-mp
-		rarr = fact.Skin.TermNames[0];
-		this.detachMemo[[rarr,[2]]] = {
-			fact: fact,
-			detach: function(pusp, work) {
-				pusp.newSteps.push(nameDep(work, this.fact));
-				work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
-			}
-		};
-	} else if (coreStr == "[[],[0,[1,0,1],[0,0,1]],[]]") {
-		// bi1
-		rarr = fact.Skin.TermNames[0];
-		harr = fact.Skin.TermNames[1];
-		rarrAxmp = this.detachMemo[[rarr, [2]]];
-		if (rarrAxmp) {
-			this.detachMemo[[harr,[2]]] = {
-				fact: fact,
-				detach: function(pusp, work) {
-					pusp.newSteps.push(pusp.tool[1]);
-					pusp.newSteps.push(pusp.tool[2]);
-					pusp.newSteps.push(nameDep(work, this.fact));
-					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-					work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
-				}
-			}
-		}
-	} else if (coreStr == "[[],[0,[1,0,1],[0,1,0]],[]]") {
-		// bi2
-		rarr = fact.Skin.TermNames[0];
-		harr = fact.Skin.TermNames[1];
-		rarrAxmp = this.detachMemo[[rarr, [2]]];
-		if (rarrAxmp) {
-			this.detachMemo[[harr,[1]]] = {
-				fact: fact,
-				detach: function(pusp, work) {
-					pusp.newSteps.push(pusp.tool[1]);
-					pusp.newSteps.push(pusp.tool[2]);
-					pusp.newSteps.push(nameDep(work, this.fact));
-					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-					pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-					work.Core[Fact.CORE_HYPS][0] = pusp.tool[2];
-				}
-			}
-		}
-	} else if (coreStr == "[[0],[0,1,0],[]]") {
-		// ax-gen
-		this.greaseMemo[fact.Skin.TermNames[0]] = {fact:fact};
-	}
-
-	// Next, detect pushUp theorems.
-	if (fact.Core[Fact.CORE_HYPS].length ||
-		fact.Core[Fact.CORE_FREE].length) {
-		// Can't use pushUp theorems with hyps or free constrains.
-		return;
-	}
-	var stmt = fact.Core[Fact.CORE_STMT];
-	var terms = fact.Skin.TermNames;
-	var detacher = this.detachMemo[[terms[0], [2]]];
-	var grease = null;
-	
-	if ((stmt.length != 3) || (stmt[0] != 0) || !detacher) {
-		// Root operation must be some version of implication -- i.e., something
-		// we can detach.
-		return;
-	}
-	if (detacher.fact.Core[Fact.CORE_HYPS].length == 0) {
-		// TODO: right now this only works with ->/axmp, but it should work with
-		// anything that can be detached. Detacher.detach() should return
-		// pusp.tool[1] instead of putting it directly into the hyps.
-		return
-	}
-	
-	if (!Array.isArray(stmt[1]) || (stmt[1].length != 3) || (stmt[1][1] != 0)) {
-		// Antecedent must be a binary operation on two args
-		return;
-	}
-	var anteArrow;
-	var anteArg1;
-	var anteArg2;
-	var greaser;
-	if (stmt[1][2] == 1) {
-		// This is a greaseless pushUp
-		anteArrow = terms[stmt[1][0]];
-		anteArg1 = 0;
-		anteArg2 = 1;
-	} else if (Array.isArray(stmt[1][2]) &&
-			   (greaser = this.greaseMemo[terms[stmt[1][0]]]) &&
-			   (stmt[1][2].length == 3) &&
-			   (stmt[1][2][1] == 1) &&
-			   (stmt[1][2][2] == 2)) {
-		// Handle greasing forall
-		anteArrow = terms[stmt[1][2][0]];
-		anteArg1 = 1;
-		anteArg2 = 2;
-		grease = function(pusp, work) {
-            var x = pusp.newSteps.pop();
-            var b = pusp.newSteps.pop();
-            var a = pusp.newSteps.pop();
-            pusp.newSteps.push(x);
-            pusp.newSteps.push(nameDep(work, greaser.fact));
-            pusp.newSteps.push(x);
-            pusp.newSteps.push(a);
-            pusp.newSteps.push(b);
-        };
-	} else {
-		// Not a valid pushUp
-		return;
-	}
-		
-	 
-	if (!Array.isArray(stmt[2]) || (stmt[2].length != 3) ||
-		(!Array.isArray(stmt[2][1])) || (!Array.isArray(stmt[2][2])) ||
-		(stmt[2][1].length != stmt[2][2].length) ||
-		(stmt[2][1][0] != stmt[2][2][0])
-	   ) {
-		// Consequent must be an binary operation on two terms identical except
-		// for the replacement of the antecedent args
-		return;
-	}
-	var parentArrow = terms[stmt[2][0]];
-	var childArrow = terms[stmt[2][1][0]];
-	var childArity = stmt[2][1].length;
-	var whichArg = null;
-	var isCov = true;
-	for (var i = 1; i < childArity; i++) {
-		var arg1 = stmt[2][1][i];
-		var arg2 = stmt[2][2][i];
-		switch (arg1) {
-		case anteArg2:
-			// Covariant facts have 0 in the first term and 1 in the second.
-			// Contravariant facts have the reverse.
-			isCov = false;
-			// fall through
-		case anteArg1:
-			if (whichArg != null) {
-				// Antecedent args cannot appear more than once
-				return;
-			}
-			whichArg = i;
-			if (arg1 + arg2 != anteArg1 + anteArg2) {
-				// Corresponding arg in other term must be the other of the two
-				// antecedent args
-				return;
-			}
-			break;
-		default:
-			if (arg2 != arg1) {
-				// all other args must be the same
-				return;
-			}
-		}
-	}
-	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 2]] =
-		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   2, isCov, parentArrow, grease, fact);
-	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 1]] =
-		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   1, !isCov, parentArrow, grease, fact);
-};
 
 function applyFact(work, workPath, fact, factPath) {
     if (typeof fact == 'string') {
         fact = sfbm(parseMark(fact).getMark());
     }
-    return Engine.applyFact(work, workPath, fact, factPath, scheme);
+    return Engine.applyFact(work, workPath, fact, factPath);
 }
 function ground(work, dirtFact) {
     if (typeof dirtFact == 'string') {
@@ -259,7 +89,7 @@ function getLand(filename) {
             console.log("# Canonically: " + JSON.stringify(fact));
         }
         state.factsByMark[fact.getMark()] = fact;
-		scheme.onAddFact(fact);
+		Engine.onAddFact(fact);
         return fact;
     }
     function addAxiom(fact) {
@@ -314,23 +144,6 @@ function zpath(exp, path) {
     return a;
 }
 
-scheme.queryPushUp = function(goalOp, goalArgNum, goalOpArity,
-							  toolOp, toolArgNum) {
-    var query = [goalOp, goalArgNum, goalOpArity, toolOp, toolArgNum];
-    if (!this.pushUpMemo[query]) {
-		throw new Error("pushUp not found! Check commit d2a748c for how this " +
-						" used to work.");
-    }
-    return this.pushUpMemo[query];
-}
-
-scheme.queryDetach = function(params) {
-    var detach = this.detachMemo[params];
-    if (!detach) {
-        throw new Error("No detach found for " + JSON.stringify(params));
-    }
-    return detach;
-}
 
 
 
@@ -556,55 +369,6 @@ Context.prototype.terms = {};
 // This is needed for proofs like 'eqid' where binding vars disappear. Oof.
 Context.prototype.markToFvib = {};
 
-// goalOp is an goalOpArity-arg term.
-// goalArg is in 1...goalOpArity, specifying which argchild the goal is
-// toolOp is the name of a 2-arg binary term
-// toolArg is 1 or 2, specifying one of the args of the tool on the stack.
-// the current goal's paren'ts [goalArg] equals the current tool's [toolArg]
-// we want to replace it with the tool's other arg.
-// isCovar tells whether the tool args will be reversed in order.
-function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
-				parentArrow, grease, fact) {
-	this.axMp = axMp;
-    this.goalOp = goalOp;
-    this.goalArg = goalArg;
-    this.goalOpArity = goalOpArity;
-    this.toolOp = toolOp;
-    this.toolArg = toolArg;
-    this.isCovar = isCovar;
-	this.parentArrow = parentArrow;
-	this.grease = grease;
-	this.fact = fact;
-};
-PushUp.prototype = {};
-PushUp.prototype.pushUp = function(pusp, work) {
-    pusp.newSteps.push(pusp.tool[1]);
-    pusp.newSteps.push(pusp.tool[2]);
-    pusp.goalPath.pop();
-    var goalParent = zpath(pusp.goal, pusp.goalPath);
-    var goalN = work.nameTerm(this.goalOp);
-    var arr1 = [goalN];
-    var arr2 = [goalN];
-    for (var i = 1; i < this.goalOpArity; i++) {
-        if (i == this.goalArg) {
-            arr1.push(pusp.tool[this.toolArg]);
-            arr2.push(pusp.tool[3 - this.toolArg]);
-        } else {
-            var arg = goalParent[i];
-            pusp.newSteps.push(arg);
-            arr1.push(arg);
-            arr2.push(arg);
-        }
-    }
-	if (this.grease) this.grease(pusp, work);
-    pusp.newSteps.push(nameDep(work, this.fact));
-    pusp.newSteps.push(nameDep(work, this.axMp));
-    var parentArrowN = work.nameTerm(this.parentArrow);
-    pusp.tool = [parentArrowN,
-                 this.isCovar ? arr2 : arr1,
-                 this.isCovar ? arr1 : arr2];
-    pusp.toolPath = [this.isCovar ? 2 : 1];
-}
 
 
 var proofCtx = new Context();
