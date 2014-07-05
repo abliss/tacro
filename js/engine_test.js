@@ -19,10 +19,40 @@ function sfbm(mark) {
     return fact;
 }
 
+// This is like "regexp match with backrefs" but on structured arrays.  TODO:
+// this is also like unification, and could share code.  an exp is a number or
+// an array of exps. a pattern is a number, a string, or an array of
+// patterns. we'll return a map of string-to-number that makes them identical,
+// if it's possible; otherwise null.
+function match(exp, pattern, map) {
+	map = map || {};
+	if (Array.isArray(pattern)) {
+		if (!Array.isArray(exp) || exp.length != pattern.length) {
+			return null;
+		}
+		for (var i = 0; i < pattern.length; i++) {
+			if (!match(exp[i], pattern[i], map)) {
+				return null;
+			}
+		}
+		return map;
+	} else if (typeof pattern == 'number') {
+		return (exp == pattern) ? map : null;
+	} else if (Array.isArray(exp)) {
+		return null;
+	} else if (map[pattern] === undefined) {
+		map[pattern] = exp;
+		return map;
+	} else {
+		return (map[pattern] == exp) ? map : null;
+	}
+}
+
 var scheme = {};
 scheme.pushUpMemo = {};
 scheme.detachMemo = {};
 scheme.onAddFact = function(fact) {
+	var map;
 	var coreStr = JSON.stringify(fact.Core);
 	if (coreStr == "[[0,[0,0,1]],1,[]]") {
 		// ax-mp
@@ -70,17 +100,21 @@ scheme.onAddFact = function(fact) {
 				}
 			}
 		}
-	} else if (coreStr == "[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]") {
-//| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       
-//| ["&rarr;","&equals;","&plus;"]
-//| For query &plus;   | 2,3,&equals; | 2 |
+	} else if (map = match(fact.Core,
+						   [[],[0,["x",0,1],["y",["z",2,0],["z",2,1]]],[]])) {
+		//| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]
+		//| ["&rarr;","&equals;","&plus;"]
+		//| For query &plus;   | 2,3,&equals; | 2 |
+		//| [[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]]
+		//| ["&rarr;","&equals;","&harr;"]
+		//| For query &equals; | 2,3,&equals; | 2 |
 		var tn = fact.Skin.TermNames;
 		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
 		if (rarrAxmp) {
-			this.pushUpMemo[[tn[2], 2, 3, tn[1], 2]] = 
-				new PushUp(rarrAxmp.fact, tn[2], 2, 3, tn[1], 2, true);
-			this.pushUpMemo[[tn[2], 2, 3, tn[1], 1]] = 
-				new PushUp(rarrAxmp.fact, tn[2], 2, 3, tn[1], 1, false);
+			this.pushUpMemo[[tn[map.z], 2, 3, tn[map.x], 2]] =
+				new PushUp(rarrAxmp.fact, tn[map.z], 2, 3, tn[map.x], 2, true);
+			this.pushUpMemo[[tn[map.z], 2, 3, tn[map.x], 1]] =
+				new PushUp(rarrAxmp.fact, tn[map.z], 2, 3, tn[map.x], 1, false);
 		}
 	}
 };
