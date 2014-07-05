@@ -10,10 +10,13 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
 // hope to "ground" the workspace in a known Fact, leaving us with a completed
 // zero-hypothesis theorem.
 (function(module) {
+    if (!module.exports) module.exports = {};
+
+	// Enable for logs
     var DEBUG = false;
-    if (!module.exports) {
-        module.exports = {};
-    }
+
+	// An incrementing number to disambiguate dummy vars
+	var dummyNum = 0;
 
 	// The engine keeps this "scheme", a list of facts registered through
 	// onAddFact which could be used for our automated-proving purposes (as a
@@ -143,7 +146,8 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
     }
 
     function newDummy() {
-        return "DUMMY_" + Math.random(); //XXX
+		dummyNum++;
+        return "DUMMY_" + dummyNum;
     }
 
     // Given a fact or an expression, replace its variables with the
@@ -165,11 +169,6 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
                 throw new Error("hmm")
             }
         }
-        if (DEBUG) {
-            for (var v in dummyMap) if (dummyMap.hasOwnProperty(v)) {
-                console.log("#XXXX Dummy:" + v + "=> " + JSON.stringify(dummyMap[v]));
-            }
-        }
         if ((typeof workOrExp == 'number') || Array.isArray(workOrExp)) {
             return replaceDummies(workOrExp);
         } else {
@@ -189,16 +188,13 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
                     });
                 });
             });
-            if (DEBUG) {
-                console.log("#XXXX Work undummied: " + JSON.stringify(workOrExp));
-            }
             return workOrExp;
         }
     }
 
     // Returns a list of mandatory hypotheses (i.e., values for each var) of the
-    // fact, such that the named subexpression of the fact's stmt matches the named
-    // subexpression of the work's first hyp.
+    // fact, such that the named subexpression of the fact's stmt matches the
+    // named subexpression of the work's first hyp.
     //
     // Modifies the work as necessary (but only once success is guaranteed) by
     // specifying dummy vars and adding Free constraints.
@@ -328,7 +324,7 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
                 if (!Array.isArray(workSubExp)) {
                     // Work is var, Fact is exp.
                     if (nonDummy[workSubExp]) {
-                        assertEqual("shrug", workSubExp, factSubExp); //XXX
+                        assertEqual("shrug", workSubExp, factSubExp);
                     } else {
                         var newExp = [];
                         newExp.push(work.nameTerm(factTerm));
@@ -383,23 +379,21 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
             var newV = varMap[v];
             if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
             if (newV == undefined) {
-                newV = work.nameVar(newDummy()); // XXX HACK
+                newV = work.nameVar(newDummy());
                 varMap[v] = newV;
             }
             if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
             pusp.newSteps.push(newV);
         });
         pusp.newSteps.push(nameDep(work, fact));
-        // Now on the stack: an instance of fact, with factPath equalling a subexp
-        // of work.
+        // Now on the stack: an instance of fact, with factPath equalling a
+        // subexp of work.
 
-        // #. add appropriate grease for generification and equivalences
-        // --> TODO: change caghni to list kinds before terms for easy grease lookup
         // #. invoke sequence of pushup theorems, ensuring presence in Deps
-        pusp.tool = globalSub(fact, varMap, work); // what's on the stack
-        pusp.toolPath = clone(factPath);           // path to subexp A
-        pusp.goal = clone(work.Core[Fact.CORE_HYPS][0]);      // what we want to prove
-        pusp.goalPath = clone(workPath);           // path to subexp B
+        pusp.tool = globalSub(fact, varMap, work);       // what's on the stack
+        pusp.toolPath = clone(factPath);                 // path to subexp A
+        pusp.goal = clone(work.Core[Fact.CORE_HYPS][0]); // what to prove
+        pusp.goalPath = clone(workPath);                 // path to subexp B
         // invariant: subexp A == subexp B
         function checkInvariant() {
             if (DEBUG) {
@@ -407,7 +401,7 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
                             JSON.stringify(zpath(pusp.tool, pusp.toolPath)) +
                             "\n" +
                             JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
-                console.log("XXXX pusp: ", JSON.stringify(pusp));
+                console.log("  pusp: ", JSON.stringify(pusp));
             }
             if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
                 JSON.stringify(zpath(pusp.goal, pusp.goalPath))) {
@@ -422,13 +416,13 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
             var goalTerm = work.Skin.TermNames[goalParent[0]];
             pusp.goalPath.push(goalArgNum);
             var toolArgNum = pusp.toolPath.pop();
-            var toolTerm = work.Skin.TermNames[zpath(pusp.tool, pusp.toolPath)[0]];
+            var toolTerm = work.Skin.TermNames[
+				zpath(pusp.tool, pusp.toolPath)[0]];
             pusp.toolPath.push(toolArgNum);
 
             scheme.queryPushUp(goalTerm, goalArgNum, toolTerm,
                         pusp.toolPath[pusp.toolPath.length - 1]).
                 pushUp(pusp, work);
-
         }
         checkInvariant();
 
@@ -437,15 +431,11 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
         var query = [work.Skin.TermNames[pusp.tool[0]], pusp.toolPath];
         scheme.queryDetach(query).detach(pusp, work);
 
-        // #. compute new preimage and update Hyps.0
-        // TODO: hardcoded for now
-
         // don't delete any steps
         pusp.newSteps.unshift(0);
         // keep the "hyps.0".
         pusp.newSteps.unshift(1);
         work.Tree.Proof.splice.apply(work.Tree.Proof, pusp.newSteps);
-
 
         // #. update DV list
         fact.Core[Fact.CORE_FREE].forEach(function(freeList) {
@@ -483,7 +473,7 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
             var newV = varMap[v];
             if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
             if (newV == undefined) {
-                newV = work.nameVar(newDummy()); // XXX HACK
+                newV = work.nameVar(newDummy());
                 varMap[v] = newV;
             }
             if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
@@ -492,7 +482,7 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
         });
         eachVarOnce(infFact.Core[Fact.CORE_HYPS], function(v) {
             if (varToStepIndex.hasOwnProperty(v)) {
-                newSteps[varToStepIndex[v]] = ""; // TODO: should clean these out.
+                newSteps[varToStepIndex[v]] = "";
             }
         });
         newSteps = newSteps.filter(function(x) { return x !== "";});
@@ -501,16 +491,17 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
         newSteps.push(nameDep(work, infFact));
         newSteps.push.apply(newSteps, work.Tree.Proof);
         work.setProof(newSteps);
-        var newHyp = globalSub(infFact, varMap, work, infFact.Core[Fact.CORE_HYPS][0]);
+        var newHyp = globalSub(infFact, varMap, work,
+							   infFact.Core[Fact.CORE_HYPS][0]);
         if (DEBUG) {console.log("# Inf newHyp: " + JSON.stringify(newHyp));}
         work.setHyps([newHyp]);
         return work;
     };
 
-    // Replace a dummy variable with a new exp containing the given term and some
-    // new dummy variables.
-    // TODO: should not allow specifying binding var
-    module.exports.specifyDummy = function(work, dummyPath, newTerm, newTermArity) {
+    // Replace a dummy variable with a new exp containing the given term and
+    // some new dummy variables.  TODO: should not allow specifying binding var
+    module.exports.specifyDummy = function(work, dummyPath,
+										   newTerm, newTermArity) {
         // TODO: duplicated code
         var nonDummy = {};
         var dummyMap = {};
@@ -539,13 +530,13 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
     module.exports.ground = function(work, dirtFact) {
         // verify that the hyp is an instance of the dirt
         var varMap = getMandHyps(work, [], dirtFact, []);
-        if (DEBUG) {console.log("# ground MandHyps: " + JSON.stringify(varMap));}
+        if (DEBUG) {console.log("# ground MandHyps: "+JSON.stringify(varMap));}
         work.Core[Fact.CORE_HYPS].shift();
         var newSteps = [];
         eachVarOnce([dirtFact.Core[Fact.CORE_STMT]], function(v) {
             var newV = varMap[v];
             if (newV == undefined) {
-                newV = work.nameVar(newDummy()); // XXX HACK
+                newV = work.nameVar(newDummy());
                 varMap[v] = newV;
             }
             newSteps.push(newV);
@@ -556,9 +547,9 @@ var Fact = require('../../caghni/js/fact.js'); //XXX
         work.Tree.Proof.shift();
         // Replace with proof of hyp instance
         work.Tree.Proof.unshift.apply(work.Tree.Proof, newSteps);
-        if (DEBUG) {console.log("#XXXX Work before canon:" + JSON.stringify(work));}
+        if (DEBUG) {console.log("# Work before canon:" + JSON.stringify(work));}
         work = module.exports.canonicalize(work);
-        if (DEBUG) {console.log("#XXXX Work after canon:" + JSON.stringify(work));}
+        if (DEBUG) {console.log("# Work after canon:" + JSON.stringify(work));}
         return work;
     };
 
