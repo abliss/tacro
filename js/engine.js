@@ -1,6 +1,5 @@
 var Fact = require('../../caghni/js/fact.js'); //XXX
 var Crypto = require('crypto');
-var Bencode = require('bencode');
 
 // This engine assists in authoring proofs by working backwards from a target
 // goal. The exported methods operate on a "workspace", i.e. a Fact whose
@@ -101,8 +100,8 @@ var Bencode = require('bencode');
 
     function fingerprint(obj) {
         var hash = Crypto.createHash('sha1');
-        hash.update(Bencode.encode(obj));
-        return "bencode-sha1-" + hash.digest('hex');
+        hash.update(JSON.stringify(obj));
+        return "sha1-" + hash.digest('hex');
     }
 
     function nameDep(workFact, depFact) {
