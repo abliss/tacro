@@ -1,6 +1,4 @@
 var Fs = require('fs');
-var Bencode = require('bencode');
-var Crypto = require('crypto');
 var Fact = require('../../caghni/js/fact.js'); //XXX
 var Async = require('async');
 var Engine = require('./engine.js');
@@ -17,35 +15,6 @@ function sfbm(mark) {
     var fact = state.factsByMark[mark];
     if (!fact) throw new Error("mark not found: " + mark);
     return fact;
-}
-
-// This is like "regexp match with backrefs" but on structured arrays.  TODO:
-// this is also like unification, and could share code.  an exp is a number or
-// an array of exps. a pattern is a number, a string, or an array of
-// patterns. we'll return a map of string-to-number that makes them identical,
-// if it's possible; otherwise null.
-function match(exp, pattern, map) {
-	map = map || {};
-	if (Array.isArray(pattern)) {
-		if (!Array.isArray(exp) || exp.length != pattern.length) {
-			return null;
-		}
-		for (var i = 0; i < pattern.length; i++) {
-			if (!match(exp[i], pattern[i], map)) {
-				return null;
-			}
-		}
-		return map;
-	} else if (typeof pattern == 'number') {
-		return (exp == pattern) ? map : null;
-	} else if (Array.isArray(exp)) {
-		return null;
-	} else if (map[pattern] === undefined) {
-		map[pattern] = exp;
-		return map;
-	} else {
-		return (map[pattern] == exp) ? map : null;
-	}
 }
 
 
@@ -110,19 +79,6 @@ function getLand(filename) {
     return land;
 }
 
-// TODO: Duplicated
-function fingerprint(obj) {
-    var hash = Crypto.createHash('sha1');
-    hash.update(Bencode.encode(obj));
-    return "bencode-sha1-" + hash.digest('hex');
-}
-
-// TODO: Duplicated
-function nameDep(workFact, depFact) {
-    var n = workFact.nameDep(fingerprint(depFact.getMark()), depFact);
-    return n;
-}
-
 function startWork(fact) {
     var work = new Fact(fact);
     work.setHyps([work.Core[Fact.CORE_STMT]]);
@@ -133,19 +89,6 @@ function startWork(fact) {
     work.setProof(["Hyps.0"]);
     return Engine.canonicalize(work);
 }
-
-
-// TODO: Duplicated
-function zpath(exp, path) {
-    var a = exp, l = path.length, i = 0;
-    for (i = 0; i < l; i++) {
-        a=a[path[i]];
-    }
-    return a;
-}
-
-
-
 
 
 
@@ -392,7 +335,9 @@ state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
 var ax2 = saveGoal();
 
-// Apparatus for importing proofs from orcat_test.js
+
+
+// ==== Apparatus for importing proofs from orcat_test.js ====
 var thms = {};
 thms.imim1 = imim1;
 thms.imim2 = imim2;
@@ -1612,80 +1557,3 @@ Async.parallel(
             throw(new Error(e));
         }
     });
-
-/*
-
-
-==== Imported Proofs: ====
-
-startWith("equals_a_a")
-applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_times_a_c_times_b_d",0)
-applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
-generify()
-generify()
-applyArrow([],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B",0)
-defthm: _dv_a_z_b_z___harr_brvbar_a_b_exist_z_equals_times_a_z_b = &brvbar;
-
-startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
-applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
-generify()
-generify()
-applyArrow([1,1,1],"harr_harr_A_B_harr_B_A",0)
-applyArrow([],"_dv_A_z_B_y___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_y_A_exist_z_B",0)
-//defthm: _dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b = &le;
-saveAs("_dv_a_y_a_z_b_y_b_z___harr_exist_z_equals_plus_a_z_b_exist_y_equals_plus_a_y_b") //undefined
-
-startWith("_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b")
-applyArrow([0],"_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b",0)
-saveAs("_dv_a_y_a_z_b_y_b_z___harr_exist_z_equals_plus_a_z_b_exist_y_equals_plus_a_y_b") //undefined
-
-startWith("_dv_a_z___exist_z_equals_z_a")
-applyArrow([1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
-applyArrow([1,1],"equals_plus_a_Oslash_a",0)
-applyArrow([],"_dv_a_z_b_z___harr_le_a_b_exist_z_equals_plus_a_z_b",1)
-saveAs("le_a_a") //undefined
-
-startWith("equals_plus_a_Oslash_a")
-applyArrow([0],"equals_plus_a_Oslash_a",0)
-saveAs("equals_a_a") //undefined
-
-
-PushUp Notes:
-
-| [[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 1,3,&rarr;   | 1 |
-| [[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 1,3,&rarr;   | 2 |
-| [[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 2,3,&rarr;   | 1 |
-| [[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]]       | ["&rarr;"]                               | For query &rarr;   | 2,3,&rarr;   | 2 |
-| [[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 1,3,&rarr;   | 1 |
-| [[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 1,3,&rarr;   | 2 |
-| [[],[0,[0,0,1],[0,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 2,3,&rarr;   | 1 |
-| [[],[0,[0,0,1],[0,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&and;"]                       | For query &and;    | 2,3,&rarr;   | 2 |
-| [[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 1,3,&harr;   | 1 |
-| [[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 1,3,&harr;   | 2 |
-| [[],[0,[1,0,1],[1,[0,2,0],[0,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 2,3,&harr;   | 1 |
-| [[],[0,[1,0,1],[1,[0,2,0],[0,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &rarr;   | 2,3,&harr;   | 2 |
-| [[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 1,3,&harr;   | 1 |
-| [[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 1,3,&harr;   | 2 |
-| [[],[0,[1,0,1],[1,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 2,3,&harr;   | 1 |
-| [[],[0,[1,0,1],[1,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&harr;"]                      | For query &harr;   | 2,3,&harr;   | 2 |
-| [[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]]       | ["&rarr;","&harr;","&and;"]              | For query &and;    | 1,3,&harr;   | 2 |
-| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&equals;","&plus;"]           | For query &plus;   | 2,3,&equals; | 2 |
-| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&and;"]              | For query &and;    | 2,3,&harr;   | 1 |
-| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&and;"]              | For query &and;    | 2,3,&harr;   | 2 |
-| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&or;"]               | For query &or;     | 2,3,&harr;   | 1 |
-| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]       | ["&rarr;","&harr;","&or;"]               | For query &or;     | 2,3,&harr;   | 2 |
-| [[],[0,[1,0,1],[2,[1,0,2],[1,1,2]]],[]]       | ["&rarr;","&equals;","&harr;"]           | For query &equals; | 1,3,&equals; | 2 |
-| [[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]]       | ["&rarr;","&equals;","&harr;"]           | For query &equals; | 2,3,&equals; | 2 |
-| [[],[0,[0,0,1],[0,[1,1],[1,0]]],[]]           | ["&rarr;","&not;"]                       | For query &not;    | 1,2,&rarr;   | 1 |
-| [[],[0,[0,0,1],[0,[1,1],[1,0]]],[]]           | ["&rarr;","&not;"]                       | For query &not;    | 1,2,&rarr;   | 2 |
-| [[],[0,[1,0,1],[1,[2,1],[2,0]]],[]]           | ["&rarr;","&harr;","&not;"]              | For query &not;    | 1,2,&harr;   | 1 |
-| [[],[0,[1,0,1],[1,[2,1],[2,0]]],[]]           | ["&rarr;","&harr;","&not;"]              | For query &not;    | 1,2,&harr;   | 2 |
-| [[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;"]                    | For query &forall; | 2,3,&rarr;   | 1 |
-| [[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;"]                    | For query &forall; | 2,3,&rarr;   | 2 |
-| [[],[0,[1,0,[0,1,2]],[0,[2,0,1],[2,0,2]]],[]] | ["&rarr;","&forall;","&exist;"]          | For query &exist;  | 2,3,&rarr;   | 2 |
-| [[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;","&harr;"]           | For query &forall; | 2,3,&harr;   | 1 |
-| [[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]] | ["&rarr;","&forall;","&harr;"]           | For query &forall; | 2,3,&harr;   | 2 |
-| [[],[0,[1,0,[2,1,2]],[2,[3,0,1],[3,0,2]]],[]] | ["&rarr;","&forall;","&harr;","&exist;"] | For query &exist;  | 2,3,&harr;   | 2 |
-
-
-*/
