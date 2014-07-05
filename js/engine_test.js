@@ -51,6 +51,7 @@ function match(exp, pattern, map) {
 var scheme = {};
 scheme.pushUpMemo = {};
 scheme.detachMemo = {};
+scheme.greaseMemo = {};
 scheme.onAddFact = function(fact) {
 	var that = this;
 	var coreStr = JSON.stringify(fact.Core);
@@ -102,6 +103,9 @@ scheme.onAddFact = function(fact) {
 				}
 			}
 		}
+	} else if (coreStr == "[[0],[0,1,0],[]]") {
+		// ax-gen
+		this.greaseMemo[fact.Skin.TermNames[0]] = {fact:fact};
 	}
 
 	// Next, detect pushUp theorems.
@@ -113,6 +117,8 @@ scheme.onAddFact = function(fact) {
 	var stmt = fact.Core[Fact.CORE_STMT];
 	var terms = fact.Skin.TermNames;
 	var detacher = this.detachMemo[[terms[0], [2]]];
+	var grease = null;
+	
 	if ((stmt.length != 3) || (stmt[0] != 0) || !detacher) {
 		// Root operation must be some version of implication -- i.e., something
 		// we can detach.
@@ -125,14 +131,44 @@ scheme.onAddFact = function(fact) {
 		return
 	}
 	
-	if (!Array.isArray(stmt[1]) || (stmt[1].length != 3) ||
-		(stmt[1][1] != 0) || (stmt[1][2] != 1)) {
+	if (!Array.isArray(stmt[1]) || (stmt[1].length != 3) || (stmt[1][1] != 0)) {
 		// Antecedent must be a binary operation on two args
-		// TODO: allow forall grease
 		return;
 	}
-	
-	var anteArrow = terms[stmt[1][0]];
+	var anteArrow;
+	var anteArg1;
+	var anteArg2;
+	var greaser;
+	if (stmt[1][2] == 1) {
+		// This is a greaseless pushUp
+		anteArrow = terms[stmt[1][0]];
+		anteArg1 = 0;
+		anteArg2 = 1;
+	} else if (Array.isArray(stmt[1][2]) &&
+			   (greaser = this.greaseMemo[terms[stmt[1][0]]]) &&
+			   (stmt[1][2].length == 3) &&
+			   (stmt[1][2][1] == 1) &&
+			   (stmt[1][2][2] == 2)) {
+		// Handle greasing forall
+		anteArrow = terms[stmt[1][2][0]];
+		anteArg1 = 1;
+		anteArg2 = 2;
+		grease = function(pusp, work) {
+            var x = pusp.newSteps.pop();
+            var b = pusp.newSteps.pop();
+            var a = pusp.newSteps.pop();
+            pusp.newSteps.push(x);
+            pusp.newSteps.push(nameDep(work, greaser.fact));
+            pusp.newSteps.push(x);
+            pusp.newSteps.push(a);
+            pusp.newSteps.push(b);
+        };
+	} else {
+		// Not a valid pushUp
+		return;
+	}
+		
+	 
 	if (!Array.isArray(stmt[2]) || (stmt[2].length != 3) ||
 		(!Array.isArray(stmt[2][1])) || (!Array.isArray(stmt[2][2])) ||
 		(stmt[2][1].length != stmt[2][2].length) ||
@@ -151,18 +187,18 @@ scheme.onAddFact = function(fact) {
 		var arg1 = stmt[2][1][i];
 		var arg2 = stmt[2][2][i];
 		switch (arg1) {
-		case 1:
+		case anteArg2:
 			// Covariant facts have 0 in the first term and 1 in the second.
 			// Contravariant facts have the reverse.
 			isCov = false;
 			// fall through
-		case 0:
+		case anteArg1:
 			if (whichArg != null) {
 				// Antecedent args cannot appear more than once
 				return;
 			}
 			whichArg = i;
-			if (arg2 != (1 - arg1)) {
+			if (arg1 + arg2 != anteArg1 + anteArg2) {
 				// Corresponding arg in other term must be the other of the two
 				// antecedent args
 				return;
@@ -175,60 +211,12 @@ scheme.onAddFact = function(fact) {
 			}
 		}
 	}
-
-
-	console.log("Got fact "+  fact.getMark() + " for query " + [childArrow, whichArg, childArity, anteArrow, 2] + " iscov=" + isCov);
 	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 2]] =
 		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   2, isCov, parentArrow);
+				   2, isCov, parentArrow, grease);
 	this.pushUpMemo[[childArrow, whichArg, childArity, anteArrow, 1]] =
 		new PushUp(detacher.fact, childArrow, whichArg, childArity, anteArrow,
-				   1, !isCov, parentArrow);
-	/*
-	else if (map = match(fact.Core,
-						   [[],[0,["x",0,1],["y",["z",2,0],["z",2,1]]],[]])) {
-		//| [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]
-		//| ["&rarr;","&equals;","&plus;"]
-		//| For query &plus;   | 2,3,&equals; | 2 |
-		//| [[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]]
-		//| ["&rarr;","&equals;","&harr;"]
-		//| For query &equals; | 2,3,&equals; | 2 |
-		//| [[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"] For query &rarr;,2,3,&rarr;,2
-
-		var tn = fact.Skin.TermNames;
-		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
-		if (rarrAxmp) {
-			this.pushUpMemo[[tn[map.z], 2, 3, tn[map.x], 2]] =
-				new PushUp(rarrAxmp.fact, tn[map.z], 2, 3, tn[map.x], 2, true);
-			this.pushUpMemo[[tn[map.z], 2, 3, tn[map.x], 1]] =
-				new PushUp(rarrAxmp.fact, tn[map.z], 2, 3, tn[map.x], 1, false);
-		}
-	} else if (map = match(fact.Core,
-						   [[],[0,["x",0,1],["y",["z",1,2],["z",0,2]]],[]])) {
-		//[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"] For query &rarr;,1,3,&rarr;,1
-		var tn = fact.Skin.TermNames;
-		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
-		if (rarrAxmp) {
-			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 1]] =
-				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 1, true);
-			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 2]] =
-				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 2, false);
-		}
-	} else if (map = match(fact.Core,
-						   [[],[0,["x",0,1],["y",["z",0,2],["z",1,2]]],[]])) {
-		//[[],[0,[0,0,1],[0,[1,0,2],[1,1,2]]],[]];["&rarr;","&and;"] For query &and;,1,3,&rarr;,1
-		//[[],[0,[1,0,1],[1,[1,0,2],[1,1,2]]],[]];["&rarr;","&harr;"] For query &harr;,1,3,&harr;,2
-		//[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]];["&rarr;","&harr;","&and;"] For query &and;,1,3,&harr;,2
-		var tn = fact.Skin.TermNames;
-		var rarrAxmp = this.detachMemo[[tn[0], [2]]];
-		if (rarrAxmp) {
-			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 1]] =
-				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 1, false);
-			this.pushUpMemo[[tn[map.z], 1, 3, tn[map.x], 2]] =
-				new PushUp(rarrAxmp.fact, tn[map.z], 1, 3, tn[map.x], 2, true);
-		}
-	}
-*/
+				   1, !isCov, parentArrow, grease);
 };
 
 function applyFact(work, workPath, fact, factPath) {
@@ -506,7 +494,7 @@ function Context() {
                                 // TODO:  should actually backpropagate this!
                                 throw new Error(
                                     "Bad mandHyp " + mandHyp + " at " +
-                                        (i-depFvib.length+j) + " in " +
+                                        j + " in " +
                                         JSON.stringify(fact) + " to " +
                                         depMark + " of " +
                                         JSON.stringify(depFvib) + " dep " +
@@ -608,7 +596,7 @@ function getParentArrow(goalOp, toolOp) { // TODO: XXX HACK
 // we want to replace it with the tool's other arg.
 // isCovar tells whether the tool args will be reversed in order.
 function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
-				parentArrow) {
+				parentArrow, grease) {
 	this.axMp = axMp;
     this.goalOp = goalOp;
     this.goalArg = goalArg;
@@ -618,6 +606,8 @@ function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
     this.isCovar = isCovar;
 	if (!parentArrow) parentArrow = getParentArrow(goalOp, toolOp);
 	this.parentArrow = parentArrow;
+	this.grease = grease;
+
     // Goal's parent: [goalOp, g0, g1, ..., gGoalArg=Goal, ...]
     // Tool: [toolOp, otherToolArg, tToolArg=Goal]
     // new goal: [goalOp, g0, g1, ..., otherToolArg, ...]
@@ -645,7 +635,7 @@ function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
                                         isCovar ? arr2 : arr1,
                                         isCovar ? arr1 : arr2]];
     if (goalOp == '&forall;' || goalOp == '&exist;') { // TODO XXX HACK
-        this.grease = function(pusp, work) {
+		if (!this.grease) this.grease = function(pusp, work) {
             var x = pusp.newSteps.pop();
             var b = pusp.newSteps.pop();
             var a = pusp.newSteps.pop();
@@ -656,6 +646,7 @@ function PushUp(axMp, goalOp, goalArg, goalOpArity, toolOp, toolArg, isCovar,
             pusp.newSteps.push(a);
             pusp.newSteps.push(b);
         };
+
         stmt[1] = [tmpFact.nameTerm("&forall;"), 2, stmt[1]];
         tmpFact.setStmt(stmt);
         tmpFact = Engine.canonicalize(tmpFact);
@@ -684,7 +675,7 @@ PushUp.prototype.pushUp = function(pusp, work) {
             arr2.push(arg);
         }
     }
-    this.grease(pusp, work);
+	if (this.grease) this.grease(pusp, work);
     var pushupFact = sfbm(this.mark);
     pusp.newSteps.push(nameDep(work, pushupFact));
     pusp.newSteps.push(nameDep(work, this.axMp));
@@ -693,10 +684,6 @@ PushUp.prototype.pushUp = function(pusp, work) {
                  this.isCovar ? arr2 : arr1,
                  this.isCovar ? arr1 : arr2];
     pusp.toolPath = [this.isCovar ? 2 : 1];
-}
-PushUp.prototype.grease = function(pusp, work) {
-    // Called after the pushupFact's mandyhps have been appended to
-    // pusp.newSteps, but before the fact itself is appended. no-op by default.
 }
 
 

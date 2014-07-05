@@ -2,6 +2,8 @@
     name:"&forall;",
     depends:["&or;"],  // TODO: figure out a content-addressable scheme
     axioms:[
+        {Core:[[0],[0,1,0],[]], // generify
+         Skin:{TermNames:["&forall;"]}},
         {Core:[[],[0,[1,0,1],1],[]],
          Skin:{TermNames:["&rarr;","&forall;"]}},
         {Core:[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]],
@@ -12,8 +14,6 @@
          Skin:{TermNames:["&rarr;","&not;","&forall;"]}},
         {Core:[[],[0,0,[1,1,0]],[[0,1]]],
          Skin:{TermNames:["&rarr;","&forall;"]}},
-        {Core:[[0],[0,1,0],[]], // generify
-         Skin:{TermNames:["&forall;"]}},
     ],
     goals:[
         {Core:[[],[0,[1,0,[2,1,2]],[0,[1,0,1],[1,0,2]]],[]],
