@@ -1,4 +1,4 @@
-var Fact = require('../../caghni/js/fact.js'); //XXX
+var Fact = require('./fact.js'); //XXX
 //var Crypto = require('crypto');
 
 // This engine assists in authoring proofs by working backwards from a target

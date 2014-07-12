@@ -1503,6 +1503,7 @@ saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
   */
 
 console.log("proved " + proofCtx.length() + " thms.");
+
 // ==== Verify ====
 GH = global.GH = {};
 global.log = console.log;
@@ -1557,3 +1558,4 @@ Async.parallel(
             throw(new Error(e));
         }
     });
+/**/
