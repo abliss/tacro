@@ -3,7 +3,8 @@
 .varA { background: #9370db; }
 .varB { background: #70db93; }
 .varC { background: #f13e44; }
-.varD { background: #bbeebb; }
+.varD { background: #11eebb; }
+.varE { background: #006600; }
 /*
 .varA.bindingright { background: #7f00ff; }
 .varB.bindingright { background: #426f42; }
@@ -12,24 +13,13 @@
 .termbox {
     display:inline-block;
 }
-.termbox span { 
+.termbox span, .termbox a { 
     display:inline-block;
     vertical-align:top;
     padding:0px;
     marign:0px;
     overflow:visible;
 }
-.termbox span.term { 
-/*    padding:1px;*/
-}
-/*
-.termbox .txt {
-    text-align:center;
-    position:relative;
-    margin:-0.5em 0;
-    top:50%;
-}
-*/
 .bindingleft>.hyprow>.bindingright,  .bindingleft>.bindingright, .bindingright>.hyprow>.bindingleft,  .bindingright>.bindingleft {
     -webkit-transform: matrix(0,-1,-1,0,0,0);
 }
@@ -47,15 +37,15 @@
 }
 
 
-.term {
-    border-top: 2px solid gray;
-    border-right: 2px solid black;
+.term a {
+    border-left: 2px solid gray;
+    border-bottom: 2px solid black;
 }
 
 .termbox .hyprow {
     position:relative;
 }
-.termbox span{
+.termbox span, .termbox a{
     box-sizing:border-box;
     -webkit-box-sizing:border-box;
 }
@@ -72,19 +62,14 @@
     background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#808080), to(#505050)); 
 }
 
-/*
-.depth1>span>.operator {
-    background:#808080;
-}
-.depth2>span>.operator {
-    background:#B0B0B0
-}
-*/
 
 .termbox .variable .txt {
     opacity:0;
 }
 
+.termbox a {
+	color: black;
+}
 body {
     margin:0px;
     width:100%;
@@ -96,9 +81,7 @@ body {
     box-sizing:border-box;
     width:100%;
     height:100%;
-    background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#404040), to(#202020)); 
-    border-top: 2em solid gray;
-    border-right:2em solid black;
+    /*background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#404040), to(#202020)); */
     text-align:center;
 }
 #shooter {

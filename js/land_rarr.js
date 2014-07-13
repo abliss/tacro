@@ -9,7 +9,7 @@
         // calculus,we use one of Hilbert's because it provides the necessary
         // "binding theorems" for rarr over itself.
         // ax-mp
-        {Core:[[1,[0,1,0]],0,[]],
+        {Core:[[0,[0,0,1]],1,[]],
          Skin:{TermNames:["&rarr;"]}},
         // ax1
         {Core:[[],[0,0,[0,1,0]],[]],

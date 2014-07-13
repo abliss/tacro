@@ -632,6 +632,7 @@ var Fact = require('./fact.js'); //XXX
 		if (coreStr == "[[0,[0,0,1]],1,[]]") {
 			// ax-mp
 			rarr = fact.Skin.TermNames[0];
+			console.log("Discovered ax-mp:" + JSON.stringify(fact));
 			scheme.detachMemo[[rarr,[2]]] = {
 				fact: fact,
 				detach: function(pusp, work) {
@@ -645,6 +646,7 @@ var Fact = require('./fact.js'); //XXX
 			harr = fact.Skin.TermNames[1];
 			rarrAxmp = scheme.detachMemo[[rarr, [2]]];
 			if (rarrAxmp) {
+				console.log("Discovered bi1:" + JSON.stringify(fact));
 				scheme.detachMemo[[harr,[2]]] = {
 					fact: fact,
 					detach: function(pusp, work) {
@@ -663,6 +665,7 @@ var Fact = require('./fact.js'); //XXX
 			harr = fact.Skin.TermNames[1];
 			rarrAxmp = scheme.detachMemo[[rarr, [2]]];
 			if (rarrAxmp) {
+				console.log("Discovered bi2:" + JSON.stringify(fact));
 				scheme.detachMemo[[harr,[1]]] = {
 					fact: fact,
 					detach: function(pusp, work) {
@@ -677,6 +680,7 @@ var Fact = require('./fact.js'); //XXX
 			}
 		} else if (coreStr == "[[0],[0,1,0],[]]") {
 			// ax-gen
+			console.log("Discovered ax-gen:" + JSON.stringify(fact));
 			scheme.greaseMemo[fact.Skin.TermNames[0]] = {fact:fact};
 		}
 
@@ -784,6 +788,7 @@ var Fact = require('./fact.js'); //XXX
 				}
 			}
 		}
+		console.log("Discovered pushup:" + JSON.stringify(fact));
 		for (var i = 1; i <= 2; i++) {
 			scheme.pushUpMemo[[childArrow, whichArg, anteArrow, i]] =
 				new PushUp(detacher.fact, childArrow, whichArg, childArity,

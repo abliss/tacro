@@ -1,6 +1,9 @@
 // Hackish for now.
 
 var Fact = require('./fact.js');
+var Engine = require('./engine.js');
+var state = {};
+
 function removeClass(node, className) {
     while (node.className.match(className)) {
         node.className = node.className.replace(className,'');
@@ -18,24 +21,21 @@ function newVarNamer() {
     };
 }
 
-function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap) {
-    var termSpan = doc.createElement("span");
+function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb, tag) {
+    var termSpan;
     spanMap[path] = termSpan;
     var width = 0;
     var height = 0;
-    termSpan.className += " term";
-    termSpan.className += " depth" + path.length;
-    if (path.length > 0) {
-        var inputNum = path[path.length - 1];
-        termSpan.className += " input" + inputNum + "of" + inputTot;
-    }
+
     if (Array.isArray(exp)) {
+		termSpan = doc.createElement("span");
         var termName = fact.Skin.TermNames[exp[0]];
         var arity = exp.length - 1;
         var children = [];
         for (var i = 1; i <= arity; i++) {
             path.push(i);
-            children.push(makeTree(doc, fact, exp[i], path, arity, varNamer, spanMap));
+            children.push(makeTree(doc, fact, exp[i], path, arity, varNamer,
+								   spanMap, cb, tag));
             path.pop();
         }
         switch (arity) {
@@ -46,9 +46,11 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap) {
             path.pop();
             termSpan.appendChild(rowSpan);
             rowSpan.className += " hyprow";
-            var opSpan = doc.createElement("span");
-            path.push("o");
+            var opSpan = doc.createElement("a");
+            path.push("0");
             spanMap[path] = opSpan;
+			opSpan.href = "#" + tag + "=" + path;
+			opSpan.onclick = cb(path);
             path.pop();
             rowSpan.appendChild(children[0].span);
             rowSpan.appendChild(opSpan);
@@ -78,6 +80,9 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap) {
             throw new Error("TODO: XXX Only arity 2 supported");
         }
     } else {
+		termSpan = doc.createElement("a");
+		termSpan.href = "#" + tag + "=" + path;
+		termSpan.onclick = cb(path);
         termSpan.className += " variable";
         termSpan.className += " var" + varNamer(exp);
         width = 1;
@@ -99,15 +104,21 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap) {
         }
         txtSpan.innerHTML = innerHTML;
     }
+    termSpan.className += " term";
+    termSpan.className += " depth" + path.length;
+    if (path.length > 0) {
+        var inputNum = path[path.length - 1];
+        termSpan.className += " input" + inputNum + "of" + inputTot;
+    }
     return ({span:termSpan, width:width, height:height});
 }
 
-function makeThmBox(fact) {
-	var stmt = fact.Core[Fact.CORE_STMT];
+function makeThmBox(fact, exp, cb, tag) {
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var spanMap = {};
-    var tree = makeTree(document, fact, stmt, [], -1, newVarNamer(), spanMap);
+    var tree = makeTree(document, fact, exp, [], -1, newVarNamer(), spanMap,
+						cb, tag);
     termBox.appendChild(tree.span);
     tree.span.style.width = "100%";
     tree.span.style.height = "100%";
@@ -125,35 +136,37 @@ function size(thmBox, ems) {
     thmBox.tree.span.style["font-size"] = "" + (50 * ems / thmBox.tree.width) + "%";
 }
 
-function addToShooter(fact) {
-    var box;
+function addToShooter(factData) {
+	var fact = new Fact(factData);
+	Engine.onAddFact(fact);
 	if (fact.Core[Fact.CORE_HYPS].length == 0) {
-		box = makeThmBox(fact);
+		var box;
+		var factOnclickMaker = function(path) {
+			var factPath = path.slice();
+			if (factPath[factPath.length-1] == 0) {
+				factPath.pop();
+			}
+			return function() {
+				try {
+					console.log("calling applyFact: " +
+								JSON.stringify(state.work) + "\n" +
+								JSON.stringify(state.workPath) + "\n" +
+								JSON.stringify(fact) + "\n" +
+								JSON.stringify(factPath) + "\n");
+					state.work = Engine.applyFact(state.work, state.workPath,
+												  fact, factPath);
+					redraw();
+				} catch (e) {
+					console.log("Error in applyFact: " + e);
+					console.log(e.stack);
+				}
+			};
+		}
+		box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker,"f");
 		size(box, 4);
 		document.getElementById("shooterTape").appendChild(box);
 	} // TODO: handle axioms with hyps
 }
-
-/*
-var thmsToAdd = exports.theory.theorems();
-function doWork() {
-    if (thmsToAdd.length > 0) {
-        addToShooter(thmsToAdd.shift());
-        window.setTimeout(doWork, 10);
-    }
-}
-doWork();
-
-var box = makeThmBox("rarr_rarr_A_rarr_B_C_rarr_rarr_A_B_rarr_A_C");
-size(box, box.tree.width * 2);
-document.getElementById("well").appendChild(box);
-
-function nextStep() {
-}
-document.body.onclick = nextStep;
-document.body.onkeyup = nextStep;
-document.body.focus();
-*/
 
 var allLands = require('./all_lands.js');
 var landMap = {};
@@ -166,7 +179,40 @@ allLands.forEach(function(land) {
 var land = landDepMap[undefined];
 land.axioms.forEach(addToShooter);
 
-var goal = land.goals[0];
-var box = makeThmBox(goal);
-size(box, box.tree.width * 2);
-document.getElementById("well").appendChild(box);
+
+function workOnclickMaker(path) {
+	var goalPath = path.slice();
+	if (goalPath[goalPath.length-1] == 0) {
+		goalPath.pop();
+	}
+	return function() {
+		state.workPath = goalPath;
+	}
+};
+
+function startWork(fact) {
+    var work = new Fact(fact);
+    work.setHyps([work.Core[Fact.CORE_STMT]]);
+    work.Skin.HypNames = ["Hyps.0"];
+    if (!work.Tree.Cmd) {
+        work.setCmd("thm");
+    }
+    work.setProof(["Hyps.0"]);
+    return Engine.canonicalize(work);
+}
+
+state.work = startWork(land.goals[0]);
+var well = document.getElementById("well");
+
+function redraw() {
+	well.removeChild(well.firstChild);
+	console.log("Redrawing: " + JSON.stringify(state.work));
+	var box = makeThmBox(state.work,
+						 state.work.Core[Fact.CORE_HYPS][0],
+						 workOnclickMaker,
+						 "g");
+	size(box, box.tree.width * 2);
+	well.appendChild(box);
+}
+
+redraw();
