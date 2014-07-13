@@ -148,18 +148,31 @@ function addToShooter(factData) {
 			}
 			return function() {
 				try {
-					console.log("calling applyFact: " +
-								JSON.stringify(state.work) + "\n" +
-								JSON.stringify(state.workPath) + "\n" +
-								JSON.stringify(fact) + "\n" +
-								JSON.stringify(factPath) + "\n");
-					state.work = Engine.applyFact(state.work, state.workPath,
-												  fact, factPath);
-					redraw();
+					if (state.workPath != null) {
+						console.log("calling applyFact: " +
+									JSON.stringify(state.work) + "\n" +
+									JSON.stringify(state.workPath) + "\n" +
+									JSON.stringify(fact) + "\n" +
+									JSON.stringify(factPath) + "\n");
+						state.work = Engine.applyFact(state.work,
+													  state.workPath,
+													  fact, factPath);
+						delete state.workPath;
+					} else if (factPath.length==0) {
+						console.log("calling ground: " +
+									JSON.stringify(state.work) + "\n" +
+									JSON.stringify(fact) + "\n");
+						var thm = Engine.ground(state.work, fact);
+						addToShooter(thm);
+						nextGoal();
+					} else {
+						console.log("wtf? " + JSON.stringify(factPath));
+					}
 				} catch (e) {
 					console.log("Error in applyFact: " + e);
 					console.log(e.stack);
 				}
+				redraw();
 			};
 		}
 		box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker,"f");
@@ -176,8 +189,8 @@ allLands.forEach(function(land) {
 	landDepMap[land.depends[0]] = land;
 });
 
-var land = landDepMap[undefined];
-land.axioms.forEach(addToShooter);
+state.land = landDepMap[undefined];
+state.land.axioms.forEach(addToShooter);
 
 
 function workOnclickMaker(path) {
@@ -201,10 +214,18 @@ function startWork(fact) {
     return Engine.canonicalize(work);
 }
 
-state.work = startWork(land.goals[0]);
-var well = document.getElementById("well");
+function nextGoal() {
+	state.goalNum++;
+	if (state.goalNum >= state.land.goals.length) {
+		alert("no more goals");
+		//TODO: load next land
+	} else {
+		state.work = startWork(state.land.goals[state.goalNum]);
+	}
+}
 
 function redraw() {
+	var well = document.getElementById("well");
 	well.removeChild(well.firstChild);
 	console.log("Redrawing: " + JSON.stringify(state.work));
 	var box = makeThmBox(state.work,
@@ -214,5 +235,9 @@ function redraw() {
 	size(box, box.tree.width * 2);
 	well.appendChild(box);
 }
+
+
+state.goalNum = -1;
+nextGoal();
 
 redraw();

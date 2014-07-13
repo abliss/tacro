@@ -548,7 +548,7 @@ var Fact = require('./fact.js'); //XXX
         // Replace with proof of hyp instance
         work.Tree.Proof.unshift.apply(work.Tree.Proof, newSteps);
         if (DEBUG) {console.log("# Work before canon:" + JSON.stringify(work));}
-        work = module.exports.canonicalize(work);
+        work = canonicalize(work);
         if (DEBUG) {console.log("# Work after canon:" + JSON.stringify(work));}
         return work;
     };
@@ -558,7 +558,7 @@ var Fact = require('./fact.js'); //XXX
     // Renames remaining variable Skins to Vn
     // Consolidates and sort freelists
     // TODO: sort deps alphabetically
-    module.exports.canonicalize = function(work) {
+    function canonicalize(work) {
         var out = new Fact();
         function mapTerm(t) {
             return out.nameTerm(work.Skin.TermNames[t]);
@@ -623,6 +623,7 @@ var Fact = require('./fact.js'); //XXX
         }
         return out;
     };
+	module.exports.canonicalize = canonicalize;
 
 	// Register this fact as available to the prover for pushUp or detach.
 	module.exports.onAddFact = function(fact) {
