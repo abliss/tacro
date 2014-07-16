@@ -10,8 +10,6 @@ var Fact = require('./fact.js'); //XXX
 // hope to "ground" the workspace in a known Fact, leaving us with a completed
 // zero-hypothesis theorem.
 (function(module) {
-    if (!module.exports) module.exports = {};
-
 	// Enable for logs
     var DEBUG = false;
 
@@ -102,12 +100,22 @@ var Fact = require('./fact.js'); //XXX
     }
 
     function fingerprint(obj) {
-		return obj
-		/*
-        var hash = Crypto.createHash('sha1');
-        hash.update(JSON.stringify(obj));
-        return "sha1-" + hash.digest('hex');
-		*/
+		var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-";
+		var str = JSON.stringify(obj);
+		var hash = 0, i, chr, len;
+		if (str.length == 0) return hash;
+		for (i = 0, len = str.length; i < len; i++) {
+			chr = str.charCodeAt(i);
+			hash = ((hash << 5) - hash) + chr;
+			//hash |= 0; // Convert to 32bit integer
+		}
+		var a = "";
+		while (hash != 0 && hash != -1) {
+			a += B64[hash & 63];
+			hash = hash >> 6;
+		}
+		//console.log("str = " + str + "\nhash=" + hash + "\na  = " + a);
+		return a;
     }
 
     function nameDep(workFact, depFact) {
@@ -171,7 +179,7 @@ var Fact = require('./fact.js'); //XXX
         }
         if ((typeof workOrExp == 'number') || Array.isArray(workOrExp)) {
             return replaceDummies(workOrExp);
-        } else {
+        } else if (workOrExp.ensureFree) {
             workOrExp.Core[Fact.CORE_STMT] = replaceDummies(
                 workOrExp.Core[Fact.CORE_STMT])
             workOrExp.Core[Fact.CORE_HYPS] =
@@ -189,7 +197,9 @@ var Fact = require('./fact.js'); //XXX
                 });
             });
             return workOrExp;
-        }
+        } else {
+			throw new Error("Not work or exp: " + workOrExp);
+		}
     }
 
     // Returns a list of mandatory hypotheses (i.e., values for each var) of the
@@ -366,7 +376,7 @@ var Fact = require('./fact.js'); //XXX
     // subexpressions will be unified; then the fact (and the required pushup
     // procedures) will be added to the beginning of the work's proof, and the
     // work's hypthesis will be updated.
-    module.exports.applyFact = function(work, workPath, fact, factPath) {
+    function applyFact(work, workPath, fact, factPath) {
         var varMap = getMandHyps(work, workPath, fact, factPath);
         if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
         // If that didn't throw, we can start mutating
@@ -462,7 +472,7 @@ var Fact = require('./fact.js'); //XXX
     // Applies the given inference fact, which must have exactly one
     // hypothesis. The conclusion of the inference must unify against the work's
     // only hypothesis. The work's new hypothesis will be the fact's hypothesis.
-    module.exports.applyInference = function(work, infFact) {
+    function applyInference(work, infFact) {
         var varMap = getMandHyps(work, [], infFact, []);
         if (DEBUG) {console.log("# Inf MandHyps: " + JSON.stringify(varMap));}
         var newSteps = [];
@@ -500,8 +510,7 @@ var Fact = require('./fact.js'); //XXX
 
     // Replace a dummy variable with a new exp containing the given term and
     // some new dummy variables.  TODO: should not allow specifying binding var
-    module.exports.specifyDummy = function(work, dummyPath,
-										   newTerm, newTermArity) {
+    function specifyDummy(work, dummyPath, newTerm, newTermArity) {
         // TODO: duplicated code
         var nonDummy = {};
         var dummyMap = {};
@@ -527,7 +536,7 @@ var Fact = require('./fact.js'); //XXX
     // Asserts that the work's only hypothesis is an instance of the given
     // fact. Returns a "grounded" theorem, i.e. one with no hypothesis,
     // representing a completed proof.
-    module.exports.ground = function(work, dirtFact) {
+    function ground(work, dirtFact) {
         // verify that the hyp is an instance of the dirt
         var varMap = getMandHyps(work, [], dirtFact, []);
         if (DEBUG) {console.log("# ground MandHyps: "+JSON.stringify(varMap));}
@@ -623,17 +632,16 @@ var Fact = require('./fact.js'); //XXX
         }
         return out;
     };
-	module.exports.canonicalize = canonicalize;
 
 	// Register this fact as available to the prover for pushUp or detach.
-	module.exports.onAddFact = function(fact) {
+	function onAddFact(fact) {
 		var coreStr = JSON.stringify(fact.Core);
 		var rarr, harr, rarr, rarrAxmp;
 		// First, detect detachment theorems
 		if (coreStr == "[[0,[0,0,1]],1,[]]") {
 			// ax-mp
 			rarr = fact.Skin.TermNames[0];
-			console.log("Discovered ax-mp:" + JSON.stringify(fact));
+			//console.log("Discovered ax-mp:" + JSON.stringify(fact));
 			scheme.detachMemo[[rarr,[2]]] = {
 				fact: fact,
 				detach: function(pusp, work) {
@@ -647,7 +655,7 @@ var Fact = require('./fact.js'); //XXX
 			harr = fact.Skin.TermNames[1];
 			rarrAxmp = scheme.detachMemo[[rarr, [2]]];
 			if (rarrAxmp) {
-				console.log("Discovered bi1:" + JSON.stringify(fact));
+				//console.log("Discovered bi1:" + JSON.stringify(fact));
 				scheme.detachMemo[[harr,[2]]] = {
 					fact: fact,
 					detach: function(pusp, work) {
@@ -666,7 +674,7 @@ var Fact = require('./fact.js'); //XXX
 			harr = fact.Skin.TermNames[1];
 			rarrAxmp = scheme.detachMemo[[rarr, [2]]];
 			if (rarrAxmp) {
-				console.log("Discovered bi2:" + JSON.stringify(fact));
+				//console.log("Discovered bi2:" + JSON.stringify(fact));
 				scheme.detachMemo[[harr,[1]]] = {
 					fact: fact,
 					detach: function(pusp, work) {
@@ -681,7 +689,7 @@ var Fact = require('./fact.js'); //XXX
 			}
 		} else if (coreStr == "[[0],[0,1,0],[]]") {
 			// ax-gen
-			console.log("Discovered ax-gen:" + JSON.stringify(fact));
+			//console.log("Discovered ax-gen:" + JSON.stringify(fact));
 			scheme.greaseMemo[fact.Skin.TermNames[0]] = {fact:fact};
 		}
 
@@ -789,7 +797,7 @@ var Fact = require('./fact.js'); //XXX
 				}
 			}
 		}
-		console.log("Discovered pushup:" + JSON.stringify(fact));
+		//console.log("Discovered pushup:" + JSON.stringify(fact));
 		for (var i = 1; i <= 2; i++) {
 			scheme.pushUpMemo[[childArrow, whichArg, anteArrow, i]] =
 				new PushUp(detacher.fact, childArrow, whichArg, childArity,
@@ -797,4 +805,14 @@ var Fact = require('./fact.js'); //XXX
 						   parentArrow, grease, fact);
 		}
 	};
+
+    if (!module.exports) module.exports = {};
+	module.exports.onAddFact = onAddFact;
+	module.exports.canonicalize = canonicalize;
+	module.exports.ground = ground;
+	module.exports.specifyDummy = specifyDummy;
+	module.exports.applyInference = applyInference;
+	module.exports.applyFact = applyFact;
+	module.exports.fingerprint = fingerprint;
+	
 })(module);
