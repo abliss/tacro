@@ -2,8 +2,8 @@
 
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
-var state = {};
-var STATE_KEY = "lastState-v02";
+var state;
+var STATE_KEY = "lastState-v05";
 
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
@@ -18,6 +18,14 @@ if (typeof document == 'undefined') {
 		createElement:function() {return new Node();},
 		getElementById:function() {return new Node();},
 	};
+
+	window = {
+		addEventListener: function(){},
+	};
+
+	history = {
+		pushState: function(){},
+	}
 }
 
 if (typeof localStorage === "undefined" || localStorage === null) {
@@ -53,6 +61,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
     if (Array.isArray(exp)) {
 		termSpan = doc.createElement("span");
         var termName = fact.Skin.TermNames[exp[0]];
+		if (!termName) throw new Error("Bad term " + exp);
         var arity = exp.length - 1;
         var children = [];
         for (var i = 1; i <= arity; i++) {
@@ -99,8 +108,8 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.appendChild(children[1].span);
             break;
         default:
-            console.log("TODO: XXX Only arity 2 supported");
-            throw new Error("TODO: XXX Only arity 2 supported");
+            console.log("TODO: XXX Only arity 2 supported:" + termName);
+            throw new Error("TODO: XXX Only arity 2 supported: " + termName);
         }
     } else {
 		termSpan = doc.createElement("a");
@@ -161,6 +170,7 @@ function size(thmBox, ems) {
 
 function addToShooter(factData) {
 	var fact = Engine.canonicalize(new Fact(factData));
+	localStorage.setItem(fact.Skin.Name, JSON.stringify(fact));
 	Engine.onAddFact(fact);
 	if (fact.Core[Fact.CORE_HYPS].length == 0) {
 		var box;
@@ -196,6 +206,7 @@ function addToShooter(factData) {
 				} catch (e) {
 					console.log("Error in applyFact: " + e);
 					console.log(e.stack);
+					alert(e);
 				}
 				redraw();
 			};
@@ -203,16 +214,9 @@ function addToShooter(factData) {
 		box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
 		size(box, 4);
 		document.getElementById("shooterTape").appendChild(box);
+		currentLand().thms.push(fact.Skin.Name);
 	} // TODO: handle axioms with hyps
 }
-
-var allLands = require('./all_lands.js');
-var landMap = {};
-var landDepMap = {}; // XXX
-allLands.forEach(function(land) {
-	landMap[land.name] = land;
-	landDepMap[land.depends[0]] = land;
-});
 
 
 function workOnclickMaker(path) {
@@ -225,7 +229,7 @@ function workOnclickMaker(path) {
 		state.url = "#g=" + goalPath;
 		save();
 	}
-};
+}
 
 function startWork(fact) {
     var work = new Fact(fact);
@@ -245,7 +249,7 @@ function setWork(work) {
 }
 
 function save() {
-	var lastHash = state.lastHash;
+	var lastHash = state.lastHash || "";
 	delete state.lastHash;
 	var hash = Engine.fingerprint(state);
 	localStorage.setItem(hash, JSON.stringify(state));
@@ -255,14 +259,22 @@ function save() {
 	history.pushState(state, "state", "#s=" + hash + state.url);
 }
 
+function currentLand() {
+	return state.lands[state.lands.length-1];
+}
 function nextGoal() {
-	state.goalNum++;
-	if (state.goalNum >= landMap[state.landName].goals.length) {
-		alert("no more goals");
-		//TODO: load next land
-	} else {
-		setWork(startWork(landMap[state.landName].goals[state.goalNum]));
+	var land = currentLand();
+	var goal = land.goals.shift();
+	if (!goal) {
+		var nextLand = landDepMap[land.name]; // XXX
+		if (nextLand) {
+			enterLand(nextLand);
+			goal = nextGoal();
+		} else {
+			alert("No more lands! You win! Now go write a land.");
+		}
 	}
+	state.work = startWork(goal);
 	save();
 }
 
@@ -282,6 +294,26 @@ function loadState(flat) {
 	state.work = new Fact(state.work);
 }
 
+function enterLand(landData) {
+	var land = {
+		name:landData.name,
+		thms:[],             // hash values
+		goals:[],            // structs
+	};
+	state.lands.push(land);
+	land.goals = landData.goals.slice();
+	landData.axioms.forEach(addToShooter);
+}
+
+var allLands = require('./all_lands.js');
+var landMap = {};
+var landDepMap = {}; // XXX
+allLands.forEach(function(land) {
+	landMap[land.name] = land;
+	landDepMap[land.depends[0]] = land;
+});
+
+
 window.addEventListener('popstate', function(ev) {
 	console.log("popstate to " + ev.state);
 	if (ev.state) {
@@ -292,16 +324,23 @@ window.addEventListener('popstate', function(ev) {
 var stateHash = localStorage.getItem(STATE_KEY);
 if (stateHash) {
 	loadState(JSON.parse(localStorage.getItem(stateHash)));
+	state.lands.forEach(function(land) {
+		console.log("Processing land " + land.name);
+		land.thms.forEach(function(thmName) {
+			var factData = JSON.parse(localStorage.getItem(thmName));
+			console.log("adding " + thmName + "=" + JSON.stringify(factData));
+			addToShooter(factData);
+		})
+	});
 } else {
-	state.landName = landDepMap[undefined].name;
-	state.goalNum = -1;
+	state = {
+		lands: [],
+	};
+	var firstLand = landDepMap[undefined]; // XXX
+	enterLand(firstLand);
 	nextGoal();
 	state.url = "";
 }
-landMap[state.landName].axioms.forEach(addToShooter);
-landMap[state.landName].goals.slice(0, state.goalNum).forEach(addToShooter);
 
 save();
-
-
 redraw();

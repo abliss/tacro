@@ -814,5 +814,5 @@ var Fact = require('./fact.js'); //XXX
 	module.exports.applyInference = applyInference;
 	module.exports.applyFact = applyFact;
 	module.exports.fingerprint = fingerprint;
-	
+
 })(module);
