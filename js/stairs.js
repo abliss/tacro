@@ -5,7 +5,7 @@ var Engine = require('./engine.js');
 var state;
 var stateHash;
 var STATE_KEY = "lastState-v11";
-
+var SIZE_MULTIPLIER = 4;
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
 	function Node() {};
@@ -216,7 +216,7 @@ function addToShooter(factData) {
 			};
 		};
 		box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
-		size(box, 4);
+		size(box, 2 * SIZE_MULTIPLIER);
 		document.getElementById("shooterTape").appendChild(box);
 	} // TODO: handle axioms with hyps
 	return fact;
@@ -291,7 +291,7 @@ function redraw() {
 	var box = makeThmBox(state.work,
 						 state.work.Core[Fact.CORE_HYPS][0],
 						 workOnclickMaker);
-	size(box, box.tree.width * 2);
+	size(box, box.tree.width * SIZE_MULTIPLIER);
 	well.appendChild(box);
 }
 
