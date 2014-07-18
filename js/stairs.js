@@ -3,7 +3,8 @@
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var state;
-var STATE_KEY = "lastState-v05";
+var stateHash;
+var STATE_KEY = "lastState-v11";
 
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
@@ -191,6 +192,7 @@ function addToShooter(factData) {
 						setWork(Engine.applyFact(state.work,
 												 state.workPath,
 												 fact, factPath));
+						message("");
 						delete state.workPath;
 						state.url = "";
 					} else if (factPath.length==0) {
@@ -198,7 +200,9 @@ function addToShooter(factData) {
 									JSON.stringify(state.work) + "\n" +
 									JSON.stringify(fact) + "\n");
 						var thm = Engine.ground(state.work, fact);
-						addToShooter(thm);
+						var newFact = addToShooter(thm);
+						currentLand().thms.push(newFact.Skin.Name);
+						message("");
 						nextGoal();
 					} else {
 						console.log("wtf? " + JSON.stringify(factPath));
@@ -206,16 +210,16 @@ function addToShooter(factData) {
 				} catch (e) {
 					console.log("Error in applyFact: " + e);
 					console.log(e.stack);
-					alert(e);
+					message(e);
 				}
 				redraw();
 			};
-		}
+		};
 		box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
 		size(box, 4);
 		document.getElementById("shooterTape").appendChild(box);
-		currentLand().thms.push(fact.Skin.Name);
 	} // TODO: handle axioms with hyps
+	return fact;
 }
 
 
@@ -249,14 +253,16 @@ function setWork(work) {
 }
 
 function save() {
-	var lastHash = state.lastHash || "";
-	delete state.lastHash;
 	var hash = Engine.fingerprint(state);
-	localStorage.setItem(hash, JSON.stringify(state));
-	localStorage.setItem(STATE_KEY, hash);
-	localStorage.setItem("parentOf-" + hash, lastHash);
-	state.lastHash = hash;
-	history.pushState(state, "state", "#s=" + hash + state.url);
+	if (hash != stateHash) {
+		localStorage.setItem(hash, JSON.stringify(state));
+		localStorage.setItem(STATE_KEY, hash);
+		localStorage.setItem("parentOf-" + hash, stateHash);
+		localStorage.setItem("childOf-" + stateHash, hash);
+		console.log("XXXX Setting " + "childOf-" + stateHash + " = " + hash);
+		stateHash = hash;
+		history.pushState(state, "state", "#s=" + hash + state.url);
+	}
 }
 
 function currentLand() {
@@ -271,7 +277,7 @@ function nextGoal() {
 			enterLand(nextLand);
 			goal = nextGoal();
 		} else {
-			alert("No more lands! You win! Now go write a land.");
+			message("No more lands! You win! Now go write a land.");
 		}
 	}
 	state.work = startWork(goal);
@@ -302,7 +308,16 @@ function enterLand(landData) {
 	};
 	state.lands.push(land);
 	land.goals = landData.goals.slice();
-	landData.axioms.forEach(addToShooter);
+	landData.axioms.forEach(function(data) {
+		var fact = addToShooter(data);
+		land.thms.push(fact.Skin.Name);
+	});
+	currentLand().thms.push.apply(currentLand(), landData.axioms);
+}
+
+function message(msg) {
+	console.log("Tacro: " + msg);
+	document.getElementById("message").innerText = msg;
 }
 
 var allLands = require('./all_lands.js');
@@ -318,23 +333,51 @@ window.addEventListener('popstate', function(ev) {
 	console.log("popstate to " + ev.state);
 	if (ev.state) {
 		loadState(ev.state);
+		save();
 		redraw();
 	}
 });
+document.getElementById("rewind").onclick = function() {
+	var parentHash = localStorage.getItem("parentOf-" + stateHash);
+	console.log("XXXX Rewinding from " + stateHash + "  to " + parentHash);
+	if (parentHash) {
+		loadState(JSON.parse(localStorage.getItem(parentHash)));
+		stateHash = parentHash;
+		redraw();
+		// Don't save() or we'll get stuck in a loop
+		document.getElementById("forward").style.visibility="visible";
+	}
+	return false;
+};
+document.getElementById("forward").onclick = function() {
+	var childHash = localStorage.getItem("childOf-" + stateHash);
+	console.log("XXXX Forwarding from " + stateHash + " to " + childHash);
+	if (childHash) {
+		loadState(JSON.parse(localStorage.getItem(childHash)));
+		stateHash = childHash;
+		redraw();
+		// Don't save() or we'll get stuck in a loop
+	} else {
+		document.getElementById("forward").style.visibility="hidden";
+	}
+	return false;
+}
 var stateHash = localStorage.getItem(STATE_KEY);
 if (stateHash) {
 	loadState(JSON.parse(localStorage.getItem(stateHash)));
 	state.lands.forEach(function(land) {
-		console.log("Processing land " + land.name);
+		console.log("Processing land " + land.name + " #" + land.thms.length);
 		land.thms.forEach(function(thmName) {
 			var factData = JSON.parse(localStorage.getItem(thmName));
 			console.log("adding " + thmName + "=" + JSON.stringify(factData));
-			addToShooter(factData);
+			var fact = addToShooter(factData);
+			
 		})
 	});
 } else {
 	state = {
 		lands: [],
+		url:"",
 	};
 	var firstLand = landDepMap[undefined]; // XXX
 	enterLand(firstLand);
