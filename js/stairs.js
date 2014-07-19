@@ -5,7 +5,7 @@ var Engine = require('./engine.js');
 var state;
 var stateHash;
 var STATE_KEY = "lastState-v11";
-var SIZE_MULTIPLIER = 4;
+var SIZE_MULTIPLIER = 3;
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -122,14 +122,12 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             txtSpan.className = " txt";
             width = 1 + children[0].width;
             height = 1 + children[0].height;
-            opSpan.style.height = "100%";
             opSpan.style.width = "100%";
-            txtSpan.style.height = "" + (100 * (height - children[0].height) / height) + "%";
-            txtSpan.style.width = "100%";
+            opSpan.style.height = "" + (100 / height) + "%";
             children[0].span.style.height = "" + (100 * children[0].height / height) + "%";
             children[0].span.style.width = "" + (100 * children[0].width / width) + "%";
 
-            opSpan.appendChild(children[0].span);
+            termSpan.appendChild(children[0].span);
             break;
         default:
             console.log("TODO: XXX Only arity 1-2 supported:"+termName);
@@ -203,7 +201,7 @@ function addToShooter(factData) {
             if (factPath[factPath.length-1] == 0) {
                 factPath.pop();
             }
-            return function() {
+            return function(ev) {
                 try {
                     state.url = "#f=" + path + ";" + fact.Skin.Name;
                     if (state.workPath != null) {
@@ -236,6 +234,7 @@ function addToShooter(factData) {
                     message(e);
                 }
                 redraw();
+				ev.stopPropagation()
             };
         };
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
@@ -251,10 +250,11 @@ function workOnclickMaker(path) {
     if (goalPath[goalPath.length-1] == 0) {
         goalPath.pop();
     }
-    return function() {
+    return function(e) {
         state.workPath = goalPath;
         state.url = "#g=" + goalPath;
         save();
+		e.stopPropagation();
     }
 }
 

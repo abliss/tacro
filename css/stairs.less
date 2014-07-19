@@ -24,23 +24,29 @@
     /*-webkit-transform: matrix(0,-1,-1,0,0,0);*/
 }
 .operator>.txt {
-    -webkit-transform: rotate(45deg);
+/*    -webkit-transform: rotate(45deg);*/
     position:relative;
-    padding:0% 0;
-    font-size:200%;
+    padding:0 0;
+	top: 50%;
+	margin:0;
+	margin-top:-.5em;
+	height:1em;
+	text-align:center;
 }
 .operator.arity2>.txt {
-   margin:-.8em 0;
-   top:50%;
-   text-align:center;
-
+   /*margin:-.8em 0;*/
+   /*top:50%;*/
+   /*border: 1px dashed blue;*/
 }
 .operator.arity1 {
-    text-align:left;
 }
 .operator.arity1>.txt {
-    text-align:center;
-    margin-left:.7em;
+	/*
+	width:100%;
+	height:100%;
+*/
+	/*border:1px dashed black;*/
+    /*margin-left:-.5em;*/
 }
 
 .termbox, .termbox .variable, .termbox .operator, .termbox .term {
@@ -61,7 +67,7 @@
     -webkit-box-sizing:border-box;
 }
 
-
+.input1of1 {float:right;}
 .input2of2 {float:right;}
     /* TODO: gradients don't transition.  need to do some opacity trick that leaves
     the text visible but fades the background.
