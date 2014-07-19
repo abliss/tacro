@@ -87,7 +87,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             path.pop();
             rowSpan.appendChild(children[0].span);
             rowSpan.appendChild(opSpan);
-            opSpan.className += " operator";
+            opSpan.className += " operator arity2";
             var txtSpan = doc.createElement("span");
             opSpan.appendChild(txtSpan);
             opSpan.className += " txtBox";
@@ -114,7 +114,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             opSpan.onclick = cb(path);
             path.pop();
             termSpan.appendChild(opSpan);
-            opSpan.className += " operator";
+            opSpan.className += " operator arity1";
             var txtSpan = doc.createElement("span");
             opSpan.appendChild(txtSpan);
             opSpan.className += " txtBox";
@@ -124,10 +124,12 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             height = 1 + children[0].height;
             opSpan.style.height = "100%";
             opSpan.style.width = "100%";
+            txtSpan.style.height = "" + (100 * (height - children[0].height) / height) + "%";
+            txtSpan.style.width = "100%";
             children[0].span.style.height = "" + (100 * children[0].height / height) + "%";
             children[0].span.style.width = "" + (100 * children[0].width / width) + "%";
 
-            termSpan.appendChild(children[0].span);
+            opSpan.appendChild(children[0].span);
             break;
         default:
             console.log("TODO: XXX Only arity 1-2 supported:"+termName);

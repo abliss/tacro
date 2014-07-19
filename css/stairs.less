@@ -21,17 +21,28 @@
     overflow:visible;
 }
 .bindingleft>.hyprow>.bindingright,  .bindingleft>.bindingright, .bindingright>.hyprow>.bindingleft,  .bindingright>.bindingleft {
-    -webkit-transform: matrix(0,-1,-1,0,0,0);
+    /*-webkit-transform: matrix(0,-1,-1,0,0,0);*/
 }
 .operator>.txt {
     -webkit-transform: rotate(45deg);
-    text-align:center;
-    top:50%;
     position:relative;
     padding:0% 0;
-    margin:-.8em 0;
-	font-size:200%;
+    font-size:200%;
 }
+.operator.arity2>.txt {
+   margin:-.8em 0;
+   top:50%;
+   text-align:center;
+
+}
+.operator.arity1 {
+    text-align:left;
+}
+.operator.arity1>.txt {
+    text-align:center;
+    margin-left:.7em;
+}
+
 .termbox, .termbox .variable, .termbox .operator, .termbox .term {
     position:relative;
 }
@@ -68,7 +79,7 @@
 }
 
 .termbox a {
-	color: black;
+    color: black;
 }
 body {
     margin:0px;
@@ -78,10 +89,10 @@ body {
 
 @shooterHeight: 14em;
 #rewind, #forward {
-	font-size:200%;
+    font-size:200%;
 }
 #forward {
-	/*visibility:hidden;*/
+    /*visibility:hidden;*/
 }
 #well {
 
