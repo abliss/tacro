@@ -294,7 +294,6 @@ function currentLand() {
 function nextGoal() {
     var land = currentLand();
     var goal = land.goals.shift();
-    console.log("XXXX Next goal is " + JSON.stringify(goal));
     if (!goal) {
         var nextLand = landDepMap[land.name]; // XXX
         if (nextLand) {
@@ -338,11 +337,12 @@ function enterLand(landData) {
     };
     state.lands.push(land);
     land.goals = landData.goals.slice();
-    console.log("XXXX First Land goal: " + JSON.stringify(land.goals[0]));
-    landData.axioms.forEach(function(data) {
-        var fact = addToShooter(data);
-        land.thms.push(fact.Skin.Name);
-    });
+	if (landData.axioms) {
+		landData.axioms.forEach(function(data) {
+			var fact = addToShooter(data);
+			land.thms.push(fact.Skin.Name);
+		});
+	}
     currentLand().thms.push.apply(currentLand(), landData.axioms);
 }
 
