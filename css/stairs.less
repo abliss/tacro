@@ -13,7 +13,7 @@
 .termbox {
     display:inline-block;
 }
-.termbox span, .termbox a { 
+.termbox span, .termbox a {
     display:inline-block;
     vertical-align:top;
     padding:0px;
@@ -34,19 +34,10 @@
 	text-align:center;
 }
 .operator.arity2>.txt {
-   /*margin:-.8em 0;*/
-   /*top:50%;*/
-   /*border: 1px dashed blue;*/
 }
 .operator.arity1 {
 }
 .operator.arity1>.txt {
-	/*
-	width:100%;
-	height:100%;
-*/
-	/*border:1px dashed black;*/
-    /*margin-left:-.5em;*/
 }
 
 .termbox, .termbox .variable, .termbox .operator, .termbox .term {
@@ -55,8 +46,8 @@
 
 
 .term a {
-    border-left: 2px solid gray;
-    border-bottom: 2px solid black;
+    border-left: 1px solid gray;
+    border-bottom: 1px solid black;
 }
 
 .termbox .hyprow {
@@ -71,12 +62,15 @@
 .input2of2 {float:right;}
     /* TODO: gradients don't transition.  need to do some opacity trick that leaves
     the text visible but fades the background.
-    background: -webkit-gradient(linear, 100% 0%, 0% 100%, from(#505050), to(#808080)); 
+    background: -webkit-gradient(linear, 100% 0%, 0% 100%, from(#505050), to(#808080));
     */
 /* TODO: do this with arithmetic or nested-opacity, not hardconding the depths*/
 
-.operator {
-    background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#808080), to(#505050)); 
+.operator.arity2 {
+    background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#808080), to(#505050));
+}
+.operator.arity1 {
+    background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#b0b0b0), to(#808080));
 }
 
 
