@@ -4,7 +4,7 @@ var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var state;
 var stateHash;
-var STATE_KEY = "lastState-v11";
+var STATE_KEY = "lastState-v12";
 var SIZE_MULTIPLIER = 3;
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
@@ -190,7 +190,9 @@ function size(thmBox, ems) {
     thmBox.tree.span.style["font-size"] = "" + (50 * ems / thmBox.tree.width) + "%";
 }
 
-function addToShooter(factData) {
+function addToShooter(factData, land) {
+    if (!land) land = currentLand();
+    // TODO: PICKUP: document.getElementById("shooterTabs")....
     var fact = Engine.canonicalize(new Fact(factData));
     localStorage.setItem(fact.Skin.Name, JSON.stringify(fact));
     Engine.onAddFact(fact);
@@ -401,7 +403,7 @@ if (stateHash) {
         land.thms.forEach(function(thmName) {
             var factData = JSON.parse(localStorage.getItem(thmName));
             console.log("adding " + thmName + "=" + JSON.stringify(factData));
-            var fact = addToShooter(factData);
+            var fact = addToShooter(factData, land);
 
         })
     });

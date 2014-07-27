@@ -6,7 +6,6 @@ var Engine = require('./engine.js');
 var lands = [];
 var state = {};
 
-
 var DEBUG = false;
 var GROUNDDEBUG = false;
 
@@ -577,6 +576,29 @@ applyArrow([], thms.conjnimp, 0);
 applyArrow([0], thms.nn2, 1);
 applyArrow([], thms.idie, 0);
 thms.dfand = save();
+
+// Testing a bug with overspecifying thm
+var reached = false; 
+try {
+    var work = startWork({Core:[[],[0,[1,[0,0,1]],0],[]],
+                          Skin:{TermNames:["&rarr;","&not;"]}});
+    if (DEBUG) console.log("Now: " + JSON.stringify(work.Core[Fact.CORE_HYPS]));
+    // work: [0,[1,[0,0,1]],0]
+    // fact: [0,[1,1],[1,0]]
+    // Unify: 1 -> [0,0,1]
+    //    [1,0] -> 0
+    work = applyFact(
+        work, [],
+        sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["&rarr;","&not;"]'),
+        [2]);
+    reached = true;
+} catch (e) {
+    // Expected
+}
+if (reached) {
+    console.log("Now: "+ JSON.stringify(work));
+    throw new Error("Should not be able to overspecify the work");
+}
 
 var landHarr = getLand("land_and.js");
 startNextGoal();

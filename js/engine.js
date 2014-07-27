@@ -219,7 +219,7 @@ var Fact = require('./fact.js'); //XXX
         var nonDummy = {};
         var dummyMap = {};
         eachVarOnce([work.Core[Fact.CORE_STMT]], function(v) {
-            nonDummy[v] = v;
+            nonDummy[v] = true;
         });
         // from fact vars to work exps
         var varMap = {};
@@ -286,7 +286,6 @@ var Fact = require('./fact.js'); //XXX
             while (dummyMap[workSubExp]) {
                 workSubExp = dummyMap[workSubExp];
             }
-
 
             if ((hypPath.length == 0) &&
                 (stmtPath != null) &&
@@ -377,6 +376,11 @@ var Fact = require('./fact.js'); //XXX
     // procedures) will be added to the beginning of the work's proof, and the
     // work's hypthesis will be updated.
     function applyFact(work, workPath, fact, factPath) {
+        if (!Array.isArray(factPath) ||
+            (factPath.length != 1) ||
+            ((factPath[0] != 1) && (factPath[0] != 2))) {
+            throw new Error("factPath must be [1] or [2] for now.");
+        }
         var varMap = getMandHyps(work, workPath, fact, factPath);
         if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
         // If that didn't throw, we can start mutating
@@ -515,7 +519,7 @@ var Fact = require('./fact.js'); //XXX
         var nonDummy = {};
         var dummyMap = {};
         eachVarOnce([work.Core[Fact.CORE_STMT]], function(v) {
-            nonDummy[v] = v;
+            nonDummy[v] = true;
         });
         var workExp = zpath(work.Core[Fact.CORE_HYPS][0], dummyPath);
         if (workExp == undefined) {
@@ -713,7 +717,7 @@ var Fact = require('./fact.js'); //XXX
 			// TODO: right now this only works with ->/axmp, but it should work
 			// with anything that can be detached. Detacher.detach() should
 			// return pusp.tool[1] instead of putting it directly into the hyps.
-			return
+            return;
 		}
 
 		if (!Array.isArray(stmt[1]) ||
@@ -814,5 +818,5 @@ var Fact = require('./fact.js'); //XXX
 	module.exports.applyInference = applyInference;
 	module.exports.applyFact = applyFact;
 	module.exports.fingerprint = fingerprint;
-
+    module.exports.DEBUG = function() {DEBUG = true;};
 })(module);
