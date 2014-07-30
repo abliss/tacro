@@ -46,10 +46,13 @@ function newVarNamer() {
     var names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
     var map = {};
     return function(obj) {
+        /*
         if (!map[obj]) {
             map[obj] = names.shift();
         }
         return map[obj];
+        */
+        return names[obj];
     };
 }
 
@@ -203,22 +206,11 @@ function addToShooter(factData, land) {
             if (factPath[factPath.length-1] == 0) {
                 factPath.pop();
             }
-            return function(ev) {
-                try {
-                    state.url = "#f=" + path + ";" + fact.Skin.Name;
-                    if (state.workPath != null) {
-                        console.log("calling applyFact: " +
-                                    JSON.stringify(state.work) + "\n" +
-                                    JSON.stringify(state.workPath) + "\n" +
-                                    JSON.stringify(fact) + "\n" +
-                                    JSON.stringify(factPath) + "\n");
-                        setWork(Engine.applyFact(state.work,
-                                                 state.workPath,
-                                                 fact, factPath));
-                        message("");
-                        delete state.workPath;
-                        state.url = "";
-                    } else if (factPath.length==0) {
+            switch (factPath.length) {
+            case 0:
+                return function(ev) {
+                    try {
+                        state.url = "#f=" + path + ";" + fact.Skin.Name;
                         console.log("calling ground: " +
                                     JSON.stringify(state.work) + "\n" +
                                     JSON.stringify(fact) + "\n");
@@ -227,21 +219,66 @@ function addToShooter(factData, land) {
                         currentLand().thms.push(newFact.Skin.Name);
                         message("");
                         nextGoal();
-                    } else {
-                        console.log("wtf? " + JSON.stringify(factPath));
+                    } catch (e) {
+                        console.log("Error in ground: " + e);
+                        console.log(e.stack);
+                        message(e);
                     }
-                } catch (e) {
-                    console.log("Error in applyFact: " + e);
-                    console.log(e.stack);
-                    message(e);
-                }
-                redraw();
-				ev.stopPropagation()
-            };
+                    redraw();
+				    ev.stopPropagation()
+                };
+            case 1:
+                return function(ev) {
+                    try {
+                        setWork(Engine.applyFact(state.work,
+                                                 state.workPath,
+                                                 fact, factPath));
+                        message("");
+                        delete state.workPath;
+                        state.url = "";
+                    } catch (e) {
+                        console.log("Error in applyFact: " + e);
+                        console.log(e.stack);
+                        message(e);
+                    }
+                    redraw();
+				    ev.stopPropagation()
+                };
+            default:
+                // Don't bother clickifying these; engine doesn't support
+                return null;
+            }
         };
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
         size(box, 2 * SIZE_MULTIPLIER);
         landPaneMap[land.name].appendChild(box);
+        break;
+    case 1:
+        // Adding generify to the shooter
+        var box;
+        var factOnclickMaker = function(path) {
+            return null;
+        };
+        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0], factOnclickMaker);
+        var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
+        size(hyp0box, 2 * SIZE_MULTIPLIER);
+        size(stmtbox, 2 * SIZE_MULTIPLIER);
+        landPaneMap[land.name].appendChild(hyp0box);
+        hyp0box.appendChild(stmtbox);
+        hyp0box.onclick = function(ev) {
+            try {
+                setWork(Engine.applyInference(state.work, fact));
+                message("");
+                delete state.workPath;
+                state.url = "";
+            } catch (e) {
+                console.log("Error in applyInference: " + e);
+                console.log(e.stack);
+                message(e);
+            }
+            redraw();
+			ev.stopPropagation()
+        };
         break;
     default:
         console.log("Skipping inference: " + JSON.stringify(fact.Core));

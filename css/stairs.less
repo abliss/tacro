@@ -134,3 +134,9 @@ body {
 .termbox {
     -webkit-transition: all 1s ease;
 }
+
+.termbox .termbox {
+    /* we stick one inside another for 1-hyp inferences, i.e. ax-gen*/
+    position:absolute;
+    left:0;
+}
