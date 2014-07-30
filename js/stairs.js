@@ -132,9 +132,28 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
 
             termSpan.appendChild(children[0].span);
             break;
+        case 0:
+            var opSpan = doc.createElement("a");
+            path.push("0");
+            spanMap[path] = opSpan;
+            //opSpan.href = "#" + tag + "=" + path;
+            opSpan.onclick = cb(path);
+            path.pop();
+            termSpan.appendChild(opSpan);
+            opSpan.className += " operator arity1";
+            var txtSpan = doc.createElement("span");
+            opSpan.appendChild(txtSpan);
+            opSpan.className += " txtBox";
+            txtSpan.innerHTML = termName;
+            txtSpan.className = " txt";
+            width = 1;
+            height = 1;
+            opSpan.style.width = "100%";
+            opSpan.style.height = "100%";
+            break;
         default:
-            console.log("TODO: XXX Only arity 1-2 supported:"+termName);
-            throw new Error("TODO: XXX Only arity 1-2 supported: "+termName);
+            console.log("TODO: XXX Only arity 0-2 supported:"+termName);
+            throw new Error("TODO: XXX Only arity 0-2 supported: "+termName);
         }
     } else {
         termSpan = doc.createElement("a");
