@@ -241,7 +241,7 @@ function addToShooter(factData, land) {
         };
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
         size(box, 2 * SIZE_MULTIPLIER);
-        currentPane.appendChild(box);
+        landPaneMap[land.name].appendChild(box);
     } // TODO: handle axioms with hyps
     return fact;
 }
@@ -356,6 +356,7 @@ function addLandToUi(land) {
     tab.innerHTML = land.name.replace(/[<]/g,"&lt;");
     var pane = document.createElement("span");
     document.getElementById("shooterTape").appendChild(pane);
+    landPaneMap[land.name] = pane;
     pane.className = "pane pane" + land.name;
     tab.onclick = function() {
         if (currentPane) {currentPane.style.display="none";}
@@ -373,8 +374,8 @@ function message(msg) {
 var allLands = require('./all_lands.js');
 var landMap = {};
 var landDepMap = {}; // XXX
-var currentPane = null;
-
+var landPaneMap = {};
+var currentPane;
 
 allLands.forEach(function(land) {
     landMap[land.name] = land;
