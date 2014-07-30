@@ -174,8 +174,8 @@ function makeThmBox(fact, exp, cb) {
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var spanMap = {};
-    var tree = makeTree(document, fact, exp, [], -1, newVarNamer(), spanMap,
-                        cb);
+    var namer = newVarNamer();
+    var tree = makeTree(document, fact, exp, [], -1, namer, spanMap, cb);
     termBox.appendChild(tree.span);
     tree.span.style.width = "100%";
     tree.span.style.height = "100%";
@@ -183,6 +183,17 @@ function makeThmBox(fact, exp, cb) {
     termBox.style.height ="" + (2 * tree.height) + "em";
     termBox.spanMap = spanMap;
     termBox.tree = tree;
+    
+    var nullCb = function(){};
+    fact.Core[Fact.CORE_FREE].forEach(function(fm) {
+        var fmSpan = document.createElement("span");
+        fmSpan.className = "freemap";
+        termBox.appendChild(fmSpan);
+        fm.forEach(function(v) {
+            var vTree = makeTree(document, fact, v, [], -1, namer, {}, nullCb);
+            fmSpan.appendChild(vTree.span);
+        });
+    });
     return termBox;
 }
 
