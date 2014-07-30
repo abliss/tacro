@@ -192,11 +192,11 @@ function size(thmBox, ems) {
 
 function addToShooter(factData, land) {
     if (!land) land = currentLand();
-    // TODO: PICKUP: document.getElementById("shooterTabs")....
     var fact = Engine.canonicalize(new Fact(factData));
     localStorage.setItem(fact.Skin.Name, JSON.stringify(fact));
     Engine.onAddFact(fact);
-    if (fact.Core[Fact.CORE_HYPS].length == 0) {
+    switch (fact.Core[Fact.CORE_HYPS].length) {
+    case 0:
         var box;
         var factOnclickMaker = function(path) {
             var factPath = path.slice();
@@ -242,6 +242,9 @@ function addToShooter(factData, land) {
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
         size(box, 2 * SIZE_MULTIPLIER);
         landPaneMap[land.name].appendChild(box);
+        break;
+    default:
+        console.log("Skipping inference: " + JSON.stringify(fact.Core));
     } // TODO: handle axioms with hyps
     return fact;
 }
@@ -367,7 +370,7 @@ function addLandToUi(land) {
 }
 
 function message(msg) {
-    console.log("Tacro: " + msg);
+    if (msg) {console.log("Tacro: " + msg);}
     document.getElementById("message").innerText = msg;
 }
 
@@ -439,5 +442,20 @@ if (stateHash) {
     state.url = "";
 }
 
+function cheat(n) {
+    while (n > 0) {
+        var thm = new Fact(state.work);
+        thm.Tree.Proof=[];
+        thm.Tree.Cmd = 'stmt'
+        thm.setHyps([]);
+        var newFact = addToShooter(thm);
+        currentLand().thms.push(newFact.Skin.Name);
+        message("");
+        nextGoal();
+        n--;
+        redraw();
+        save();
+    }
+}
 save();
 redraw();
