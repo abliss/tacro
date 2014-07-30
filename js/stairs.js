@@ -241,7 +241,7 @@ function addToShooter(factData, land) {
         };
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
         size(box, 2 * SIZE_MULTIPLIER);
-        document.getElementById("shooterTape").appendChild(box);
+        currentPane.appendChild(box);
     } // TODO: handle axioms with hyps
     return fact;
 }
@@ -338,6 +338,7 @@ function enterLand(landData) {
         goals:[],            // structs
     };
     state.lands.push(land);
+    addLandToUi(land);
     land.goals = landData.goals.slice();
 	if (landData.axioms) {
 		landData.axioms.forEach(function(data) {
@@ -348,6 +349,22 @@ function enterLand(landData) {
     currentLand().thms.push.apply(currentLand(), landData.axioms);
 }
 
+function addLandToUi(land) {
+    var tab = document.createElement("button");
+    document.getElementById("shooterTabs").appendChild(tab);
+    tab.className = "tab";
+    tab.innerHTML = land.name.replace(/[<]/g,"&lt;");
+    var pane = document.createElement("span");
+    document.getElementById("shooterTape").appendChild(pane);
+    pane.className = "pane pane" + land.name;
+    currentPane = pane;
+    tab.onclick = function() {
+        currentPane.style.visibility="gone";
+        pane.style.visibility="visible";
+        currentPane = pane;
+    };
+}
+
 function message(msg) {
     console.log("Tacro: " + msg);
     document.getElementById("message").innerText = msg;
@@ -356,6 +373,9 @@ function message(msg) {
 var allLands = require('./all_lands.js');
 var landMap = {};
 var landDepMap = {}; // XXX
+var currentPane = null;
+
+
 allLands.forEach(function(land) {
     landMap[land.name] = land;
     landDepMap[land.depends[0]] = land;
@@ -400,11 +420,11 @@ if (stateHash) {
     loadState(JSON.parse(localStorage.getItem(stateHash)));
     state.lands.forEach(function(land) {
         console.log("Processing land " + land.name + " #" + land.thms.length);
+        addLandToUi(land);
         land.thms.forEach(function(thmName) {
             var factData = JSON.parse(localStorage.getItem(thmName));
             console.log("adding " + thmName + "=" + JSON.stringify(factData));
             var fact = addToShooter(factData, land);
-
         })
     });
 } else {
