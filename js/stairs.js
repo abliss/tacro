@@ -357,12 +357,12 @@ function addLandToUi(land) {
     var pane = document.createElement("span");
     document.getElementById("shooterTape").appendChild(pane);
     pane.className = "pane pane" + land.name;
-    currentPane = pane;
     tab.onclick = function() {
-        currentPane.style.visibility="gone";
-        pane.style.visibility="visible";
+        if (currentPane) {currentPane.style.display="none";}
+        pane.style.display="inline-block";
         currentPane = pane;
     };
+    tab.onclick();
 }
 
 function message(msg) {
@@ -423,7 +423,7 @@ if (stateHash) {
         addLandToUi(land);
         land.thms.forEach(function(thmName) {
             var factData = JSON.parse(localStorage.getItem(thmName));
-            console.log("adding " + thmName + "=" + JSON.stringify(factData));
+            //console.log("adding " + thmName + "=" + JSON.stringify(factData));
             var fact = addToShooter(factData, land);
         })
     });
