@@ -5,7 +5,7 @@ var Engine = require('./engine.js');
 var state;
 var stateHash;
 var STATE_KEY = "lastState-v12";
-var SIZE_MULTIPLIER = 3;
+var SIZE_MULTIPLIER = 2.5;
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -367,6 +367,7 @@ function nextGoal() {
     var land = currentLand();
     var goal = land.goals.shift();
     if (!goal) {
+        delete land.goals;
         var nextLand = landDepMap[land.name]; // XXX
         if (nextLand) {
             enterLand(nextLand);
@@ -416,7 +417,6 @@ function enterLand(landData) {
 			land.thms.push(fact.Skin.Name);
 		});
 	}
-    currentLand().thms.push.apply(currentLand(), landData.axioms);
 }
 
 function addLandToUi(land) {
