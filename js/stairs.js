@@ -5,7 +5,7 @@ var Engine = require('./engine.js');
 var state;
 var stateHash;
 var STATE_KEY = "lastState-v12";
-var SIZE_MULTIPLIER = 2.5;
+var SIZE_MULTIPLIER = 3;
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
