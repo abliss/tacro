@@ -63,6 +63,9 @@
         {Core:[[],[0,[1,0,1],[0,[1,0,2],[1,2,1]]],[]],Skin:{TermNames:["&rarr;","&equals;"]}},
         {Core:[[],[0,[1,0,1],[1,1,0]],[]],Skin:{TermNames:["&rarr;","&equals;"]}},
         {Core:[[],[0,[1,0,1],[1,1,0]],[]],Skin:{TermNames:["&harr;","&equals;","&rarr;"]}},
+        //XXX
+        {Core:[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]],
+               Skin:{TermNames:["&rarr;","&exist;","&equals;"]}},
 
     ],
 },
