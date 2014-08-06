@@ -261,14 +261,15 @@ log.facts.forEach(function(factObj) {
     var fact = new Fact(factObj);
 
     state.factsByMark[fact.getMark()] = fact;
-    if (factObj.Tree.Proof.length == 0) {
-        factObj.Tree.Cmd = 'stmt';
-        ifaceCtx.append(new Fact(factObj));
-    } else {
+    if (factObj && factObj.Tree && factObj.Tree.Proof && factObj.Tree.Proof.length > 0) {
         if (!factObj.Tree.Cmd) {
             factObj.Tree.Cmd = 'thm';
         }
         proofCtx.append(new Fact(factObj));
+    } else {
+        if (!factObj.Tree) factObj.Tree = {};
+        factObj.Tree.Cmd = 'stmt';
+        ifaceCtx.append(new Fact(factObj));
     }
 });
 
@@ -319,7 +320,7 @@ Async.parallel(
         UrlCtx.files["tmp2.gh"] = results.proof;
         if (DEBUG) {
             console.log("==== IFACE ====\n" + results.iface);
-            console.log("==== PROOF ====\n" + results.proof.substr(30000));
+            console.log("==== PROOF ====\n" + results.proof.substr(00000));
         }
         try {
             run(UrlCtx, "tmp2.gh", verifyCtx);

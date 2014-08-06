@@ -561,11 +561,12 @@ save();
 redraw();
 
 // XXX Find missing induction tool
+/*
 var prefix = '{"Core":[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]]';
 for (var k in localStorage) {
     if (localStorage[k] && localStorage[k].match) {
-        if (localStorage[k].match(prefix)) {
-            var factData = JSON.parse[localStorage[k]];
+        if (localStorage[k].match(prefix)|| k=="y9x5k") {
+            var factData = JSON.parse(localStorage[k]);
             console.log("Found thm: " + factData.Skin.Name)
             currentLand().thms.push(factData.Skin.Name);
         } else if (localStorage[k].match("sect")) {
@@ -573,4 +574,7 @@ for (var k in localStorage) {
         }
     }
 }
+// {"Core":[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]]
+//{"Core":[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]]'; 
 //exportFacts(); //XXX
+*/
