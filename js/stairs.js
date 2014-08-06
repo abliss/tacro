@@ -492,10 +492,22 @@ if (stateHash) {
     state.lands.forEach(function(land) {
         console.log("Processing land " + land.name + " #" + land.thms.length);
         addLandToUi(land);
+        var i = 0;
         land.thms.forEach(function(thmName) {
             var factData = JSON.parse(localStorage.getItem(thmName));
             //console.log("adding " + thmName + "=" + JSON.stringify(factData));
-            var fact = addToShooter(factData, land);
+            //XXX
+            if (land.name=="&equals;" && i == 7) {
+                /*factData = {Core:[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]],
+                           Skin:{TermNames:["&rarr;","&exist;","&equals;"]}};
+                */
+                factData = {Core:[[],[0,[0,[1,0,0,],1],1],[]],
+                            Skin:{TermNames:["&rarr;","&equals;"]}};
+            } 
+            i++;
+            addToShooter(factData, land);
+            last = JSON.stringify(factData.Core);
+
         })
     });
 } else {
@@ -524,5 +536,41 @@ function cheat(n) {
         save();
     }
 }
+function exportFacts() {
+
+    console.log("==== EXPORT BEGIN ====");
+    state.lands.forEach(function(land) {
+        land.thms.forEach(function(thmName) {
+            var factData = localStorage.getItem(thmName);
+            if (factData.length < 4000) {
+                console.log("addFact(" + factData + ")");
+            } else {
+                console.log("addFact(" + factData.substring(0,4000));
+                while (factData.length > 0) {
+                    factData = factData.substring(4000);
+                    console.log("        " + factData.substring(0, 4000));
+                }
+                console.log("      )");
+            }
+        });
+    });
+   
+    console.log("==== EXPORT END ====");
+}
 save();
 redraw();
+
+// XXX Find missing induction tool
+var prefix = '{"Core":[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]]';
+for (var k in localStorage) {
+    if (localStorage[k] && localStorage[k].match) {
+        if (localStorage[k].match(prefix)) {
+            var factData = JSON.parse[localStorage[k]];
+            console.log("Found thm: " + factData.Skin.Name)
+            currentLand().thms.push(factData.Skin.Name);
+        } else if (localStorage[k].match("sect")) {
+            console.log("Checking "  + k + ": " + localStorage[k].substr(0,prefix.length));
+        }
+    }
+}
+//exportFacts(); //XXX
