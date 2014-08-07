@@ -349,6 +349,7 @@ function setWork(work) {
 
 function save() {
     var hash = Engine.fingerprint(state);
+    if (stateHash == null) {stateHash = "null";}
     if (hash != stateHash) {
         localStorage.setItem(hash, JSON.stringify(state));
         localStorage.setItem(STATE_KEY, hash);
@@ -527,35 +528,69 @@ document.getElementById("forward").onclick = function() {
     return false;
 };
 
-// ==== AUTH ====
+// ==== FIREBASE / AUTH ====
 var fb = {};
-fb.root = new Firebase("https://tacro.firebaseio.com");
-fb.auth = new FirebaseSimpleLogin(fb.root, function(error, user) {
-    if (error) {
-        // an error occurred while attempting login
-        console.log(error);
-    } else if (user) {
-        fb.user = user;
-        // user authenticated with Firebase
-        console.log("User ID: " + user.uid + ", Provider: " + user.provider);
-    }
-    else {
-        // user is logged out
-    }
-});
-fb.authRef = new Firebase("https://tacro.firebaseio.com/.info/authenticated");
-fb.authRef.on("value", function(snap) {
-    if (snap.val() == true) {
-        console.log("Now logged in as " + fb.user.uid);
+fb.queue = [];
+fb.once = function(f) {
+    if (fb.root) {
+        f();
     } else {
-        console.log("Now logged out ");
+        fb.queue.push(f);
     }
-});
+}
+function firebaseLoaded() {
+    console.log("Firebase loaded.");
+    fb.root = new Firebase("https://tacro.firebaseio.com");
+    fb.queue.forEach(function(f) {f();});
+}
+function firebaseLoginLoaded() {
+    console.log("Firebase Login loaded.");
+    fb.once(function() {
+        fb.auth = new FirebaseSimpleLogin(fb.root, function(error, user) {
+            if (error) {
+                // an error occurred while attempting login
+                console.log(error);
+            } else if (user) {
+                fb.user = user;
+                // user authenticated with Firebase
+                console.log("User ID: " + user.uid + ", Provider: " +
+                            user.provider);
+                var loginNode = document.getElementById("login");
+                loginNode.disabled = false;
+                loginNode.innerText = user.email.replace(/@.*/,'');
+                loginNode.onclick = function() {
+                    fb.auth.logout();
+                    return false;
+                }
+            }
+            else {
+                // user is logged out
+                document.getElementById("login").innerText = "guest";
+                resetLoginLink();
+            }
+        });
+    new Firebase("https://tacro.firebaseio.com/.info/authenticated").
+            on("value", function(snap) {
+                if (snap.val() == true) {
+                    console.log("Now logged in.");
+                } else {
+                    console.log("Now logged out.");
+                }
+            });
+    });
+}
 
-document.getElementById("login").onclick = function() {
-    fb.auth.login("google");
-    return false;
-};
+
+function resetLoginLink() {
+    var link = document.getElementById("login");
+    link.disabled = false;
+    link.onclick = function() {
+        fb.auth.login("google", {
+            rememberMe: true,
+        });
+        return false;
+    };
+}
 
 var stateHash = localStorage.getItem(STATE_KEY);
 if (stateHash) {
