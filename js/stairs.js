@@ -441,6 +441,46 @@ function message(msg) {
     document.getElementById("message").innerText = msg;
 }
 
+function cheat(n) {
+    while (n > 0) {
+        var thm = new Fact(state.work);
+        thm.Tree.Proof=[];
+        thm.Tree.Cmd = 'stmt'
+        thm.setHyps([]);
+        var newFact = addToShooter(thm);
+        currentLand().thms.push(newFact.Skin.Name);
+        message("");
+        nextGoal();
+        n--;
+        redraw();
+        save();
+    }
+}
+function exportFacts() {
+
+    console.log("==== EXPORT BEGIN ====");
+    state.lands.forEach(function(land) {
+        land.thms.forEach(function(thmName) {
+            var factData = localStorage.getItem(thmName);
+            if (factData.length < 4000) {
+                console.log("addFact(" + factData + ")");
+            } else {
+                console.log("addFact(" + factData.substring(0,4000));
+                while (factData.length > 0) {
+                    factData = factData.substring(4000);
+                    console.log("        " + factData.substring(0, 4000));
+                }
+                console.log("      )");
+            }
+        });
+    });
+   
+    console.log("==== EXPORT END ====");
+}
+
+
+
+
 var allLands = require('./all_lands.js');
 var landMap = {};
 var landDepMap = {}; // XXX
@@ -485,7 +525,38 @@ document.getElementById("forward").onclick = function() {
         document.getElementById("forward").style.visibility="hidden";
     }
     return false;
-}
+};
+
+// ==== AUTH ====
+var fb = {};
+fb.root = new Firebase("https://tacro.firebaseio.com");
+fb.auth = new FirebaseSimpleLogin(fb.root, function(error, user) {
+    if (error) {
+        // an error occurred while attempting login
+        console.log(error);
+    } else if (user) {
+        fb.user = user;
+        // user authenticated with Firebase
+        console.log("User ID: " + user.uid + ", Provider: " + user.provider);
+    }
+    else {
+        // user is logged out
+    }
+});
+fb.authRef = new Firebase("https://tacro.firebaseio.com/.info/authenticated");
+fb.authRef.on("value", function(snap) {
+    if (snap.val() == true) {
+        console.log("Now logged in as " + fb.user.uid);
+    } else {
+        console.log("Now logged out ");
+    }
+});
+
+document.getElementById("login").onclick = function() {
+    fb.auth.login("google");
+    return false;
+};
+
 var stateHash = localStorage.getItem(STATE_KEY);
 if (stateHash) {
     loadState(JSON.parse(localStorage.getItem(stateHash)));
@@ -521,60 +592,5 @@ if (stateHash) {
     state.url = "";
 }
 
-function cheat(n) {
-    while (n > 0) {
-        var thm = new Fact(state.work);
-        thm.Tree.Proof=[];
-        thm.Tree.Cmd = 'stmt'
-        thm.setHyps([]);
-        var newFact = addToShooter(thm);
-        currentLand().thms.push(newFact.Skin.Name);
-        message("");
-        nextGoal();
-        n--;
-        redraw();
-        save();
-    }
-}
-function exportFacts() {
-
-    console.log("==== EXPORT BEGIN ====");
-    state.lands.forEach(function(land) {
-        land.thms.forEach(function(thmName) {
-            var factData = localStorage.getItem(thmName);
-            if (factData.length < 4000) {
-                console.log("addFact(" + factData + ")");
-            } else {
-                console.log("addFact(" + factData.substring(0,4000));
-                while (factData.length > 0) {
-                    factData = factData.substring(4000);
-                    console.log("        " + factData.substring(0, 4000));
-                }
-                console.log("      )");
-            }
-        });
-    });
-   
-    console.log("==== EXPORT END ====");
-}
 save();
 redraw();
-
-// XXX Find missing induction tool
-/*
-var prefix = '{"Core":[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]]';
-for (var k in localStorage) {
-    if (localStorage[k] && localStorage[k].match) {
-        if (localStorage[k].match(prefix)|| k=="y9x5k") {
-            var factData = JSON.parse(localStorage[k]);
-            console.log("Found thm: " + factData.Skin.Name)
-            currentLand().thms.push(factData.Skin.Name);
-        } else if (localStorage[k].match("sect")) {
-            console.log("Checking "  + k + ": " + localStorage[k].substr(0,prefix.length));
-        }
-    }
-}
-// {"Core":[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]]
-//{"Core":[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]]'; 
-//exportFacts(); //XXX
-*/

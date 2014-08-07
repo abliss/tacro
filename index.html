@@ -26,6 +26,9 @@
       };
     </script>
     <script src="js/less.js" type="text/javascript"></script>
+    <!-- TODO: need to async this -->
+    <script src="https://cdn.firebase.com/js/client/1.0.18/firebase.js"></script>
+    <script src="https://cdn.firebase.com/js/simple-login/1.6.1/firebase-simple-login.js"></script>
   </head>
   <body>
     <div id="shooter">
@@ -33,9 +36,12 @@
       <span id="shooterTape"></span>
     </div>
     <div id="rightPane">
-	  <a id="rewind" href="#">&laquo;<span id="rewindLabel"/></a>
-	  <a id="forward" href="#"><span id="forwardLabel"/>&raquo;</a>
-	  <span id="message"></span><br/>
+      <span id="toolbox">
+	    <a id="rewind" href="#">&laquo;<span id="rewindLabel"/></a>
+	    <a id="forward" href="#"><span id="forwardLabel"/>&raquo;</a>
+	    <span id="message"></span>
+        <a id="login" href="#login">guest</a>
+      </span>
       <div id="well"><span id="placeholder">Loading...</span></div>
     </div>
     <script src="js/fact.js" type="text/javascript"></script>
