@@ -1,5 +1,4 @@
 // Hackish for now.
-
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var state;
@@ -540,8 +539,13 @@ fb.once = function(f) {
 }
 function firebaseLoaded() {
     console.log("Firebase loaded.");
-    fb.root = new Firebase("https://tacro.firebaseio.com");
+    OfflineFirebase.restore();
+    fb.root = new OfflineFirebase("https://tacro.firebaseio.com/tacro");
     fb.queue.forEach(function(f) {f();});
+    fb.root.child("checked").child("facts").on(
+        'value', function(snap) {
+            console.log("Checked facts: " + snap.numChildren());
+        },null, null, true);
 }
 function firebaseLoginLoaded() {
     console.log("Firebase Login loaded.");
@@ -598,19 +602,8 @@ if (stateHash) {
     state.lands.forEach(function(land) {
         console.log("Processing land " + land.name + " #" + land.thms.length);
         addLandToUi(land);
-        var i = 0;
         land.thms.forEach(function(thmName) {
             var factData = JSON.parse(localStorage.getItem(thmName));
-            //console.log("adding " + thmName + "=" + JSON.stringify(factData));
-            //XXX
-            if (land.name=="&equals;" && i == 7) {
-                /*factData = {Core:[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]],
-                           Skin:{TermNames:["&rarr;","&exist;","&equals;"]}};
-                */
-                factData = {Core:[[],[0,[0,[1,0,0,],1],1],[]],
-                            Skin:{TermNames:["&rarr;","&equals;"]}};
-            } 
-            i++;
             addToShooter(factData, land);
             last = JSON.stringify(factData.Core);
 

@@ -25,6 +25,8 @@ function getFbKey(fact) {
         replace(/\./g,"%2E");
     return core + ";" + terms;
 }
+
+
 factsRef.set({});
 var work = 0;
 var finished = false;
@@ -32,7 +34,7 @@ Facts.forEach(function(factData) {
     var fact = new Fact(factData);
     var key = getFbKey(fact);
     work++;
-    factsRef.child(key).set(factData, function(err) {
+    factsRef.child(key).set(JSON.stringify(factData), function(err) {
         if(err) {
             console.log(err);
         }
