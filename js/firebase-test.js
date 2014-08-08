@@ -30,6 +30,12 @@ function getFbKey(fact) {
 factsRef.set({});
 var work = 0;
 var finished = false;
+function done() {
+    work--;
+    if (finished && work == 0) {
+        process.exit(0);
+    }
+}
 Facts.forEach(function(factData) {
     var fact = new Fact(factData);
     var key = getFbKey(fact);
@@ -38,13 +44,27 @@ Facts.forEach(function(factData) {
         if(err) {
             console.log(err);
         }
-        work--;
-        if (finished && work == 0) {
-            process.exit(0);
-        }
+        done();
     });
     if (key.length > 700) {
         console.log("key:" + key);
     }
 });
+
+var allLands = require('./all_lands.js');
+var landsRef = rootRef.child('checked').child('lands');
+landsRef.set({});
+allLands.forEach(function(land) {
+    if (land.axioms) {
+        land.axioms = land.axioms.map(JSON.stringify);
+    }
+    land.goals = land.goals.map(JSON.stringify);
+    landsRef.child(land.name).set(land, function(err) {
+        if(err) {
+            console.log(err);
+        }
+        done();
+    });
+});
+
 finished = true;

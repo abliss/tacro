@@ -481,18 +481,6 @@ function exportFacts() {
 
 
 
-var allLands = require('./all_lands.js');
-var landMap = {};
-var landDepMap = {}; // XXX
-var landPaneMap = {};
-var currentPane;
-
-allLands.forEach(function(land) {
-    landMap[land.name] = land;
-    landDepMap[land.depends[0]] = land;
-});
-
-
 window.addEventListener('popstate', function(ev) {
     console.log("popstate to " + ev.state);
     if (ev.state) {
@@ -527,35 +515,24 @@ document.getElementById("forward").onclick = function() {
     return false;
 };
 
+
 // ==== FIREBASE / AUTH ====
-var fb = {};
-fb.queue = [];
-fb.once = function(f) {
-    if (fb.root) {
-        f();
-    } else {
-        fb.queue.push(f);
-    }
+OfflineFirebase.restore();
+// Redirection in case we want to go async.
+var tacroFb = {
+    "root": new OfflineFirebase("https://tacro.firebaseio.com/tacro"),
+    "once": function(f) {f(tacroFb.root);},
 }
-function firebaseLoaded() {
-    console.log("Firebase loaded.");
-    OfflineFirebase.restore();
-    fb.root = new OfflineFirebase("https://tacro.firebaseio.com/tacro");
-    fb.queue.forEach(function(f) {f();});
-    fb.root.child("checked").child("facts").on(
-        'value', function(snap) {
-            console.log("Checked facts: " + snap.numChildren());
-        },null, null, true);
-}
+
 function firebaseLoginLoaded() {
     console.log("Firebase Login loaded.");
-    fb.once(function() {
-        fb.auth = new FirebaseSimpleLogin(fb.root, function(error, user) {
+    tacroFb.once(function(root) {
+        tacroFb.auth = new FirebaseSimpleLogin(root, function(error, user) {
             if (error) {
                 // an error occurred while attempting login
                 console.log(error);
             } else if (user) {
-                fb.user = user;
+                tacroFb.user = user;
                 // user authenticated with Firebase
                 console.log("User ID: " + user.uid + ", Provider: " +
                             user.provider);
@@ -563,7 +540,7 @@ function firebaseLoginLoaded() {
                 loginNode.disabled = false;
                 loginNode.innerText = user.email.replace(/@.*/,'');
                 loginNode.onclick = function() {
-                    fb.auth.logout();
+                    tacroFb.auth.logout();
                     return false;
                 }
             }
@@ -589,12 +566,19 @@ function resetLoginLink() {
     var link = document.getElementById("login");
     link.disabled = false;
     link.onclick = function() {
-        fb.auth.login("google", {
+        tacroFb.auth.login("google", {
             rememberMe: true,
         });
         return false;
     };
 }
+
+
+
+var landMap = {};
+var landDepMap = {}; // XXX
+var landPaneMap = {};
+var currentPane;
 
 var stateHash = localStorage.getItem(STATE_KEY);
 if (stateHash) {
@@ -606,19 +590,37 @@ if (stateHash) {
             var factData = JSON.parse(localStorage.getItem(thmName));
             addToShooter(factData, land);
             last = JSON.stringify(factData.Core);
-
         })
-    });
+    })
+    save();
+    redraw();
 } else {
     state = {
         lands: [],
         url:"",
     };
-    var firstLand = landDepMap[undefined]; // XXX
-    enterLand(firstLand);
-    nextGoal();
-    state.url = "";
 }
 
-save();
-redraw();
+tacroFb.once(function(root) {
+    root.child("checked").child("lands").on('value', function(snap) {
+        snap.forEach(function(land) {
+            land = land.val();
+            if (land.goals) land.goals = land.goals.map(JSON.parse);
+            if (land.axioms) land.axioms = land.axioms.map(JSON.parse);
+            landMap[land.name] = land;
+            if (land.depends && land.depends.length > 0) {
+                landDepMap[land.depends[0]] = land;
+            } else {
+                landDepMap[undefined] = land;
+                if (state.lands.length == 0) {
+                    enterLand(land);
+                    nextGoal();
+                    state.url = "";
+                    save();
+                    redraw();
+                }
+            }
+        });
+    }, null, null, true);
+});
+
