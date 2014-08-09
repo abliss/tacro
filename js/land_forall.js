@@ -1,6 +1,6 @@
-{
+({
     name:"&forall;",
-    depends:["&or;"],  // TODO: figure out a content-addressable scheme
+    depends:["&or;"],  
     axioms:[
         {Core:[[0],[0,1,0],[]], // generify
          Skin:{TermNames:["&forall;"]}},
@@ -35,4 +35,4 @@
         {Core:[[],[0,[0,[1,0,[0,1,1]],2],2],[]],
          Skin:{TermNames:["&rarr;","&forall;"]}},
     ],
-}
+})

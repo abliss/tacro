@@ -1,4 +1,4 @@
-{
+({
     name:"&rarr;",
     depends:[],
     // 0 hyp theorems are displayed in the user's toolbox.
@@ -38,11 +38,9 @@
          Skin:{TermNames:["&rarr;"]}},
         {Core:[[],[0,0,0],[]],
          Skin:{TermNames:["&rarr;"]}},
-        {Core:[[],[0,0,[0,1,[0,[0,1,2],2]]],[]],
-         Skin:{TermNames:["&rarr;"]}},
         {Core:[[],[0,0,[0,[0,0,1],1]],[]],
          Skin:{TermNames:["&rarr;"]}},
         {Core:[[],[0,[0,[0,0,0],1],1],[]],
          Skin:{TermNames:["&rarr;"]}},
     ],
-}
+})

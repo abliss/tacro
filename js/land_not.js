@@ -1,6 +1,6 @@
-{
+({
     name:"&not;",
-    depends:["&rarr;"],  // TODO: figure out a content-addressable scheme
+    depends:["&rarr;"],  
     axioms:[
         // ax3
         {Core:[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]],
@@ -26,4 +26,4 @@
         {Core:[[],[0,[1,[1,0,0],[0,[1,1,1]]]],[]],
          Skin:{TermNames:["&not;","&rarr;"]}},
     ],
-}
+})

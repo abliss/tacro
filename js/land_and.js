@@ -1,6 +1,6 @@
-{
+({
     name:"&and;",
-    depends:["&not;"],  // TODO: figure out a content-addressable scheme
+    depends:["&not;"],  
     goals:[
         // Future definitions using the biconditional can be automatic, but
         // this definition *of* the biconditional must be manual.
@@ -41,4 +41,4 @@
         {Core:[[],[0,[1,[0,0,1],[0,2,3]],[0,[1,0,2],[1,1,3]]],[]],
          Skin:{TermNames:["&rarr;","&and;"]}},
 ],
-}
+})

@@ -1,6 +1,6 @@
-{
+({
     name:"&harr;",
-    depends:["&and;"],  // TODO: figure out a content-addressable scheme
+    depends:["&and;"],  
     goals:[
         {Core:[[],[0,[1,0,0],[1,1,1]],[]],
          Skin:{TermNames:["&and;","&rarr;"]}},
@@ -68,4 +68,4 @@
         {Core:[[],[0,[1,[2,0,1],[2,0,2]],[2,1,2]],[]],
          Skin:{"TermNames":["&rarr;","&and;","&harr;"]}},
     ],
-}
+})

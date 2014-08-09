@@ -1,6 +1,6 @@
-{
+({
     name:"&Oslash;",
-    depends:["&equals;"],  // TODO: figure out a content-addressable scheme
+    depends:["&equals;"],  
     axioms:[
         // TODO: this axiom is unnecessary, though it does force equal into 
         // termvars, and gives us something to put in this file.
@@ -10,4 +10,4 @@
     goals:[
 
     ],
-}
+})

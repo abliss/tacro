@@ -27,7 +27,7 @@ function getFbKey(fact) {
 }
 
 
-factsRef.set({});
+//factsRef.set({});
 var work = 0;
 var finished = false;
 function done() {
@@ -51,20 +51,25 @@ Facts.forEach(function(factData) {
     }
 });
 
-var allLands = require('./all_lands.js');
 var landsRef = rootRef.child('checked').child('lands');
-landsRef.set({});
-allLands.forEach(function(land) {
-    if (land.axioms) {
-        land.axioms = land.axioms.map(JSON.stringify);
-    }
-    land.goals = land.goals.map(JSON.stringify);
-    landsRef.child(land.name).set(land, function(err) {
-        if(err) {
-            console.log(err);
+Fs.readdirSync(".").forEach(function(fn) {
+    if (fn.match(/^land_/)) {
+        var landData = Fs.readFileSync(fn,"utf8");
+        var land = eval(landData);
+        if (land.name == undefined) {
+            throw new Error("Bad land " + fn + ": " + landData + "\n=>\n" +
+                            JSON.stringify(land));
         }
-        done();
-    });
-});
+        if (land.axioms) land.axioms = land.axioms.map(JSON.stringify);
+        if (land.goals) land.goals = land.goals.map(JSON.stringify);
+        work++;
+        landsRef.child(land.name).set(land, function(err) {
+            if(err) {
+                console.log(err);
+            }
+            done();
+        });
+    }
+})
 
 finished = true;
