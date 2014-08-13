@@ -513,27 +513,17 @@ document.getElementById("forward").onclick = function() {
 };
 
 
-// ==== FIREBASE / AUTH ====
-if (typeof OfflineFirebase !== 'undefined') {
-    OfflineFirebase.restore();
-} else {
-    OfflineFirebase = require('firebase');
-}
-// Redirection in case we want to go async.
-var tacroFb = {
-    "root": new OfflineFirebase("https://tacro.firebaseio.com/tacro"),
-    "once": function(f) {f(tacroFb.root);},
-}
+// ==== AUTH ====
 
 function firebaseLoginLoaded() {
     console.log("Firebase Login loaded.");
-    tacroFb.once(function(root) {
-        tacroFb.auth = new FirebaseSimpleLogin(root, function(error, user) {
+    Storage.auth = new FirebaseSimpleLogin(
+        Storage.remote, function(error, user) {
             if (error) {
                 // an error occurred while attempting login
                 console.log(error);
             } else if (user) {
-                tacroFb.user = user;
+                Storage.user = user;
                 // user authenticated with Firebase
                 console.log("User ID: " + user.uid + ", Provider: " +
                             user.provider);
@@ -541,7 +531,7 @@ function firebaseLoginLoaded() {
                 loginNode.disabled = false;
                 loginNode.innerText = user.email.replace(/@.*/,'');
                 loginNode.onclick = function() {
-                    tacroFb.auth.logout();
+                    Storage.auth.logout();
                     return false;
                 }
             }
@@ -552,14 +542,13 @@ function firebaseLoginLoaded() {
             }
         });
     new Firebase("https://tacro.firebaseio.com/.info/authenticated").
-            on("value", function(snap) {
-                if (snap.val() == true) {
-                    console.log("Now logged in.");
-                } else {
-                    console.log("Now logged out.");
-                }
-            });
-    });
+        on("value", function(snap) {
+            if (snap.val() == true) {
+                console.log("Now logged in.");
+            } else {
+                console.log("Now logged out.");
+            }
+        });
 }
 
 
@@ -567,7 +556,7 @@ function resetLoginLink() {
     var link = document.getElementById("login");
     link.disabled = false;
     link.onclick = function() {
-        tacroFb.auth.login("google", {
+        Storage.auth.login("google", {
             rememberMe: true,
         });
         return false;
@@ -602,8 +591,7 @@ if (stateHash) {
     };
 }
 
-tacroFb.once(function(root) {
-    root.child("checked").child("lands").on('value', function(snap) {
+Storage.remote.child("checked").child("lands").on('value', function(snap) {
         snap.forEach(function(land) {
             land = JSON.parse(land.val());
             landMap[land.name] = land;
@@ -621,5 +609,4 @@ tacroFb.once(function(root) {
             }
         });
     }, null, null, true);
-});
 

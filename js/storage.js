@@ -22,7 +22,13 @@
         Storage.local = localStorage;
     }
 
-
+    var Firebase;
+    if (typeof OfflineFirebase !== 'undefined') {
+        Firebase = OfflineFirebase;
+    } else {
+        Firebase = require('firebase');
+    }
+    Storage.remote = new Firebase("https://tacro.firebaseio.com/tacro");
 
     module.exports = Storage;
 })(module);
