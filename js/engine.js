@@ -101,7 +101,13 @@ var Fact = require('./fact.js'); //XXX
 
     function fingerprint(obj) {
 		var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-";
-		var str = JSON.stringify(obj);
+		var str;
+		if (typeof obj === 'string') {
+			str = obj;
+		} else {
+			str = JSON.stringify(obj);
+		}
+
 		var hash = 0, i, chr, len;
 		if (str.length == 0) return hash;
 		for (i = 0, len = str.length; i < len; i++) {
