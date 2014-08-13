@@ -30,7 +30,10 @@ function getFbKey(fact) {
 //factsRef.set({});
 var work = 0;
 var finished = false;
-function done() {
+function done(err) {
+    if (err) {
+        console.log("Error: " + err);
+    }
     work--;
     if (finished && work == 0) {
         process.exit(0);
@@ -40,35 +43,26 @@ Facts.forEach(function(factData) {
     var fact = new Fact(factData);
     var key = getFbKey(fact);
     work++;
-    factsRef.child(key).set(JSON.stringify(factData), function(err) {
-        if(err) {
-            console.log(err);
-        }
-        done();
-    });
+    factsRef.child(key).set(JSON.stringify(factData), done);
     if (key.length > 700) {
         console.log("key:" + key);
     }
 });
 
 var landsRef = rootRef.child('checked').child('lands');
+landsRef.set({});
 Fs.readdirSync(".").forEach(function(fn) {
     if (fn.match(/^land_/)) {
         var landData = Fs.readFileSync(fn,"utf8");
         var land = eval(landData);
-        if (land.name == undefined) {
+        var path = encodeURIComponent(land.name).replace(/\./g,"%2E");
+        if (!path) {
             throw new Error("Bad land " + fn + ": " + landData + "\n=>\n" +
                             JSON.stringify(land));
         }
-        if (land.axioms) land.axioms = land.axioms.map(JSON.stringify);
-        if (land.goals) land.goals = land.goals.map(JSON.stringify);
+        land = JSON.stringify(land);
         work++;
-        landsRef.child(land.name).set(land, function(err) {
-            if(err) {
-                console.log(err);
-            }
-            done();
-        });
+        landsRef.child(path).set(land, done);
     }
 })
 

@@ -64,7 +64,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
     if (Array.isArray(exp)) {
         termSpan = doc.createElement("span");
         var termName = fact.Skin.TermNames[exp[0]];
-        if (!termName) throw new Error("Bad term " + exp);
+        if (!termName) throw new Error("Bad term " + JSON.stringify(exp));
         var arity = exp.length - 1;
         var children = [];
         for (var i = 1; i <= arity; i++) {
@@ -604,12 +604,10 @@ if (stateHash) {
 tacroFb.once(function(root) {
     root.child("checked").child("lands").on('value', function(snap) {
         snap.forEach(function(land) {
-            land = land.val();
-            if (land.goals) land.goals = land.goals.map(JSON.parse);
-            if (land.axioms) land.axioms = land.axioms.map(JSON.parse);
+            land = JSON.parse(land.val());
             landMap[land.name] = land;
             if (land.depends && land.depends.length > 0) {
-                landDepMap[land.depends[0]] = land;
+                landDepMap[land.depends[0]] = land; // TODO: multidep
             } else {
                 landDepMap[undefined] = land;
                 if (state.lands.length == 0) {
