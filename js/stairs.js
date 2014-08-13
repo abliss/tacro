@@ -571,10 +571,11 @@ if (stateHash) {
     };
 }
 
-Storage.remoteGet("checked/lands", function(snap) {
-    console.log("Got checked lands: " + snap.numChildren());
-    snap.forEach(function(land) {
-        land = JSON.parse(land.val());
+Storage.remoteGet("checked/lands", function(lands) {
+    var numLands = 0;
+    for (var n in lands) if (lands.hasOwnProperty(n)) {
+        numLands++;
+        land = JSON.parse(lands[n].land);
         landMap[land.name] = land;
         if (land.depends && land.depends.length > 0) {
             landDepMap[land.depends[0]] = land; // TODO: multidep
@@ -588,6 +589,7 @@ Storage.remoteGet("checked/lands", function(snap) {
                 redraw();
             }
         }
-    });
+    }
+    console.log("Got checked lands: " + numLands);
 });
 

@@ -27,7 +27,7 @@ function getFbKey(fact) {
 }
 
 
-//factsRef.set({});
+// ==== Work counter so node knows when to exit ====
 var work = 0;
 var finished = false;
 function done(err) {
@@ -39,18 +39,25 @@ function done(err) {
         process.exit(0);
     }
 }
+function set(ref, val) {
+    work++;
+    ref.set(val, done);
+} 
+// ====
+
 Facts.forEach(function(factData) {
     var fact = new Fact(factData);
     var key = getFbKey(fact);
     work++;
-    factsRef.child(key).set(JSON.stringify(factData), done);
+    set(factsRef.child(key),JSON.stringify(factData));
     if (key.length > 700) {
         console.log("key:" + key);
     }
 });
 
-var landsRef = rootRef.child('checked').child('lands');
-landsRef.set({});
+// Combine all lands into one object. JSONify the axioms and goals for fast
+// parsing and efficient firebase storage.
+var lands = {};
 Fs.readdirSync(".").forEach(function(fn) {
     if (fn.match(/^land_/)) {
         var landData = Fs.readFileSync(fn,"utf8");
@@ -60,10 +67,23 @@ Fs.readdirSync(".").forEach(function(fn) {
             throw new Error("Bad land " + fn + ": " + landData + "\n=>\n" +
                             JSON.stringify(land));
         }
-        land = JSON.stringify(land);
-        work++;
-        landsRef.child(path).set(land, done);
+        lands[path] = {depends: land.depends,
+                       land: JSON.stringify(land)};
     }
 })
-
+set(rootRef.child('checked').child('lands'), lands);
+Fs.mkdir('../rest', function(err) {
+    //if (err) throw err;
+    Fs.mkdir('../rest/checked', function(err) {
+        //if (err) throw err;
+        work++;
+        Fs.writeFile(
+            "../rest/checked/lands.json",
+            JSON.stringify(lands), function(err) {
+                work--;
+                if (err) throw err;
+                console.log("Local write complete");
+            });
+    });
+});
 finished = true;

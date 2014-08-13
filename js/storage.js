@@ -36,12 +36,44 @@
     Storage.remoteGet = function(path, callback) {
         var ref = this.remote;
         path.split("/").forEach(function(step) {ref = ref.child(step);});
+        var cbWrap = function(snap){callback(snap.val());};
         if (offlineEnabled) {
-            ref.once('value', callback, null, null, true);
+            ref.once('value', cbWrap, null, null, true);
         } else {
-            ref.once('value', callback, null, null);
+            ref.once('value', cbWrap, null, null);
         }
     };
+    if (typeof XMLHttpRequest !== 'undefined') {
+        // XXXX Override remoteGet to use XHR
+        Storage.remoteGet = function(path, callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var obj;
+                    try {
+                        var obj = eval("(" + xhr.responseText + ")");
+                     } catch (e) {
+                         console.log("Error evaluating xhr.responsetext:");
+                         console.log(e);
+                         console.log(e.stack);
+                         console.log("text was:");
+                         console.log("================");
+                         var dump = xhr.responseText;
+                         var maxDumpLength = 500;
+                         if (dump.length > 500) {
+                             dump = "..." + dump.substring(dump.length - 500);
+                         }
+                         console.log(dump);
+                     }
+                    callback(obj);
+                 } else if (xhr.readyState > 4) {
+                     console.log("Bad xhr: " + xhr.readyState);
+                 }
+            };
+            xhr.open("GET", "rest/" + path + ".json", true);
+            xhr.send(null);
+        };
+    }
 
     Storage.authInit = function(FirebaseSimpleLogin, callback) {
         var thatStorage = this;
