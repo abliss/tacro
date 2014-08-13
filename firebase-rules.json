@@ -1,0 +1,14 @@
+{
+    "rules": {
+        ".read": true,
+        "users": {
+            "$user_id": {
+                ".write": "$user_id === auth.uid"
+            },"checked": {
+                ".write": false
+            },"incoming": {
+                ".write": "!data.exists() && newData.exists()"
+            }
+        }
+    }
+}
