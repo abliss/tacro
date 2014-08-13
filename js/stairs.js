@@ -513,42 +513,24 @@ document.getElementById("forward").onclick = function() {
 };
 
 
-// ==== AUTH ====
-
 function firebaseLoginLoaded() {
     console.log("Firebase Login loaded.");
-    Storage.auth = new FirebaseSimpleLogin(
-        Storage.remote, function(error, user) {
-            if (error) {
-                // an error occurred while attempting login
-                console.log(error);
-            } else if (user) {
-                Storage.user = user;
-                // user authenticated with Firebase
-                console.log("User ID: " + user.uid + ", Provider: " +
-                            user.provider);
-                var loginNode = document.getElementById("login");
-                loginNode.disabled = false;
-                loginNode.innerText = user.email.replace(/@.*/,'');
-                loginNode.onclick = function() {
-                    Storage.auth.logout();
-                    return false;
-                }
+    Storage.authInit(FirebaseSimpleLogin, function(user) {
+        if (user) {
+            // user authenticated
+            var loginNode = document.getElementById("login");
+            loginNode.disabled = false;
+            loginNode.innerText = user.displayName;
+            loginNode.onclick = function() {
+                Storage.authLogout();
+                return false;
             }
-            else {
-                // user is logged out
-                document.getElementById("login").innerText = "guest";
-                resetLoginLink();
-            }
-        });
-    new Firebase("https://tacro.firebaseio.com/.info/authenticated").
-        on("value", function(snap) {
-            if (snap.val() == true) {
-                console.log("Now logged in.");
-            } else {
-                console.log("Now logged out.");
-            }
-        });
+        } else {
+            // user is logged out
+            document.getElementById("login").innerText = "guest";
+            resetLoginLink();
+        }
+    });
 }
 
 
@@ -556,9 +538,7 @@ function resetLoginLink() {
     var link = document.getElementById("login");
     link.disabled = false;
     link.onclick = function() {
-        Storage.auth.login("google", {
-            rememberMe: true,
-        });
+        Storage.authLogin();
         return false;
     };
 }
@@ -591,22 +571,23 @@ if (stateHash) {
     };
 }
 
-Storage.remote.child("checked").child("lands").on('value', function(snap) {
-        snap.forEach(function(land) {
-            land = JSON.parse(land.val());
-            landMap[land.name] = land;
-            if (land.depends && land.depends.length > 0) {
-                landDepMap[land.depends[0]] = land; // TODO: multidep
-            } else {
-                landDepMap[undefined] = land;
-                if (state.lands.length == 0) {
-                    enterLand(land);
-                    nextGoal();
-                    state.url = "";
-                    save();
-                    redraw();
-                }
+Storage.remoteGet("checked/lands", function(snap) {
+    console.log("Got checked lands: " + snap.numChildren());
+    snap.forEach(function(land) {
+        land = JSON.parse(land.val());
+        landMap[land.name] = land;
+        if (land.depends && land.depends.length > 0) {
+            landDepMap[land.depends[0]] = land; // TODO: multidep
+        } else {
+            landDepMap[undefined] = land;
+            if (state.lands.length == 0) {
+                enterLand(land);
+                nextGoal();
+                state.url = "";
+                save();
+                redraw();
             }
-        });
-    }, null, null, true);
+        }
+    });
+});
 
