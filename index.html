@@ -15,6 +15,7 @@
           if (!console) {
             window.console = {log: function(x) {alert(x);}};
           }
+          // TODO: proper script loading
           function require(x) {
             if (window.modules.hasOwnProperty(x)) {
               return window.modules[x];
@@ -43,6 +44,8 @@
     </div>
     <script src="js/fact.js" type="text/javascript"></script>
     <script type="text/javascript">modules['./fact.js'] = module.exports;</script>
+    <script src="js/storage.js" type="text/javascript"></script>
+    <script type="text/javascript">modules['./storage.js'] = module.exports;</script>
 
     <script src="js/engine.js" type="text/javascript"></script>
     <script type="text/javascript">modules['./engine.js'] = module.exports;</script>

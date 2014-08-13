@@ -1,6 +1,8 @@
 // Hackish for now.
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
+var Storage = require('./storage.js');
+
 var state;
 var stateHash;
 var STATE_KEY = "lastState-v12";
@@ -26,11 +28,6 @@ if (typeof document == 'undefined') {
     history = {
         pushState: function(){},
     }
-}
-
-if (typeof localStorage === "undefined" || localStorage === null) {
-  var LocalStorage = require('node-localstorage').LocalStorage;
-  localStorage = new LocalStorage('./scratch');
 }
 
 // ==== END stubs ====
@@ -225,7 +222,7 @@ function size(thmBox, ems) {
 function addToShooter(factData, land) {
     if (!land) land = currentLand();
     var fact = Engine.canonicalize(new Fact(factData));
-    localStorage.setItem(fact.Skin.Name, JSON.stringify(fact));
+    Storage.local.setItem(fact.Skin.Name, JSON.stringify(fact));
     Engine.onAddFact(fact);
     switch (fact.Core[Fact.CORE_HYPS].length) {
     case 0:
@@ -350,10 +347,10 @@ function save() {
     var hash = Engine.fingerprint(state);
     if (stateHash == null) {stateHash = "null";}
     if (hash != stateHash) {
-        localStorage.setItem(hash, JSON.stringify(state));
-        localStorage.setItem(STATE_KEY, hash);
-        localStorage.setItem("parentOf-" + hash, stateHash);
-        localStorage.setItem("childOf-" + stateHash, hash);
+        Storage.local.setItem(hash, JSON.stringify(state));
+        Storage.local.setItem(STATE_KEY, hash);
+        Storage.local.setItem("parentOf-" + hash, stateHash);
+        Storage.local.setItem("childOf-" + stateHash, hash);
         console.log("XXXX Setting " + "childOf-" + stateHash + " = " + hash);
         stateHash = hash;
         history.pushState(state, "state", "#s=" + hash + state.url);
@@ -461,7 +458,7 @@ function exportFacts() {
     console.log("==== EXPORT BEGIN ====");
     state.lands.forEach(function(land) {
         land.thms.forEach(function(thmName) {
-            var factData = localStorage.getItem(thmName);
+            var factData = Storage.local.getItem(thmName);
             if (factData.length < 4000) {
                 console.log("addFact(" + factData + ")");
             } else {
@@ -490,10 +487,10 @@ window.addEventListener('popstate', function(ev) {
     }
 });
 document.getElementById("rewind").onclick = function() {
-    var parentHash = localStorage.getItem("parentOf-" + stateHash);
+    var parentHash = Storage.local.getItem("parentOf-" + stateHash);
     console.log("XXXX Rewinding from " + stateHash + "  to " + parentHash);
     if (parentHash) {
-        loadState(JSON.parse(localStorage.getItem(parentHash)));
+        loadState(JSON.parse(Storage.local.getItem(parentHash)));
         stateHash = parentHash;
         redraw();
         // Don't save() or we'll get stuck in a loop
@@ -502,10 +499,10 @@ document.getElementById("rewind").onclick = function() {
     return false;
 };
 document.getElementById("forward").onclick = function() {
-    var childHash = localStorage.getItem("childOf-" + stateHash);
+    var childHash = Storage.local.getItem("childOf-" + stateHash);
     console.log("XXXX Forwarding from " + stateHash + " to " + childHash);
     if (childHash) {
-        loadState(JSON.parse(localStorage.getItem(childHash)));
+        loadState(JSON.parse(Storage.local.getItem(childHash)));
         stateHash = childHash;
         redraw();
         // Don't save() or we'll get stuck in a loop
@@ -517,7 +514,11 @@ document.getElementById("forward").onclick = function() {
 
 
 // ==== FIREBASE / AUTH ====
-OfflineFirebase.restore();
+if (typeof OfflineFirebase !== 'undefined') {
+    OfflineFirebase.restore();
+} else {
+    OfflineFirebase = require('firebase');
+}
 // Redirection in case we want to go async.
 var tacroFb = {
     "root": new OfflineFirebase("https://tacro.firebaseio.com/tacro"),
@@ -580,14 +581,14 @@ var landDepMap = {}; // XXX
 var landPaneMap = {};
 var currentPane;
 
-var stateHash = localStorage.getItem(STATE_KEY);
+var stateHash = Storage.local.getItem(STATE_KEY);
 if (stateHash) {
-    loadState(JSON.parse(localStorage.getItem(stateHash)));
+    loadState(JSON.parse(Storage.local.getItem(stateHash)));
     state.lands.forEach(function(land) {
         console.log("Processing land " + land.name + " #" + land.thms.length);
         addLandToUi(land);
         land.thms.forEach(function(thmName) {
-            var factData = JSON.parse(localStorage.getItem(thmName));
+            var factData = JSON.parse(Storage.local.getItem(thmName));
             addToShooter(factData, land);
             last = JSON.stringify(factData.Core);
         })
