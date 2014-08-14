@@ -3,8 +3,10 @@ var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var Storage = require('./storage.js');
 
+var storage = new Storage(Engine.fingerprint);
+var log = {};
 var state;
-var stateHash;
+var lastStateFp = null;
 var STATE_KEY = "lastState-v12";
 var SIZE_MULTIPLIER = 3;
 // ==== Stubs for node.js usage ====
@@ -220,9 +222,12 @@ function size(thmBox, ems) {
 }
 
 function addToShooter(factData, land) {
+    if (!factData) {
+        throw new Error("Bad fact: "+ factData);
+    }
     if (!land) land = currentLand();
     var fact = Engine.canonicalize(new Fact(factData));
-    Storage.local.setItem(fact.Skin.Name, JSON.stringify(fact));
+    var factFp = storage.fpSave("fact", fact);
     Engine.onAddFact(fact);
     switch (fact.Core[Fact.CORE_HYPS].length) {
     case 0:
@@ -236,13 +241,14 @@ function addToShooter(factData, land) {
             case 0:
                 return function(ev) {
                     try {
-                        state.url = "#f=" + path + ";" + fact.Skin.Name;
+                        state.url = "#f=" + path + ";" +
+                            fact.Skin.Name;
                         console.log("calling ground: " +
-                                    JSON.stringify(state.work) + "\n" +
-                                    JSON.stringify(fact) + "\n");
+                                    JSON.stringify(state.work) +
+                                    "\n" + JSON.stringify(fact) + "\n");
                         var thm = Engine.ground(state.work, fact);
-                        var newFact = addToShooter(thm);
-                        currentLand().thms.push(newFact.Skin.Name);
+                        var newFactFp = addToShooter(thm);
+                        currentLand().thms.push(newFactFp);
                         message("");
                         nextGoal();
                     } catch (e) {
@@ -309,7 +315,7 @@ function addToShooter(factData, land) {
     default:
         console.log("Skipping inference: " + JSON.stringify(fact.Core));
     } // TODO: handle axioms with hyps
-    return fact;
+    return factFp;
 }
 
 
@@ -344,16 +350,14 @@ function setWork(work) {
 }
 
 function save() {
-    var hash = Engine.fingerprint(state);
-    if (stateHash == null) {stateHash = "null";}
-    if (hash != stateHash) {
-        Storage.local.setItem(hash, JSON.stringify(state));
-        Storage.local.setItem(STATE_KEY, hash);
-        Storage.local.setItem("parentOf-" + hash, stateHash);
-        Storage.local.setItem("childOf-" + stateHash, hash);
-        console.log("XXXX Setting " + "childOf-" + stateHash + " = " + hash);
-        stateHash = hash;
-        history.pushState(state, "state", "#s=" + hash + state.url);
+    var stateFp = storage.fpSave("state", state);
+    if (stateFp != log.now) {
+        var logFp = storage.fpSave("log", log);
+        storage.local.setItem(STATE_KEY, logFp);
+        storage.local.setItem("childOf/" + stateFp, logFp);
+        console.log("XXXX Setting " + "childOf/" + stateFp + " = " + logFp);
+        history.pushState(logFp, "state", "#s=" + stateFp + "/" + state.url);
+        log = {parent: logFp, now: stateFp};
     }
 }
 
@@ -399,6 +403,19 @@ function loadState(flat) {
     message("");
 }
 
+function loadLogFp(logFp, cb) {
+    storage.fpLoad("log", logFp, function(logObj) {
+        storage.fpLoad("state", logObj.now, function(stateObj) {
+            log = logObj;
+            loadState(stateObj);
+            redraw();
+            // TODO: should popstate? double-undo problem.
+            history.pushState(logFp, "state",
+                              "#s=" + logObj.now + "/" + state.url);
+            if (cb) {cb();}
+        });
+    });
+}
 function enterLand(landData) {
     var land = {
         name:landData.name,
@@ -410,8 +427,8 @@ function enterLand(landData) {
     land.goals = landData.goals.slice();
 	if (landData.axioms) {
 		landData.axioms.forEach(function(data) {
-			var fact = addToShooter(data);
-			land.thms.push(fact.Skin.Name);
+			var factFp = addToShooter(data);
+			land.thms.push(factFp);
 		});
 	}
 }
@@ -444,8 +461,8 @@ function cheat(n) {
         thm.Tree.Proof=[];
         thm.Tree.Cmd = 'stmt'
         thm.setHyps([]);
-        var newFact = addToShooter(thm);
-        currentLand().thms.push(newFact.Skin.Name);
+        var factFp = addToShooter(thm);
+        currentLand().thms.push(factFp);
         message("");
         nextGoal();
         n--;
@@ -457,8 +474,8 @@ function exportFacts() {
 
     console.log("==== EXPORT BEGIN ====");
     state.lands.forEach(function(land) {
-        land.thms.forEach(function(thmName) {
-            var factData = Storage.local.getItem(thmName);
+        land.thms.forEach(function(thmFp) {
+            var factData = storage.fpLoad("fact",thmFp);
             if (factData.length < 4000) {
                 console.log("addFact(" + factData + ")");
             } else {
@@ -481,31 +498,23 @@ function exportFacts() {
 window.addEventListener('popstate', function(ev) {
     console.log("popstate to " + ev.state);
     if (ev.state) {
-        loadState(ev.state);
-        save();
-        redraw();
+        loadLogFp(ev.state);
     }
 });
 document.getElementById("rewind").onclick = function() {
-    var parentHash = Storage.local.getItem("parentOf-" + stateHash);
-    console.log("XXXX Rewinding from " + stateHash + "  to " + parentHash);
-    if (parentHash) {
-        loadState(JSON.parse(Storage.local.getItem(parentHash)));
-        stateHash = parentHash;
-        redraw();
-        // Don't save() or we'll get stuck in a loop
+    var parentFp = log.parent;
+    console.log("XXXX Rewinding to " + parentFp);
+    if (parentFp) {
+        loadLogFp(parentFp);
         document.getElementById("forward").style.visibility="visible";
     }
     return false;
 };
 document.getElementById("forward").onclick = function() {
-    var childHash = Storage.local.getItem("childOf-" + stateHash);
-    console.log("XXXX Forwarding from " + stateHash + " to " + childHash);
-    if (childHash) {
-        loadState(JSON.parse(Storage.local.getItem(childHash)));
-        stateHash = childHash;
-        redraw();
-        // Don't save() or we'll get stuck in a loop
+    var childLogFp = storage.local.getItem("childOf/" + log.now);
+    console.log("XXXX Forwarding from " + log.now + " to " + childLogFp);
+    if (childLogFp) {
+        loadLogFp(childLogFp);
     } else {
         document.getElementById("forward").style.visibility="hidden";
     }
@@ -515,14 +524,14 @@ document.getElementById("forward").onclick = function() {
 
 function firebaseLoginLoaded() {
     console.log("Firebase Login loaded.");
-    Storage.authInit(FirebaseSimpleLogin, function(user) {
+    storage.authInit(FirebaseSimpleLogin, function(user) {
         if (user) {
             // user authenticated
             var loginNode = document.getElementById("login");
             loginNode.disabled = false;
             loginNode.innerText = user.displayName;
             loginNode.onclick = function() {
-                Storage.authLogout();
+                storage.authLogout();
                 return false;
             }
         } else {
@@ -538,7 +547,7 @@ function resetLoginLink() {
     var link = document.getElementById("login");
     link.disabled = false;
     link.onclick = function() {
-        Storage.authLogin();
+        storage.authLogin();
         return false;
     };
 }
@@ -550,20 +559,19 @@ var landDepMap = {}; // XXX
 var landPaneMap = {};
 var currentPane;
 
-var stateHash = Storage.local.getItem(STATE_KEY);
-if (stateHash) {
-    loadState(JSON.parse(Storage.local.getItem(stateHash)));
-    state.lands.forEach(function(land) {
-        console.log("Processing land " + land.name + " #" + land.thms.length);
-        addLandToUi(land);
-        land.thms.forEach(function(thmName) {
-            var factData = JSON.parse(Storage.local.getItem(thmName));
-            addToShooter(factData, land);
-            last = JSON.stringify(factData.Core);
-        })
-    })
-    save();
-    redraw();
+var logFp = storage.local.getItem(STATE_KEY);
+if (logFp) {
+    loadLogFp(logFp, function() {
+        state.lands.forEach(function(land) {
+            console.log("Processing land " + land.name);
+            addLandToUi(land);
+            land.thms.forEach(function(thmFp) {
+                storage.fpLoad("fact", thmFp, function(thmObj) {
+                    addToShooter(thmObj, land);
+                });
+            });
+        });
+    });
 } else {
     state = {
         lands: [],
@@ -571,7 +579,7 @@ if (stateHash) {
     };
 }
 
-Storage.remoteGet("checked/lands", function(lands) {
+storage.remoteGet("checked/lands", function(lands) {
     var numLands = 0;
     for (var n in lands) if (lands.hasOwnProperty(n)) {
         numLands++;
@@ -581,7 +589,7 @@ Storage.remoteGet("checked/lands", function(lands) {
             landDepMap[land.depends[0]] = land; // TODO: multidep
         } else {
             landDepMap[undefined] = land;
-            if (state.lands.length == 0) {
+            if (state && state.lands.length == 0) {
                 enterLand(land);
                 nextGoal();
                 state.url = "";
