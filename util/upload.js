@@ -1,6 +1,8 @@
+// Uploads lands and facts to firebase; also prepares lands as a locally
+// fetchable json.
 var Firebase = require('firebase');
-var Facts = require('./factlog.js').facts;
-var Fact = require('./fact.js');
+var Facts = require('../data/factlog.js').facts;
+var Fact = require('../script/fact.js');
 var Fs = require('fs');
 
 var rootRef = new Firebase("https://tacro.firebaseio.com/tacro");
@@ -58,9 +60,9 @@ Facts.forEach(function(factData) {
 // Combine all lands into one object. JSONify the axioms and goals for fast
 // parsing and efficient firebase storage.
 var lands = {};
-Fs.readdirSync(".").forEach(function(fn) {
+Fs.readdirSync("../data").forEach(function(fn) {
     if (fn.match(/^land_/)) {
-        var landData = Fs.readFileSync(fn,"utf8");
+        var landData = Fs.readFileSync("../data/" + fn,"utf8");
         var land = eval(landData);
         var path = encodeURIComponent(land.name).replace(/\./g,"%2E");
         if (!path) {

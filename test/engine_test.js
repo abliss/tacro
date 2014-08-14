@@ -1,7 +1,7 @@
 var Fs = require('fs');
-var Fact = require('../../caghni/js/fact.js'); //XXX
 var Async = require('async');
-var Engine = require('./engine.js');
+var Fact = require('../script/fact.js');
+var Engine = require('../script/engine.js');
 
 var lands = [];
 var state = {};
@@ -316,7 +316,7 @@ Context.prototype.markToFvib = {};
 var proofCtx = new Context();
 var ifaceCtx = new Context();
 
-var landRarr = getLand("land_rarr.js");
+var landRarr = getLand("../data/land_rarr.js");
 var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
 var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
 var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
@@ -512,13 +512,10 @@ thms.idd = save();
 applyArrow([], thms.idd, 0);
 thms.id = save();
 
-startWith(thms.Distribute);
-applyArrow([0], thms.idd, 1);
-applyArrow([1,0], thms.Simplify, 1);
-thms.mpd = save();
-
-applyArrow([], thms.mpd, 0);
+startWith(thms.id);
+applyArrow([], thms.con12, 0);
 thms.mp = save();
+
 startWith(thms.id);
 applyArrow([], thms.mp, 0);
 thms.idie = save();
@@ -531,7 +528,7 @@ thms.contract = pm243;
 
 // Level 2
 
-var landNot = getLand("land_not.js");
+var landNot = getLand("../data/land_not.js");
 
 thms.Transpose = sfbm('[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]');
 
@@ -600,7 +597,7 @@ if (reached) {
     throw new Error("Should not be able to overspecify the work");
 }
 
-var landHarr = getLand("land_and.js");
+var landHarr = getLand("../data/land_and.js");
 startNextGoal();
 state.work = ground(state.work, thms.dfand);
 thms.Conjoin = saveGoal();
@@ -690,7 +687,7 @@ applyArrow([1,0], thms.ancom, 1);
 applyArrow([1,1], thms.ancom, 0);
 thms.prth = save();
 
-var landHarr = getLand("land_harr.js");
+var landHarr = getLand("../data/land_harr.js");
 
 
 startWith(thms.id);
@@ -943,7 +940,7 @@ applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
 save();
 
 
-var landOr = getLand("land_or.js");
+var landOr = getLand("../data/land_or.js");
 
   // Level 6
 
@@ -1026,7 +1023,7 @@ state.work = applyFact(state.work, [2,2], "harr_rarr_not_A_B_or_A_B", [1]);
 state.work = applyFact(state.work, [2,2], thms.orcom, [2]);
 // <-> v v A B C v v A B C
 thms.orass = saveGoal()
-var landForall = getLand("land_forall.js");
+var landForall = getLand("../data/land_forall.js");
 
 thms.axalim='rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B';
 startWith(thms.bi1);
@@ -1110,7 +1107,7 @@ applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
 //saveAs("rarr_rarr_forall_z_rarr_A_A_B_B") //undefined
 save();
 
-var landExist = getLand("land_exist.js");
+var landExist = getLand("../data/land_exist.js");
 startNextGoal();
 state.work = ground(state.work, thms.biid);
 thms.df_ex = saveGoal();
@@ -1189,7 +1186,7 @@ applyArrow([1],"harr_A_not_not_A",1)
 //saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
 save();
 
-var landEquals = getLand("land_equals.js");
+var landEquals = getLand("../data/land_equals.js");
 
 
 startWith("_dv_a_z___not_forall_z_not_equals_z_a")
@@ -1362,10 +1359,10 @@ applyArrow([1],"rarr_and_harr_A_B_harr_A_C_harr_B_C",0)
 
 
 
-var landOslash = getLand("land_Oslash.js");
+var landOslash = getLand("../data/land_Oslash.js");
 // No goals. :(
 
-var landSect = getLand("land_sect.js");
+var landSect = getLand("../data/land_sect.js");
 
 startWith("_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A")
 applyArrow([0,1,1],"rarr_and_A_rarr_A_B_B",1)
@@ -1414,7 +1411,7 @@ applyArrow([1,1,1,0],"rarr_forall_z_A_A",1)
 //saveAs("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E") //undefined
 save();
 
-var landPlus = getLand("land_plus.js");
+var landPlus = getLand("../data/land_plus.js");
 
 startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
@@ -1529,9 +1526,8 @@ console.log("proved " + proofCtx.length() + " thms.");
 // ==== Verify ====
 GH = global.GH = {};
 global.log = console.log;
-require('../../caghni/js/verify.js')
-require('../../caghni/js/proofstep.js')
-
+require('../../caghni/js/verify.js'); //XXX
+require('../../caghni/js/proofstep.js'); //XXX
 var UrlCtx = {
     files: {},
     resolve: function(url) {

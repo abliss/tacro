@@ -2,9 +2,9 @@
 // generated from stairs.js:exportFacts
 
 var Fs = require('fs');
-var Fact = require('../../caghni/js/fact.js'); //XXX
+var Fact = require('../script/fact.js');
 var Async = require('async');
-var Engine = require('./engine.js');
+var Engine = require('../script/engine.js');
 
 var lands = [];
 var state = {};
@@ -256,7 +256,7 @@ var proofCtx = new Context();
 var ifaceCtx = new Context();
 
 
-var log = require('./factlog.js');
+var log = require('../data/factlog.js');
 log.facts.forEach(function(factObj) {
     var fact = new Fact(factObj);
 
