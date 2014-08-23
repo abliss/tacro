@@ -11,6 +11,8 @@ var STATE_KEY = "lastState-v12";
 var USERID_KEY = "tacro-userid";
 var SIZE_MULTIPLIER = 3;
 var urlNum = 0;
+var selectedNode = null;
+var workBox;
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -70,8 +72,10 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
         var children = [];
         for (var i = 1; i <= arity; i++) {
             path.push(i);
-            children.push(makeTree(doc, fact, exp[i], path, arity, varNamer,
-                                   spanMap, cb));
+            var subTree = makeTree(doc, fact, exp[i], path, arity, varNamer,
+                                   spanMap, cb);
+            spanMap[path] = subTree.span;
+            children.push(subTree);
             path.pop();
         }
         switch (arity) {
@@ -83,13 +87,13 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.appendChild(rowSpan);
             rowSpan.className += " hyprow";
             var opSpan = doc.createElement("a");
-            path.push("0");
-            spanMap[path] = opSpan;
             //opSpan.href = "#" + tag + "=" + path;
-            opSpan.onclick = cb(path);
-            path.pop();
             rowSpan.appendChild(children[0].span);
             rowSpan.appendChild(opSpan);
+            path.push("0");
+            spanMap[path] = opSpan;
+            opSpan.onclick = cb(path);
+            path.pop();
             opSpan.className += " operator arity2";
             var txtSpan = doc.createElement("span");
             opSpan.appendChild(txtSpan);
@@ -111,12 +115,12 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             break;
         case 1:
             var opSpan = doc.createElement("a");
+            //opSpan.href = "#" + tag + "=" + path;
+            termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
-            //opSpan.href = "#" + tag + "=" + path;
             opSpan.onclick = cb(path);
             path.pop();
-            termSpan.appendChild(opSpan);
             opSpan.className += " operator arity1";
             var txtSpan = doc.createElement("span");
             opSpan.appendChild(txtSpan);
@@ -134,12 +138,12 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             break;
         case 0:
             var opSpan = doc.createElement("a");
+            //opSpan.href = "#" + tag + "=" + path;
+            termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
-            //opSpan.href = "#" + tag + "=" + path;
             opSpan.onclick = cb(path);
             path.pop();
-            termSpan.appendChild(opSpan);
             opSpan.className += " operator arity1";
             var txtSpan = doc.createElement("span");
             opSpan.appendChild(txtSpan);
@@ -201,6 +205,7 @@ function makeThmBox(fact, exp, cb) {
     termBox.style.width = "" + (2 * tree.width) + "em";
     termBox.style.height ="" + (2 * tree.height) + "em";
     termBox.spanMap = spanMap;
+    spanMap[[]] = tree.span;
     termBox.tree = tree;
     
     var nullCb = function(){};
@@ -333,6 +338,7 @@ function workOnclickMaker(path) {
         state.workPath = goalPath;
         state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
         save();
+        redrawSelection();
 		e.stopPropagation();
     }
 }
@@ -393,6 +399,18 @@ function nextGoal() {
     return goal;
 }
 
+function redrawSelection() {
+    if (selectedNode) {
+        selectedNode.className += "NOT";
+    }
+    if (typeof state.workPath !== 'undefined') {
+        selectedNode = workBox.spanMap[state.workPath];
+        if (!selectedNode) {
+            throw new Error("Selected node not found:" + state.workPath);
+        }
+        selectedNode.className += " selected";
+    }
+}
 function redraw() {
     var well = document.getElementById("well");
     //console.log("Redrawing: " + JSON.stringify(state.work));
@@ -403,6 +421,8 @@ function redraw() {
         size(box, box.tree.width * SIZE_MULTIPLIER);
         well.removeChild(well.firstChild);
         well.appendChild(box);
+        workBox = box;
+        redrawSelection();
     } catch (e) {
         message(e);
     }
