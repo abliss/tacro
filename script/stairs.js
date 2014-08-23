@@ -368,7 +368,6 @@ function save() {
         var logFp = storage.fpSave("log", log);
         log.parent = logFp;
         storage.local.setItem("childOf/" + oldNow, logFp);
-        console.log("XXXX Setting " + "childOf/" + oldNow + " = " + logFp);
         storage.local.setItem(STATE_KEY, logFp);
         if (storage.user) {
             storage.remote.child("users").child(storage.user.uid).
@@ -413,7 +412,6 @@ function redrawSelection() {
 }
 function redraw() {
     var well = document.getElementById("well");
-    //console.log("Redrawing: " + JSON.stringify(state.work));
     try {
         var box = makeThmBox(state.work,
                              state.work.Core[Fact.CORE_HYPS][0],
@@ -439,7 +437,6 @@ function loadLogFp(logFp, cb) {
         storage.fpLoad("state", logObj.now, function(stateObj) {
             log = logObj;
             loadState(stateObj);
-            console.log("loadLogFp: " + logFp + "/" + logObj.now);
             redraw();
             // TODO: should popstate? double-undo problem.
             history.pushState(logFp, "state",
@@ -536,7 +533,6 @@ window.addEventListener('popstate', function(ev) {
 });
 document.getElementById("rewind").onclick = function() {
     var parentFp = log.parent;
-    console.log("XXXX Rewinding to l=" + parentFp);
     if (parentFp) {
         loadLogFp(parentFp);
     }
@@ -544,7 +540,6 @@ document.getElementById("rewind").onclick = function() {
 };
 document.getElementById("forward").onclick = function() {
     var childLogFp = storage.local.getItem("childOf/" + log.now);
-    console.log("XXXX Forwarding from " + log.now + " to " + childLogFp);
     if (childLogFp) {
         loadLogFp(childLogFp);
     } else {
@@ -598,7 +593,6 @@ var logFp = storage.local.getItem(STATE_KEY);
 if (logFp) {
     loadLogFp(logFp, function() {
         state.lands.forEach(function(land) {
-            console.log("Processing land " + land.name);
             addLandToUi(land);
             land.thms.forEach(function(thmFp) {
                 storage.fpLoad("fact", thmFp, function(thmObj) {
