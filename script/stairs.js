@@ -2,12 +2,13 @@
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var Storage = require('./storage.js');
-localStorage.clear();
+
 var storage = new Storage(Engine.fingerprint);
 var log = {};
 var state;
 var lastStateFp = null;
 var STATE_KEY = "lastState-v12";
+var USERID_KEY = "tacro-userid";
 var SIZE_MULTIPLIER = 3;
 var urlNum = 0;
 // ==== Stubs for node.js usage ====
@@ -363,6 +364,10 @@ function save() {
         storage.local.setItem("childOf/" + oldNow, logFp);
         console.log("XXXX Setting " + "childOf/" + oldNow + " = " + logFp);
         storage.local.setItem(STATE_KEY, logFp);
+        if (storage.user) {
+            storage.remote.child("users").child(storage.user.uid).
+                child(STATE_KEY).set(logFp);
+        }
         history.pushState(logFp, "state", "#s=" + stateFp + "/" + state.url);
     }
 }
@@ -541,6 +546,11 @@ function firebaseLoginLoaded() {
                 storage.authLogout();
                 return false;
             }
+            storage.remote.child("users").child(user.uid).child(STATE_KEY).
+                on('value', function(snap) {
+                    var logFp = snap.val();
+                    console.log("Found remote logFp: " + logFp);
+                });
         } else {
             // user is logged out
             document.getElementById("login").innerText = "guest";
@@ -558,8 +568,6 @@ function resetLoginLink() {
         return false;
     };
 }
-
-
 
 var landMap = {};
 var landDepMap = {}; // XXX

@@ -15,6 +15,8 @@
     }
 
     function Storage(fingerprinter) {
+        var thatStorage = this;
+
         if (typeof localStorage === "undefined" || localStorage === null) {
             var LocalStorage = require('node-localstorage').LocalStorage;
             this.local = new LocalStorage('./scratch');
@@ -64,8 +66,8 @@
         this.remote = new Firebase("https://tacro.firebaseio.com/tacro");
 
         // Takes a /-delimited firebase path and calls back with the snapshot.
-        this.remoteGet = function(path, callback) {
-            var ref = this.remote;
+        var fbGet = function(path, callback) {
+            var ref = thatStorage.remote;
             path.split("/").forEach(function(step) {ref = ref.child(step);});
             var cbWrap = function(snap){callback(snap.val());};
             if (offlineEnabled) {
@@ -74,9 +76,10 @@
                 ref.once('value', cbWrap, null, null);
             }
         };
+        var restGet;
         if (typeof XMLHttpRequest !== 'undefined') {
             // XXXX Override remoteGet to use XHR
-            this.remoteGet = function(path, callback) {
+            restGet = function(path, callback) {
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === 4) {
@@ -106,8 +109,24 @@
             };
         }
 
+        this.remoteGet = function(path, callback) {
+            var success = false;
+            if (restGet) {
+                restGet(path, function(arg) {
+                    if (!success) {
+                        success = true;
+                        callback(arg);
+                    }
+                });
+            }
+            fbGet(path, function(arg) {
+                if (!success) {
+                    success = true;
+                    callback(arg);
+                }
+            });
+        };
         this.authInit = function(FirebaseSimpleLogin, callback) {
-            var thatStorage = this;
             this.auth = new FirebaseSimpleLogin(
                 this.remote, function(err, user) {
                     if (err) {

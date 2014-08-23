@@ -6,9 +6,18 @@
                 ".write": "$user_id === auth.uid"
             },"checked": {
                 ".write": false
-            },"incoming": {
+            },
+        },
+        "incoming": {
+            "fact":{
                 ".write": "!data.exists() && newData.exists()"
-            }
+            },
+            "state":{
+                ".write": "!data.exists() && newData.exists()"
+            },
+            "log":{
+                ".write": "!data.exists() && newData.exists()"
+            },
         }
     }
 }
