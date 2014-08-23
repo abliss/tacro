@@ -1,5 +1,6 @@
 var Storage = require('../script/storage.js');
-
+var Engine = require('../script/engine.js');
+var storage = new Storage(Engine.fingerprint);
 var work = 0;
 var finished = false;
 function done() {
@@ -9,10 +10,10 @@ function done() {
     }
 }
 
-var fp = Storage.saveFp('kind', {foo:1});
+var fp = storage.fpSave('kind', {foo:1});
 
 work++;
-Control.storage.loadFp('kind', fp, function(x) {
+storage.fpLoad('kind', fp, function(x) {
     if (x.foo == 1) {
         done();
     } else {

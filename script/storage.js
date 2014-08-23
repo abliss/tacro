@@ -29,7 +29,7 @@
         this.fpSave = function(kind, obj) {
             var that = this;
             var str = JSON.stringify(obj);
-            var fp = Engine.fingerprint(str);
+            var fp = fingerprinter(str);
             var key = "fp/" + kind + "/" + fp;
             this.local.setItem(key, str);
             var pushRef = this.remote.child("incoming").child(kind).push(
