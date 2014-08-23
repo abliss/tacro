@@ -2,13 +2,14 @@
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var Storage = require('./storage.js');
-
+localStorage.clear();
 var storage = new Storage(Engine.fingerprint);
 var log = {};
 var state;
 var lastStateFp = null;
 var STATE_KEY = "lastState-v12";
 var SIZE_MULTIPLIER = 3;
+var urlNum = 0;
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -241,11 +242,14 @@ function addToShooter(factData, land) {
             case 0:
                 return function(ev) {
                     try {
-                        state.url = "#f=" + path + ";" +
+                        state.url = "#u=" + (urlNum++) + "/" +
+                            "#f=" + path + ";" +
                             fact.Skin.Name;
+                        /*
                         console.log("calling ground: " +
                                     JSON.stringify(state.work) +
                                     "\n" + JSON.stringify(fact) + "\n");
+                        */
                         var thm = Engine.ground(state.work, fact);
                         var newFactFp = addToShooter(thm);
                         currentLand().thms.push(newFactFp);
@@ -326,7 +330,7 @@ function workOnclickMaker(path) {
     }
     return function(e) {
         state.workPath = goalPath;
-        state.url = "#g=" + goalPath;
+        state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
         save();
 		e.stopPropagation();
     }
@@ -352,12 +356,14 @@ function setWork(work) {
 function save() {
     var stateFp = storage.fpSave("state", state);
     if (stateFp != log.now) {
+        var oldNow = log.now;
+        log.now = stateFp;
         var logFp = storage.fpSave("log", log);
+        log.parent = logFp;
+        storage.local.setItem("childOf/" + oldNow, logFp);
+        console.log("XXXX Setting " + "childOf/" + oldNow + " = " + logFp);
         storage.local.setItem(STATE_KEY, logFp);
-        storage.local.setItem("childOf/" + stateFp, logFp);
-        console.log("XXXX Setting " + "childOf/" + stateFp + " = " + logFp);
         history.pushState(logFp, "state", "#s=" + stateFp + "/" + state.url);
-        log = {parent: logFp, now: stateFp};
     }
 }
 
@@ -384,7 +390,7 @@ function nextGoal() {
 
 function redraw() {
     var well = document.getElementById("well");
-    console.log("Redrawing: " + JSON.stringify(state.work));
+    //console.log("Redrawing: " + JSON.stringify(state.work));
     try {
         var box = makeThmBox(state.work,
                              state.work.Core[Fact.CORE_HYPS][0],
@@ -408,10 +414,12 @@ function loadLogFp(logFp, cb) {
         storage.fpLoad("state", logObj.now, function(stateObj) {
             log = logObj;
             loadState(stateObj);
+            console.log("loadLogFp: " + logFp + "/" + logObj.now);
             redraw();
             // TODO: should popstate? double-undo problem.
             history.pushState(logFp, "state",
                               "#s=" + logObj.now + "/" + state.url);
+            document.getElementById("forward").style.visibility="visible";
             if (cb) {cb();}
         });
     });
@@ -503,10 +511,9 @@ window.addEventListener('popstate', function(ev) {
 });
 document.getElementById("rewind").onclick = function() {
     var parentFp = log.parent;
-    console.log("XXXX Rewinding to " + parentFp);
+    console.log("XXXX Rewinding to l=" + parentFp);
     if (parentFp) {
         loadLogFp(parentFp);
-        document.getElementById("forward").style.visibility="visible";
     }
     return false;
 };
