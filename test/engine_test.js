@@ -500,7 +500,14 @@ startWith(thms.Distribute);
 applyArrow([1,0],thms.Simplify, 1);
 thms.con12 = save();
 
+startNextGoal();
+state.work = applyFact(state.work, [1], thms.Simplify, [1]);
+state.work = applyFact(state.work, [], thms.Distribute, [2]);
+state.work = ground(state.work, thms.Simplify);
+// |- (PQR)(PQ)PR
+thms.idd = saveGoal();
 
+/*
 startWith(thms.Simplify);
 applyArrow([], thms.Distribute, 0);
 thms.iddlem1 = save();
@@ -508,6 +515,7 @@ thms.iddlem1 = save();
 startWith(thms.iddlem1)
 applyArrow([0], thms.Simplify, 1);
 thms.idd = save();
+*/
 
 applyArrow([], thms.idd, 0);
 thms.id = save();

@@ -32,8 +32,6 @@
          Skin:{TermNames:["&rarr;"]}},
         {Core:[[],[0,[0,0,[0,1,2]],[0,1,[0,0,2]]],[]],
          Skin:{TermNames:["&rarr;"]}},
-        {Core:[[],[0,[0,0,1],[0,0,0]],[]],
-         Skin:{TermNames:["&rarr;"]}},
         {Core:[[],[0,0,[0,1,1]],[]],
          Skin:{TermNames:["&rarr;"]}},
         {Core:[[],[0,0,0],[]],
