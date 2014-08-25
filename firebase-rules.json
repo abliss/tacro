@@ -8,21 +8,13 @@
                 }
             },
             "incoming": {
-                "fact":{
-                    "$pushed": {
-                        ".write": "!data.exists()"
+                "$pushed": {
+                    ".write": "!data.exists()",
+                    ".validate": "newData.hasChildren(['when','what','kind'])",
+                    "when": {
+                        ".validate": "newData.val() == now"
                     }
-                },
-                "state":{
-                    "$pushed": {
-                        ".write": "!data.exists()"
-                    }
-                },
-                "log":{
-                    "$pushed": {
-                        ".write": "!data.exists()"
-                    }
-                },
+                }
             }
         }
     }

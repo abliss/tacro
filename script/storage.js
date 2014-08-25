@@ -4,7 +4,7 @@
     var FB_URL = "https://tacro.firebaseio.com/tacro";
     var nextTick;
     var offlineEnabled = false;
-    var Firebase;
+    var firebase;
 
     if (typeof process !== 'undefined' && process.nextTick) {
         nextTick = process.nextTick;
@@ -32,8 +32,12 @@
             var fp = fingerprinter(str);
             var key = "fp/" + kind + "/" + fp;
             this.local.setItem(key, str);
-            var pushRef = this.remote.child("incoming").child(kind).push(
-                str, function(err) {
+            var pushRef = this.remote.child("incoming").push(
+                {
+                    "kind":kind,
+                    "when":Firebase.ServerValue.TIMESTAMP,
+                    "what":str
+                }, function(err) {
                     if (err) {
                         console.log("Err on push: " + err);
                     } else {
@@ -58,12 +62,13 @@
 
 
         if (typeof OfflineFirebase !== 'undefined') {
-            Firebase = OfflineFirebase;
+            firebase = OfflineFirebase;
             offlineEnabled = true;
         } else {
-            Firebase = require('firebase');
+            firebase = require('firebase');
+            Firebase = firebase;
         }
-        this.remote = new Firebase("https://tacro.firebaseio.com/tacro");
+        this.remote = new firebase("https://tacro.firebaseio.com/tacro");
 
         // Takes a /-delimited firebase path and calls back with the snapshot.
         var fbGet = function(path, callback) {
@@ -136,6 +141,8 @@
                         if (user) {
                             console.log("User: " + user.id + " = " +
                                         user.displayName);
+                            thatStorage.remote.child("users").child(user.uid).
+                                child("displayName").set(user.displayName);
                         } else {
                             console.log("No User.");
                         }
@@ -143,7 +150,7 @@
                         callback(user);
                     }
                 });
-            new Firebase("https://tacro.firebaseio.com/.info/authenticated").
+            new firebase("https://tacro.firebaseio.com/.info/authenticated").
                 on("value", function(snap) {
                     if (snap.val() == true) {
                         console.log("Now logged in.");
