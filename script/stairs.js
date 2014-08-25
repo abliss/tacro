@@ -29,6 +29,7 @@ if (typeof document == 'undefined') {
 
     window = {
         addEventListener: function(){},
+        location: {search: ""},
     };
 
     history = {
@@ -38,6 +39,9 @@ if (typeof document == 'undefined') {
 
 // ==== END stubs ====
 
+if (window.location.search.match("CLEAR")) {
+    localStorage.clear();
+}
 function removeClass(node, className) {
     while (node.className.match(className)) {
         node.className = node.className.replace(className,'');
