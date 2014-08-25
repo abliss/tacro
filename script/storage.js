@@ -86,6 +86,7 @@
                         var obj;
                         try {
                             var obj = eval("(" + xhr.responseText + ")");
+                            callback(obj);
                         } catch (e) {
                             console.log("Error evaluating xhr.responsetext:");
                             console.log(e);
@@ -99,7 +100,6 @@
                             }
                             console.log(dump);
                         }
-                        callback(obj);
                     } else if (xhr.readyState > 4) {
                         console.log("Bad xhr: " + xhr.readyState);
                     }
