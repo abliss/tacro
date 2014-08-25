@@ -1,23 +1,29 @@
 {
     "rules": {
-        ".read": true,
-        "users": {
-            "$user_id": {
-                ".write": "$user_id === auth.uid"
-            },"checked": {
-                ".write": false
+        "tacro": {
+            ".read": true,
+            "users": {
+                "$user_id": {
+                    ".write": "$user_id === auth.uid"
+                }
             },
-        },
-        "incoming": {
-            "fact":{
-                ".write": "!data.exists() && newData.exists()"
-            },
-            "state":{
-                ".write": "!data.exists() && newData.exists()"
-            },
-            "log":{
-                ".write": "!data.exists() && newData.exists()"
-            },
+            "incoming": {
+                "fact":{
+                    "$pushed": {
+                        ".write": "!data.exists()"
+                    }
+                },
+                "state":{
+                    "$pushed": {
+                        ".write": "!data.exists()"
+                    }
+                },
+                "log":{
+                    "$pushed": {
+                        ".write": "!data.exists()"
+                    }
+                },
+            }
         }
     }
 }
