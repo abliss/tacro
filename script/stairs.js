@@ -604,6 +604,9 @@ if (logFp) {
                 });
             });
         });
+        if (window.location.search.match("CHEAT")) {
+            cheat(1);
+        }
     });
 } else {
     state = {
