@@ -7,7 +7,7 @@ var storage = new Storage(Engine.fingerprint);
 var log = {};
 var state;
 var lastStateFp = null;
-var STATE_KEY = "lastState-v12";
+var STATE_KEY = "lastState-v13";
 var USERID_KEY = "tacro-userid";
 var SIZE_MULTIPLIER = 3;
 var urlNum = 0;
@@ -625,7 +625,13 @@ storage.remoteGet("checked/lands", function(lands) {
             landDepMap[land.depends[0]] = land; // TODO: multidep
         } else {
             landDepMap[undefined] = land;
-            if (state && state.lands.length == 0) {
+            if (!state) {
+                state = {
+                    lands:[],
+                    url: "",
+                }
+            }
+            if (state.lands.length == 0) {
                 enterLand(land);
                 nextGoal();
                 state.url = "";
@@ -636,4 +642,3 @@ storage.remoteGet("checked/lands", function(lands) {
     }
     console.log("Got checked lands: " + numLands);
 });
-
