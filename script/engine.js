@@ -377,6 +377,39 @@ var Fact = require('./fact.js'); //XXX
         return varMap;
     }
 
+    // Returns an array of functions to push the given toolOp/toolArg up the tree
+    // to the top and detach. Each one can be called on (pusp, work).
+    function getPushUps(work, workPath, toolOp, toolArg) {
+        // This looks a lot more complicated than it is.  Here's the concept: at
+        // each level of the goal tree, we need to query for and apply a pushUp
+        // theorem.  However, in order to know *which* pushUp theorem to apply,
+        // we need both the goal's operator at the level above, and the result
+        // of the pushUp query from the level below.
+        // Each query is [goalOp, goalArgNum, toolOp, toolArgNum];
+        var pushUps = []; // pushUp results, from the bottom up
+        var queries = []; // goalOps and argNums from the top down
+        var term = work.Core[Fact.CORE_HYPS][0];
+        workPath.forEach(function(z) { // walk down, filling in the first half of the queries
+            var op = work.Skin.TermNames[term[0]];
+            queries.push([op, z]);
+            term = term[z];
+        });
+        while (queries.length > 0) {        // walk back up, finishing and executing the queries
+            var q = queries.pop();
+            q.push(toolOp);
+            q.push(toolArg);
+            var pu = scheme.queryPushUp(q);
+            pushUps.push(pu.pushUp.bind(pu));
+            toolOp = pu.parentArrow;
+            toolArg = (pu.isCovar ? 2 : 1);
+        }
+        // Now, since the invariant holds and goalPath = [], and
+        // tool[toolPath[0]] == goal, so just detach.
+        var detacher = scheme.queryDetach([toolOp, [toolArg]]);
+        pushUps.push(detacher.detach.bind(detacher));
+        return pushUps;
+    }
+    
     // Applies the given fact (with zero hypotheses) to the workspace (a proved
     // theorem with one hypothesis, representing a work-in-progress). The
     // workpath points to a subexpression of the work's only hypothesis. The
@@ -431,41 +464,14 @@ var Fact = require('./fact.js'); //XXX
                 throw new Error("Invariant broken!");
             }
         }
-        // This looks a lot more complicated than it is.  Here's the concept: at
-        // each level of the goal tree, we need to query for and apply a pushUp
-        // theorem.  However, in order to know *which* pushUp theorem to apply,
-        // we need both the goal's operator at the level above, and the result
-        // of the pushUp query from the level below.
-        // Each query is [goalOp, goalArgNum, toolOp, toolArgNum];
-        var pushUps = []; // pushUp results, from the bottom up
-        var queries = []; // goalOps and argNums from the top down
-        var term = pusp.goal;
-        pusp.goalPath.forEach(function(z) { // walk down, filling in the first half of the queries
-            var op = work.Skin.TermNames[term[0]];
-            queries.push([op, z]);
-            term = term[z];
-        });
-        var toolOp = fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]];
-        var toolArg = factPath[0];
-        while (queries.length > 0) {        // walk back up, finishing and executing the queries
-            var q = queries.pop();
-            q.push(toolOp);
-            q.push(toolArg);
-            var pu = scheme.queryPushUp(q);
-            pushUps.push(pu);
-            toolOp = pu.parentArrow;
-            toolArg = (pu.isCovar ? 2 : 1);
-        }
-        var detach = scheme.queryDetach([toolOp, [toolArg]]);
+        var pushUps = getPushUps(work, workPath,
+                                 fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[0]);
         // Now apply the pushups from the bottom up, and finally detach.
         if (DEBUG) checkInvariant();
         pushUps.forEach(function(pu) {
-            pu.pushUp(pusp, work);
+            pu(pusp, work);
             if (DEBUG) checkInvariant();
         })
-        // Now, since the invariant holds and goalPath = [], and
-        // tool[toolPath[0]] == goal, so just detach.
-        detach.detach(pusp, work);
 
         // Now we have a complete pusp, so apply it to the workspace.
 
