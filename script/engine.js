@@ -23,15 +23,17 @@ var Fact = require('./fact.js'); //XXX
 		pushUpMemo : {},
 		detachMemo : {},
 		greaseMemo : {},
-		queryPushUp:  function(goalOp, goalArgNum, toolOp, toolArgNum) {
-			var query = [goalOp, goalArgNum, toolOp, toolArgNum];
-			if (!this.pushUpMemo[query]) {
+		queryPushUp:  function(query) { // [goalOp, goalArgNum, toolOp, toolArgNum]
+            var pushUp = this.pushUpMemo[query];
+			if (!pushUp) {
 				throw new Error("pushUp not found! Check commit d2a748c " +
 								"for how this used to work.");
 			}
-			return this.pushUpMemo[query];
+            if (DEBUG) console.log("queryPushUp: " + JSON.stringify(query) + " => " +  pushUp);
+			return pushUp;
 		},
 		queryDetach: function(params) {
+            if (DEBUG) console.log("queryDetach: " + JSON.stringify(arguments));
 			var detach = this.detachMemo[params];
 			if (!detach) {
 				throw new Error("No detach found for " +
@@ -44,13 +46,14 @@ var Fact = require('./fact.js'); //XXX
 	// A data structure for keeping in the scheme.
 	// goalOp is an goalOpArity-arg term.
 	// goalArg is in 1...goalOpArity, specifying which argchild the goal is
-	// (unused: toolOp is the name of a 2-arg binary term)
 	// toolArg is 1 or 2, specifying one of the args of the tool on the stack.
 	// the current goal's paren'ts [goalArg] equals the current tool's [toolArg]
 	// we want to replace it with the tool's other arg.
 	// isCovar tells whether the tool args will be reversed in order.
 	function PushUp(axMp, goalOp, goalArg, goalOpArity, toolArg,
 					isCovar, parentArrow, grease, fact) {
+        this.isCovar = isCovar;
+        this.parentArrow = parentArrow;
 		this.pushUp = function(pusp, work) {
 			pusp.newSteps.push(pusp.tool[1]);
 			pusp.newSteps.push(pusp.tool[2]);
@@ -428,28 +431,43 @@ var Fact = require('./fact.js'); //XXX
                 throw new Error("Invariant broken!");
             }
         }
-
-        while (pusp.goalPath.length > 0) {
-            checkInvariant();
-            var goalArgNum = pusp.goalPath.pop();
-            var goalParent = zpath(pusp.goal, pusp.goalPath);
-            var goalTerm = work.Skin.TermNames[goalParent[0]];
-            pusp.goalPath.push(goalArgNum);
-            var toolArgNum = pusp.toolPath.pop();
-            var toolTerm = work.Skin.TermNames[
-				zpath(pusp.tool, pusp.toolPath)[0]];
-            pusp.toolPath.push(toolArgNum);
-
-            scheme.queryPushUp(goalTerm, goalArgNum, toolTerm,
-                        pusp.toolPath[pusp.toolPath.length - 1]).
-                pushUp(pusp, work);
+        // This looks a lot more complicated than it is.  Here's the concept: at
+        // each level of the goal tree, we need to query for and apply a pushUp
+        // theorem.  However, in order to know *which* pushUp theorem to apply,
+        // we need both the goal's operator at the level above, and the result
+        // of the pushUp query from the level below.
+        // Each query is [goalOp, goalArgNum, toolOp, toolArgNum];
+        var pushUps = []; // pushUp results, from the bottom up
+        var queries = []; // goalOps and argNums from the top down
+        var term = pusp.goal;
+        pusp.goalPath.forEach(function(z) { // walk down, filling in the first half of the queries
+            var op = work.Skin.TermNames[term[0]];
+            queries.push([op, z]);
+            term = term[z];
+        });
+        var toolOp = fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]];
+        var toolArg = factPath[0];
+        while (queries.length > 0) {        // walk back up, finishing and executing the queries
+            var q = queries.pop();
+            q.push(toolOp);
+            q.push(toolArg);
+            var pu = scheme.queryPushUp(q);
+            pushUps.push(pu);
+            toolOp = pu.parentArrow;
+            toolArg = (pu.isCovar ? 2 : 1);
         }
-        checkInvariant();
-
+        var detach = scheme.queryDetach([toolOp, [toolArg]]);
+        // Now apply the pushups from the bottom up, and finally detach.
+        if (DEBUG) checkInvariant();
+        pushUps.forEach(function(pu) {
+            pu.pushUp(pusp, work);
+            if (DEBUG) checkInvariant();
+        })
         // Now, since the invariant holds and goalPath = [], and
         // tool[toolPath[0]] == goal, so just detach.
-        var query = [work.Skin.TermNames[pusp.tool[0]], pusp.toolPath];
-        scheme.queryDetach(query).detach(pusp, work);
+        detach.detach(pusp, work);
+
+        // Now we have a complete pusp, so apply it to the workspace.
 
         // don't delete any steps
         pusp.newSteps.unshift(0);
@@ -651,7 +669,7 @@ var Fact = require('./fact.js'); //XXX
 		if (coreStr == "[[0,[0,0,1]],1,[]]") {
 			// ax-mp
 			rarr = fact.Skin.TermNames[0];
-			//console.log("Discovered ax-mp:" + JSON.stringify(fact));
+			//console.log("Discovered ax-mp: rarr=" + rarr);
 			scheme.detachMemo[[rarr,[2]]] = {
 				fact: fact,
 				detach: function(pusp, work) {
@@ -665,7 +683,7 @@ var Fact = require('./fact.js'); //XXX
 			harr = fact.Skin.TermNames[1];
 			rarrAxmp = scheme.detachMemo[[rarr, [2]]];
 			if (rarrAxmp) {
-				//console.log("Discovered bi1:" + JSON.stringify(fact));
+				//console.log("Discovered bi1: harr=" + harr + " / rarr=" + rarr);
 				scheme.detachMemo[[harr,[2]]] = {
 					fact: fact,
 					detach: function(pusp, work) {
@@ -684,7 +702,7 @@ var Fact = require('./fact.js'); //XXX
 			harr = fact.Skin.TermNames[1];
 			rarrAxmp = scheme.detachMemo[[rarr, [2]]];
 			if (rarrAxmp) {
-				//console.log("Discovered bi2:" + JSON.stringify(fact));
+				//console.log("Discovered bi2: harr=" + harr + " / rarr=" + rarr);
 				scheme.detachMemo[[harr,[1]]] = {
 					fact: fact,
 					detach: function(pusp, work) {
@@ -699,8 +717,9 @@ var Fact = require('./fact.js'); //XXX
 			}
 		} else if (coreStr == "[[0],[0,1,0],[]]") {
 			// ax-gen
-			//console.log("Discovered ax-gen:" + JSON.stringify(fact));
-			scheme.greaseMemo[fact.Skin.TermNames[0]] = {fact:fact};
+            var forall = fact.Skin.TermNames[0];
+			//console.log("Discovered ax-gen: forall=" + forall);
+			scheme.greaseMemo[forall] = {fact:fact};
 		}
 
 		// Next, detect pushUp theorems.
@@ -807,7 +826,11 @@ var Fact = require('./fact.js'); //XXX
 				}
 			}
 		}
-		//console.log("Discovered pushup:" + JSON.stringify(fact));
+        /*
+		console.log("Discovered pushup: " +
+                    " child=" + childArrow + "/" + whichArg + 
+                    " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow);
+        */
 		for (var i = 1; i <= 2; i++) {
 			scheme.pushUpMemo[[childArrow, whichArg, anteArrow, i]] =
 				new PushUp(detacher.fact, childArrow, whichArg, childArity,
