@@ -271,7 +271,7 @@ function addToShooter(factData, land) {
                         message(e);
                     }
                     redraw();
-				    ev.stopPropagation()
+                    ev.stopPropagation()
                 };
             case 1:
                 return function(ev) {
@@ -288,7 +288,7 @@ function addToShooter(factData, land) {
                         message(e);
                     }
                     redraw();
-				    ev.stopPropagation()
+                    ev.stopPropagation()
                 };
             default:
                 // Don't bother clickifying these; engine doesn't support
@@ -323,7 +323,7 @@ function addToShooter(factData, land) {
                 message(e);
             }
             redraw();
-			ev.stopPropagation()
+            ev.stopPropagation()
         };
         break;
     default:
@@ -343,7 +343,7 @@ function workOnclickMaker(path) {
         state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
         save();
         redrawSelection();
-		e.stopPropagation();
+        e.stopPropagation();
     }
 }
 
@@ -459,12 +459,12 @@ function enterLand(landData) {
     state.lands.push(land);
     addLandToUi(land);
     land.goals = landData.goals.slice();
-	if (landData.axioms) {
-		landData.axioms.forEach(function(data) {
-			var factFp = addToShooter(data);
-			land.thms.push(factFp);
-		});
-	}
+    if (landData.axioms) {
+        landData.axioms.forEach(function(data) {
+            var factFp = addToShooter(data);
+            land.thms.push(factFp);
+        });
+    }
 }
 
 function addLandToUi(land) {

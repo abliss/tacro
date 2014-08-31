@@ -63,7 +63,7 @@ function getLand(filename) {
             console.log("# Canonically: " + JSON.stringify(fact));
         }
         state.factsByMark[fact.getMark()] = fact;
-		Engine.onAddFact(fact);
+        Engine.onAddFact(fact);
         return fact;
     }
     function addAxiom(fact) {
