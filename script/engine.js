@@ -20,9 +20,14 @@ var Fact = require('./fact.js'); //XXX
 	// onAddFact which could be used for our automated-proving purposes (as a
 	// detach or a pushUp).
 	var scheme = {
+        pushUpHalfMemo: {}, // An index of pushUpMemo by the first two params
 		pushUpMemo : {},
 		detachMemo : {},
 		greaseMemo : {},
+        halfQueryPushUp: function(goalOp, goalArgNum) {
+            var r = this.pushUpHalfMemo[[goalOp, goalArgNum]];
+            return r || {};
+        },
 		queryPushUp:  function(query) { // [goalOp, goalArgNum, toolOp, toolArgNum]
             var pushUp = this.pushUpMemo[query];
 			if (!pushUp) {
@@ -410,6 +415,45 @@ var Fact = require('./fact.js'); //XXX
         return pushUps;
     }
     
+    // Returns an map of {k: [operatator, argNum, opaque]} describing which theorems,
+    // given the current set of known pushUps, could be applied to the given
+    // work at the given path.  If you want, you can pass the opaque part back
+    // to applyFact to maybe speed things up?
+    function getUsableTools(work, workPath) {
+        var actuals = {};
+        var term = work.Core[Fact.CORE_HYPS][0];
+        if (workPath.length > 0) {
+            // Half-query for the final pushUp, then test the chain
+            var parent;
+            var argNum;
+            workPath.forEach(function(z) {
+                parent = term;
+                term = term[z];
+                argNum = z;
+            });
+            var goalOp = work.Skin.TermNames[parent[0]];
+            var potentials = scheme.halfQueryPushUp(goalOp, argNum);
+            for (var k in potentials) if (potentials.hasOwnProperty(k)) {
+                var v = potentials[k];
+                try {
+                    var pus = getPushUps(work, workPath, v[0], v[1]);
+                    var out = v.slice();
+                    // TODO: supply opaque: out.push(pus);
+                    actuals[v] = out;
+                } catch(e) {
+                    // TODO: should check which error
+                }
+            }
+        } else {
+            //Any detachable.
+            for (var k in scheme.detachMemo) if (scheme.detachMemo.hasOwnProperty(k)) {
+                var v = scheme.detachMemo[k];
+                actuals[[v.op, v.argNum]] = [v.op, v.argNum];
+            }
+        }
+        return actuals;
+    }
+    
     // Applies the given fact (with zero hypotheses) to the workspace (a proved
     // theorem with one hypothesis, representing a work-in-progress). The
     // workpath points to a subexpression of the work's only hypothesis. The
@@ -467,10 +511,9 @@ var Fact = require('./fact.js'); //XXX
         var pushUps = getPushUps(work, workPath,
                                  fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[0]);
         // Now apply the pushups from the bottom up, and finally detach.
-        if (DEBUG) checkInvariant();
         pushUps.forEach(function(pu) {
-            pu(pusp, work);
             if (DEBUG) checkInvariant();
+            pu(pusp, work);
         })
 
         // Now we have a complete pusp, so apply it to the workspace.
@@ -678,6 +721,8 @@ var Fact = require('./fact.js'); //XXX
 			//console.log("Discovered ax-mp: rarr=" + rarr);
 			scheme.detachMemo[[rarr,[2]]] = {
 				fact: fact,
+                op: rarr,
+                argNum: 2,
 				detach: function(pusp, work) {
 					pusp.newSteps.push(nameDep(work, this.fact));
 					work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
@@ -692,6 +737,8 @@ var Fact = require('./fact.js'); //XXX
 				//console.log("Discovered bi1: harr=" + harr + " / rarr=" + rarr);
 				scheme.detachMemo[[harr,[2]]] = {
 					fact: fact,
+                    op: harr,
+                    argNum: 2,
 					detach: function(pusp, work) {
 						pusp.newSteps.push(pusp.tool[1]);
 						pusp.newSteps.push(pusp.tool[2]);
@@ -711,6 +758,8 @@ var Fact = require('./fact.js'); //XXX
 				//console.log("Discovered bi2: harr=" + harr + " / rarr=" + rarr);
 				scheme.detachMemo[[harr,[1]]] = {
 					fact: fact,
+                    op: harr,
+                    argNum: 1,
 					detach: function(pusp, work) {
 						pusp.newSteps.push(pusp.tool[1]);
 						pusp.newSteps.push(pusp.tool[2]);
@@ -837,7 +886,13 @@ var Fact = require('./fact.js'); //XXX
                     " child=" + childArrow + "/" + whichArg + 
                     " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow);
         */
+        var halfMemo = scheme.pushUpHalfMemo[[childArrow, whichArg]];
+        if (!halfMemo) {
+            halfMemo = {};
+            scheme.pushUpHalfMemo[[childArrow, whichArg]] = halfMemo;
+        }
 		for (var i = 1; i <= 2; i++) {
+            halfMemo[[anteArrow, i]] = [anteArrow, i];
 			scheme.pushUpMemo[[childArrow, whichArg, anteArrow, i]] =
 				new PushUp(detacher.fact, childArrow, whichArg, childArity,
 						   i, (i == 2 ? isCov : !isCov),
@@ -853,5 +908,6 @@ var Fact = require('./fact.js'); //XXX
 	module.exports.applyInference = applyInference;
 	module.exports.applyFact = applyFact;
 	module.exports.fingerprint = fingerprint;
+    module.exports.getUsableTools = getUsableTools
     module.exports.DEBUG = function() {DEBUG = true;};
 })(module);

@@ -8,6 +8,7 @@ var state = {};
 
 var DEBUG = false;
 var GROUNDDEBUG = false;
+var start = new Date();
 
 state.factsByMark = {};
 function sfbm(mark) {
@@ -20,6 +21,11 @@ function sfbm(mark) {
 function applyFact(work, workPath, fact, factPath) {
     if (typeof fact == 'string') {
         fact = sfbm(parseMark(fact).getMark());
+    }
+    var usable = Engine.getUsableTools(work, workPath);
+    var toolOp = fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]];
+    if (!usable[[toolOp, factPath[0]]]) {
+        throw new Error("Unusable tool!" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
     }
     return Engine.applyFact(work, workPath, fact, factPath);
 }
@@ -1583,5 +1589,6 @@ Async.parallel(
             console.log(e.toString());
             throw(new Error(e));
         }
+        console.log("FINISHED in " + (new Date() - start));
     });
 /**/
