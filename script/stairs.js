@@ -20,11 +20,14 @@ if (typeof document == 'undefined') {
         style: {},
         appendChild: function(){},
         removeChild: function(){},
+        sheet: { insertRule: function(){}},
     };
 
     document = {
         createElement:function() {return new Node();},
         getElementById:function() {return new Node();},
+        createTextNode:function() {return new Node();},
+        head: new Node(),
     };
 
     window = {
@@ -78,6 +81,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             path.push(i);
             var subTree = makeTree(doc, fact, exp[i], path, arity, varNamer,
                                    spanMap, cb);
+            subTree.span.className += " tool" + cssEscape(termName);
             spanMap[path] = subTree.span;
             children.push(subTree);
             path.pop();
@@ -98,7 +102,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             spanMap[path] = opSpan;
             opSpan.onclick = cb(path);
             path.pop();
-            opSpan.className += " operator arity2";
+            opSpan.className += " operator " +" arity2";
             var txtSpan = doc.createElement("span");
             opSpan.appendChild(txtSpan);
             opSpan.className += " txtBox";
@@ -232,6 +236,26 @@ function size(thmBox, ems) {
     thmBox.tree.span.style["font-size"] = "" + (50 * ems / thmBox.tree.width) + "%";
 }
 
+function cssEscape(str) {
+    // TODO: collisions
+    return encodeURIComponent(str).replace(/%/g,"_");
+}
+function registerNewTool(toolOp) {
+    var styleEl = document.createElement('style');
+    // Apparently some version of Safari needs the following line? I dunno.
+    styleEl.appendChild(document.createTextNode(''));
+    document.head.appendChild(styleEl);
+    var styleSheet = styleEl.sheet;
+    for (var arg = 1; arg <= 2; arg++) {
+        var rule = "#shooter.tool" + cssEscape(toolOp) + "_" + arg +
+            " .depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
+            " { border: 2px solid black; }";
+        console.log("XXXX Inserting rule " + rule);
+        styleSheet.insertRule(rule, 0);
+    }
+
+}
+
 function addToShooter(factData, land) {
     if (!factData) {
         throw new Error("Bad fact: "+ factData);
@@ -239,7 +263,10 @@ function addToShooter(factData, land) {
     if (!land) land = currentLand();
     var fact = Engine.canonicalize(new Fact(factData));
     var factFp = storage.fpSave("fact", fact);
-    Engine.onAddFact(fact);
+    var newTool = Engine.onAddFact(fact);
+    if (newTool) {
+        registerNewTool(newTool);
+    }
     switch (fact.Core[Fact.CORE_HYPS].length) {
     case 0:
         var box;
@@ -340,6 +367,15 @@ function workOnclickMaker(path) {
     }
     return function(e) {
         state.workPath = goalPath;
+        // Highlight usable tools.
+        // TODO: move this somewhere else
+        var usableTools = Engine.getUsableTools(state.work, state.workPath);
+        var className = "";
+        for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
+            var v = usableTools[k];
+            className += " tool" + cssEscape(v[0]) + "_" + v[1];
+        }
+        document.getElementById("shooter").className = className;
         state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
         save();
         redrawSelection();

@@ -24,6 +24,7 @@ var Fact = require('./fact.js'); //XXX
         pushUpMemo : {},
         detachMemo : {},
         greaseMemo : {},
+        toolsSeen: {},
         halfQueryPushUp: function(goalOp, goalArgNum) {
             var r = this.pushUpHalfMemo[[goalOp, goalArgNum]];
             return r || {};
@@ -710,7 +711,9 @@ var Fact = require('./fact.js'); //XXX
         return out;
     };
 
-    // Register this fact as available to the prover for pushUp or detach.
+    // Register this fact as available to the prover for pushUp or detach.  If
+    // this is the first time that the fact's root operator becomes usable for a
+    // tool, we'll return that operator. Otherwise, nothing will be returned.
     function onAddFact(fact) {
         var coreStr = JSON.stringify(fact.Core);
         var rarr, harr, rarr, rarrAxmp;
@@ -728,6 +731,10 @@ var Fact = require('./fact.js'); //XXX
                     work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
                 }
             };
+            if (!scheme.toolsSeen[rarr]) {
+                scheme.toolsSeen[rarr] = true;
+                return rarr;
+            }
         } else if (coreStr == "[[],[0,[1,0,1],[0,0,1]],[]]") {
             // bi1
             rarr = fact.Skin.TermNames[0];
@@ -747,6 +754,10 @@ var Fact = require('./fact.js'); //XXX
                         pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
                         work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
                     }
+                }
+                if (!scheme.toolsSeen[harr]) {
+                    scheme.toolsSeen[harr] = true;
+                    return harr;
                 }
             }
         } else if (coreStr == "[[],[0,[1,0,1],[0,1,0]],[]]") {
@@ -768,6 +779,10 @@ var Fact = require('./fact.js'); //XXX
                         pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
                         work.Core[Fact.CORE_HYPS][0] = pusp.tool[2];
                     }
+                }
+                if (!scheme.toolsSeen[harr]) {
+                    scheme.toolsSeen[harr] = true;
+                    return harr;
                 }
             }
         } else if (coreStr == "[[0],[0,1,0],[]]") {
@@ -897,6 +912,10 @@ var Fact = require('./fact.js'); //XXX
                 new PushUp(detacher.fact, childArrow, whichArg, childArity,
                            i, (i == 2 ? isCov : !isCov),
                            parentArrow, grease, fact);
+        }
+        if (!scheme.toolsSeen[anteArrow]) {
+            scheme.toolsSeen[anteArrow] = true;
+            return anteArrow;
         }
     };
 
