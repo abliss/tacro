@@ -256,6 +256,21 @@ function registerNewTool(toolOp) {
 
 }
 
+function setWorkPath(wp) {
+    var className = "";
+    if (typeof wp == 'undefined') {
+        delete state.workPath;
+    } else {
+        state.workPath = wp;
+        var usableTools = Engine.getUsableTools(state.work, state.workPath);
+        for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
+            var v = usableTools[k];
+            className += " tool" + cssEscape(v[0]) + "_" + v[1];
+        }
+    }
+    document.getElementById("shooter").className = className;
+}
+
 function addToShooter(factData, land) {
     if (!factData) {
         throw new Error("Bad fact: "+ factData);
@@ -307,7 +322,7 @@ function addToShooter(factData, land) {
                                                  state.workPath,
                                                  fact, factPath));
                         message("");
-                        delete state.workPath;
+                        setWorkPath();
                         state.url = "";
                     } catch (e) {
                         console.log("Error in applyFact: " + e);
@@ -342,7 +357,7 @@ function addToShooter(factData, land) {
             try {
                 setWork(Engine.applyInference(state.work, fact));
                 message("");
-                delete state.workPath;
+                setWorkPath();
                 state.url = "";
             } catch (e) {
                 console.log("Error in applyInference: " + e);
@@ -366,16 +381,9 @@ function workOnclickMaker(path) {
         goalPath.pop();
     }
     return function(e) {
-        state.workPath = goalPath;
+        setWorkPath(goalPath);
         // Highlight usable tools.
         // TODO: move this somewhere else
-        var usableTools = Engine.getUsableTools(state.work, state.workPath);
-        var className = "";
-        for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
-            var v = usableTools[k];
-            className += " tool" + cssEscape(v[0]) + "_" + v[1];
-        }
-        document.getElementById("shooter").className = className;
         state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
         save();
         redrawSelection();
