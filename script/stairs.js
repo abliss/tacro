@@ -539,6 +539,9 @@ function addLandToUi(land) {
     tab.innerHTML = land.name.replace(/[<]/g,"&lt;");
     var pane = document.createElement("span");
     document.getElementById("shooterTape").appendChild(pane);
+    if (!landMap[land.name]) {
+        landMap[land.name] = {land:land};
+    }
     landMap[land.name].pane = pane;
     landMap[land.name].tab = tab;
     pane.className = "pane pane" + land.name;
