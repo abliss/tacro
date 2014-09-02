@@ -16,6 +16,19 @@ var Fact = require('./fact.js'); //XXX
     // An incrementing number to disambiguate dummy vars
     var dummyNum = 0;
 
+    // A list of all facts registered through onAddFact.
+    // TODO: index this in a smart way.
+    var allKnownFacts = [];
+
+    var nextTick;
+    if (typeof process !== 'undefined' && process.nextTick) {
+        nextTick = process.nextTick;
+    } else if (typeof window !== 'undefined' && window.setTimeout) {
+        nextTick = function(cb) {window.setTimeout(cb, 0);}
+    } else {
+        throw new Error("No nextTick");
+    }
+
     // The engine keeps this "scheme", a list of facts registered through
     // onAddFact which could be used for our automated-proving purposes (as a
     // detach or a pushUp).
@@ -454,6 +467,27 @@ var Fact = require('./fact.js'); //XXX
         }
         return actuals;
     }
+
+    // Filters the known-theorem list for facts which could ground the given
+    // work (i.e.e., a call to ground(work, fact) would succeed). For each fact,
+    // callsback with the work and the grounding fact. Currently, this will be
+    // slow if there are many known facts; in the future we hope to do some
+    // fancy indexing.
+    function forEachGroundableFact(work, cb) {
+        allKnownFacts.forEach(function(f) {
+            if (f.Core[Fact.CORE_HYPS].length == 0) {
+                try {
+                    if (work.Core[Fact.CORE_HYPS][0] !== 1) {
+                        //XXX TODO: infinite recurse bug here, not trying.
+                        getMandHyps(work, [], f, []);
+                    }
+                    nextTick(cb.bind(null,work,f));
+                } catch(e) {
+                    // TODO: should not be using exceptions for this
+                }
+            }
+        });
+    }
     
     // Applies the given fact (with zero hypotheses) to the workspace (a proved
     // theorem with one hypothesis, representing a work-in-progress). The
@@ -715,6 +749,7 @@ var Fact = require('./fact.js'); //XXX
     // this is the first time that the fact's root operator becomes usable for a
     // tool, we'll return that operator. Otherwise, nothing will be returned.
     function onAddFact(fact) {
+        allKnownFacts.push(fact);
         var coreStr = JSON.stringify(fact.Core);
         var rarr, harr, rarr, rarrAxmp;
         // First, detect detachment theorems
@@ -927,6 +962,7 @@ var Fact = require('./fact.js'); //XXX
     module.exports.applyInference = applyInference;
     module.exports.applyFact = applyFact;
     module.exports.fingerprint = fingerprint;
+    module.exports.forEachGroundableFact = forEachGroundableFact;
     module.exports.getUsableTools = getUsableTools
     module.exports.DEBUG = function() {DEBUG = true;};
 })(module);

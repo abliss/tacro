@@ -13,6 +13,12 @@ var SIZE_MULTIPLIER = 3;
 var urlNum = 0;
 var selectedNode = null;
 var workBox;
+var factToShooterBox = {};
+var deferredUntilRedraw = [];
+var landMap = {};
+var landDepMap = {}; // XXX
+var currentPane;
+
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -100,7 +106,6 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             rowSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
-            opSpan.onclick = cb(path);
             path.pop();
             opSpan.className += " operator " +" arity2";
             var txtSpan = doc.createElement("span");
@@ -127,7 +132,6 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
-            opSpan.onclick = cb(path);
             path.pop();
             opSpan.className += " operator arity1";
             var txtSpan = doc.createElement("span");
@@ -150,7 +154,6 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
-            opSpan.onclick = cb(path);
             path.pop();
             opSpan.className += " operator arity1";
             var txtSpan = doc.createElement("span");
@@ -170,7 +173,6 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
     } else {
         termSpan = doc.createElement("a");
         //termSpan.href = "#" + tag + "=" + path;
-        termSpan.onclick = cb(path);
         termSpan.className += " variable";
         termSpan.className += " var" + varNamer(exp);
         width = 1;
@@ -191,6 +193,10 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             }
         }
         txtSpan.innerHTML = innerHTML;
+    }
+    var onclick = cb(path);
+    if (onclick) {
+        termSpan.onclick = onclick;
     }
     termSpan.className += " term";
     termSpan.className += " depth" + path.length;
@@ -249,7 +255,7 @@ function registerNewTool(toolOp) {
     for (var arg = 1; arg <= 2; arg++) {
         var rule = "#shooter.tool" + cssEscape(toolOp) + "_" + arg +
             " .depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
-            " { border: 2px solid black; }";
+            " { border: 2px solid black; cursor:pointer;}";
         console.log("XXXX Inserting rule " + rule);
         styleSheet.insertRule(rule, 0);
     }
@@ -286,60 +292,58 @@ function addToShooter(factData, land) {
     case 0:
         var box;
         var factOnclickMaker = function(path) {
-            var factPath = path.slice();
-            if (factPath[factPath.length-1] == 0) {
-                factPath.pop();
-            }
-            switch (factPath.length) {
-            case 0:
-                return function(ev) {
-                    try {
-                        state.url = "#u=" + (urlNum++) + "/" +
-                            "#f=" + path + ";" +
-                            fact.Skin.Name;
-                        /*
-                        console.log("calling ground: " +
-                                    JSON.stringify(state.work) +
-                                    "\n" + JSON.stringify(fact) + "\n");
-                        */
-                        var thm = Engine.ground(state.work, fact);
-                        var newFactFp = addToShooter(thm);
-                        currentLand().thms.push(newFactFp);
-                        message("");
-                        nextGoal();
-                    } catch (e) {
-                        console.log("Error in ground: " + e);
-                        console.log(e.stack);
-                        message(e);
-                    }
-                    redraw();
-                    ev.stopPropagation()
-                };
-            case 1:
-                return function(ev) {
-                    try {
-                        setWork(Engine.applyFact(state.work,
-                                                 state.workPath,
-                                                 fact, factPath));
-                        message("");
-                        setWorkPath();
-                        state.url = "";
-                    } catch (e) {
-                        console.log("Error in applyFact: " + e);
-                        console.log(e.stack);
-                        message(e);
-                    }
-                    redraw();
-                    ev.stopPropagation()
-                };
-            default:
-                // Don't bother clickifying these; engine doesn't support
+            if (path.length != 1) {
                 return null;
             }
+            var factPath = path.slice();
+            return function(ev) {
+                try {
+                    setWork(Engine.applyFact(state.work,
+                                             state.workPath,
+                                             fact, factPath));
+                    message("");
+                    setWorkPath();
+                    state.url = "";
+                } catch (e) {
+                    console.log("Error in applyFact: " + e);
+                    console.log(e.stack);
+                    message(e);
+                }
+                redraw();
+                ev.stopPropagation()
+            };
         };
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
         size(box, 2 * SIZE_MULTIPLIER);
-        landPaneMap[land.name].appendChild(box);
+        landMap[land.name].pane.appendChild(box);
+        var turnstile = document.createElement("span");
+        turnstile.className = "turnstile";
+        turnstile.innerText = "\u22a2";
+        turnstile.onclick = function(ev) {
+            try {
+                state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
+                var thm = Engine.ground(state.work, fact);
+                var newFactFp = addToShooter(thm);
+                currentLand().thms.push(newFactFp);
+                message("");
+                setWorkPath();
+                nextGoal();
+                redraw();
+            } catch (e) {
+                console.log("Error in ground: " + e);
+                console.log(e.stack);
+                message(e);
+            }
+            ev.stopPropagation()
+        };
+    
+        box.appendChild(turnstile);
+        factToShooterBox[fact.Skin.Name] = {
+            fact: fact,
+            box: box,
+            land: land.name,
+            turnstile: turnstile
+        };
         break;
     case 1:
         // Adding generify to the shooter
@@ -347,11 +351,11 @@ function addToShooter(factData, land) {
         var factOnclickMaker = function(path) {
             return null;
         };
-        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0], factOnclickMaker);
+        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0],factOnclickMaker);
         var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
         size(hyp0box, 2 * SIZE_MULTIPLIER);
         size(stmtbox, 2 * SIZE_MULTIPLIER);
-        landPaneMap[land.name].appendChild(hyp0box);
+        landMap[land.name].pane.appendChild(hyp0box);
         hyp0box.appendChild(stmtbox);
         hyp0box.onclick = function(ev) {
             try {
@@ -446,6 +450,9 @@ function nextGoal() {
     return goal;
 }
 
+function onNextRedraw(f) {
+    deferredUntilRedraw.push(f);
+}
 function redrawSelection() {
     if (selectedNode) {
         selectedNode.className += "NOT";
@@ -459,6 +466,8 @@ function redrawSelection() {
     }
 }
 function redraw() {
+    deferredUntilRedraw.forEach(function(f) { f(); });
+    deferredUntilRedraw.splice(0, deferredUntilRedraw.length);
     var well = document.getElementById("well");
     try {
         var box = makeThmBox(state.work,
@@ -469,6 +478,17 @@ function redraw() {
         well.appendChild(box);
         workBox = box;
         redrawSelection();
+        Engine.forEachGroundableFact(state.work, function(w, f) {
+            message("Groundable: " + f.Skin.Name);
+            message("Ground out!");
+            var box = factToShooterBox[f.Skin.Name];
+            box.turnstile.style.display = "block";
+            landMap[box.land].tab.className = "tab groundable";
+            onNextRedraw(function() {
+                box.turnstile.style.display = "none";
+                landMap[box.land].tab.className = "tab";
+            });
+        });
     } catch (e) {
         message(e);
     }
@@ -477,6 +497,7 @@ function redraw() {
 function loadState(flat) {
     state = flat;
     state.work = new Fact(state.work);
+    setWorkPath(state.workPath);
     message("");
 }
 
@@ -518,7 +539,8 @@ function addLandToUi(land) {
     tab.innerHTML = land.name.replace(/[<]/g,"&lt;");
     var pane = document.createElement("span");
     document.getElementById("shooterTape").appendChild(pane);
-    landPaneMap[land.name] = pane;
+    landMap[land.name].pane = pane;
+    landMap[land.name].tab = tab;
     pane.className = "pane pane" + land.name;
     tab.onclick = function() {
         if (currentPane) {currentPane.style.display="none";}
@@ -632,10 +654,6 @@ function resetLoginLink() {
     };
 }
 
-var landMap = {};
-var landDepMap = {}; // XXX
-var landPaneMap = {};
-var currentPane;
 
 var logFp = storage.local.getItem(STATE_KEY);
 if (logFp) {
@@ -664,7 +682,7 @@ storage.remoteGet("checked/lands", function(lands) {
     for (var n in lands) if (lands.hasOwnProperty(n)) {
         numLands++;
         land = JSON.parse(lands[n].land);
-        landMap[land.name] = land;
+        landMap[land.name] = {land:land};
         if (land.depends && land.depends.length > 0) {
             landDepMap[land.depends[0]] = land; // TODO: multidep
         } else {
