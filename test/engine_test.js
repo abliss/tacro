@@ -329,6 +329,35 @@ var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
 var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
 var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
 
+var thms = {};
+
+startNextGoal();
+state.work = applyFact(state.work, [], pm243, [2]);
+state.work = ground(state.work, ax1);
+thms.id = saveGoal();
+
+startNextGoal();
+state.work = applyFact(state.work, [], imim1, [2]);
+state.work = ground(state.work, ax1);
+thms.himp1 = saveGoal();
+
+startNextGoal();
+state.work = applyFact(state.work, [2], pm243, [2]);
+state.work = applyFact(state.work, [2], imim1, [2]);
+state.work = ground(state.work, ax1);
+thms.mp = saveGoal();
+
+startNextGoal();
+state.work = applyFact(state.work, [], thms.mp, [2]);
+state.work = ground(state.work, thms.id);
+thms.idie = saveGoal();
+
+
+startNextGoal();
+state.work = applyFact(state.work, [1], imim1, [1]);
+state.work = applyFact(state.work, [], imim1, [2]);
+state.work = ground(state.work, thms.mp);
+thms.con12 = saveGoal();
 
 startNextGoal();
 // |- (PQR)(PQ)PR => |- (PQR)(PQ)PR
@@ -338,16 +367,16 @@ state.work = applyFact(state.work, [2,1], imim1, [1]);
 // |- (P(QR))((Qr)(Pr))(P(PR)) => |- (PQR)(PQ)PR
 state.work = ground(state.work, imim1);
 // |- (PQR)(PQ)PR
-var ax2 = saveGoal();
+thms.Distribute = saveGoal();
 
 
 
+thms.contract = pm243;
 // ==== Apparatus for importing proofs from orcat_test.js ====
-var thms = {};
 thms.imim1 = imim1;
 thms.imim2 = imim2;
-thms.Distribute = ax2;
 thms.Simplify = ax1;
+
 
 var stack = []; // goalPath, fact, factPath
 function startNextGoal() {
@@ -498,47 +527,6 @@ function saveAs(str) {
 }
 
 // ==== BEGIN import from orcat_test.js ====
-startWith(thms.Simplify);
-applyArrow([], thms.imim1, 0);
-thms.himp1 = save();
-
-startWith(thms.Distribute);
-applyArrow([1,0],thms.Simplify, 1);
-thms.con12 = save();
-
-startNextGoal();
-state.work = applyFact(state.work, [1], thms.Simplify, [1]);
-state.work = applyFact(state.work, [], thms.Distribute, [2]);
-state.work = ground(state.work, thms.Simplify);
-// |- (PQR)(PQ)PR
-thms.idd = saveGoal();
-
-/*
-startWith(thms.Simplify);
-applyArrow([], thms.Distribute, 0);
-thms.iddlem1 = save();
-
-startWith(thms.iddlem1)
-applyArrow([0], thms.Simplify, 1);
-thms.idd = save();
-*/
-
-applyArrow([], thms.idd, 0);
-thms.id = save();
-
-startWith(thms.id);
-applyArrow([], thms.con12, 0);
-thms.mp = save();
-
-startWith(thms.id);
-applyArrow([], thms.mp, 0);
-thms.idie = save();
-
-// XXX already defined
-//startWith(thms.mp);
-//applyArrow([], thms.Distribute, 0);
-//thms.contract = save();
-thms.contract = pm243;
 
 // Level 2
 

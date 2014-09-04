@@ -298,12 +298,13 @@ function addToShooter(factData, land) {
             var factPath = path.slice();
             return function(ev) {
                 try {
-                    setWork(Engine.applyFact(state.work,
-                                             state.workPath,
-                                             fact, factPath));
+                    var newWork = Engine.applyFact(state.work,
+                                                   state.workPath,
+                                                   fact, factPath);
                     message("");
-                    setWorkPath();
                     state.url = "";
+                    setWorkPath();
+                    setWork(newWork);
                 } catch (e) {
                     console.log("Error in applyFact: " + e);
                     console.log(e.stack);

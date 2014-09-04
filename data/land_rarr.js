@@ -14,31 +14,34 @@
         // ax1
         {Core:[[],[0,0,[0,1,0]],[]],
          Skin:{TermNames:["&rarr;"]}},
+        // pm2.43
+        {Core:[[],[0,[0,0,[0,0,1]],[0,0,1]],[]],
+         Skin:{TermNames:["&rarr;"]}},
         // imim1
         {Core:[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]],
          Skin:{TermNames:["&rarr;"]}},
         // imim2
         {Core:[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]],
          Skin:{TermNames:["&rarr;"]}},
-        // pm2.43
-        {Core:[[],[0,[0,0,[0,0,1]],[0,0,1]],[]],
-         Skin:{TermNames:["&rarr;"]}},
     ],
     goals:[
-        // ax2
-        {Core:[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]],
-         Skin:{TermNames:["&rarr;"]}},
-        {Core:[[],[0,[0,[0,0,1],2],[0,1,2]],[]],
-         Skin:{TermNames:["&rarr;"]}},
-        {Core:[[],[0,[0,0,[0,1,2]],[0,1,[0,0,2]]],[]],
-         Skin:{TermNames:["&rarr;"]}},
-        {Core:[[],[0,0,[0,1,1]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+        // id
         {Core:[[],[0,0,0],[]],
          Skin:{TermNames:["&rarr;"]}},
+        // himp1
+        {Core:[[],[0,[0,[0,0,1],2],[0,1,2]],[]],
+         Skin:{TermNames:["&rarr;"]}},
+        // mp
         {Core:[[],[0,0,[0,[0,0,1],1]],[]],
          Skin:{TermNames:["&rarr;"]}},
+        // idie
         {Core:[[],[0,[0,[0,0,0],1],1],[]],
+         Skin:{TermNames:["&rarr;"]}},
+        // con12
+        {Core:[[],[0,[0,0,[0,1,2]],[0,1,[0,0,2]]],[]],
+         Skin:{TermNames:["&rarr;"]}},
+        // ax2
+        {Core:[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]],
          Skin:{TermNames:["&rarr;"]}},
     ],
 })
