@@ -534,6 +534,10 @@ function enterLand(landData) {
 }
 
 function addLandToUi(land) {
+    if (landMap[land.name] && landMap[land.name].pane) {
+        console.log("Warning: Skipping already-added land " + land.name);
+        return;
+    }
     var tab = document.createElement("button");
     document.getElementById("shooterTabs").appendChild(tab);
     tab.className = "tab";
