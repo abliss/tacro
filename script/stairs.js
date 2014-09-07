@@ -261,7 +261,6 @@ function registerNewTool(toolOp) {
         var rule = "#shooter.tool" + cssEscape(toolOp) + "_" + arg +
             " .depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
             " { border: 2px solid black; cursor:pointer;}";
-        console.log("XXXX Inserting rule " + rule);
         styleSheet.insertRule(rule, 0);
     }
 
@@ -306,7 +305,7 @@ function addToShooter(factData, land) {
                     var newWork = Engine.applyFact(state.work,
                                                    state.workPath,
                                                    fact, factPath);
-                    doAnimate(box, factPath);
+                    doAnimate(box, factPath, workBox, state.workPath);
                     message("");
                     state.url = "";
                     setWorkPath();
@@ -742,19 +741,31 @@ function getPageCoords(node) {
     } while ((node = node.offsetParent));
     return [x,y];
 }
-function doAnimate(box, path) {
-    var coords = getPageCoords(box);
-    var clone = box.cloneNode(true);
+function doAnimate(factBox, factPath, workBox, workPath) {
+    var factRect = factBox.getBoundingClientRect();
+    var childRect = factBox.spanMap[factPath].getBoundingClientRect();
+    var dstRect = workBox.spanMap[workPath].getBoundingClientRect();
+    var clone = factBox.cloneNode(true);
     document.body.appendChild(clone);
     clone.style.position = "absolute";
-    clone.style.left = coords[0] + "px";
-    clone.style.top = coords[1] + "px";
+    clone.style.left = factRect.left + 26 + "px"; // TOOD XXX WTF
+    clone.style.top = factRect.top + 26 + "px";// TOOD XXX WTF
     clone.className += " animClone";
-    var anim = Move(clone).translate(50,50);
-    //window.setTimeout(anim.end.bind(anim),0);
-    console.log(getPageCoords(clone));
+    var anim = Move(clone);
+    anim = anim.scale(dstRect.width / childRect.width);
+    
+    anim = anim.x(dstRect.left - childRect.left);
+    anim = anim.y(dstRect.top - childRect.top);
+
+    window.setTimeout(anim.end.bind(anim),0);
 }
 //XXX
 window.setTimeout(function() {
-    doAnimate(factToShooterBox["yR4Ys"].box,[2]);
-}, 500);
+    try {
+        doAnimate(factToShooterBox["yR4Ys"].box,[2], workBox, []);
+    } catch (e) {
+        console.log(e);
+        console.log(e.stack);
+        message(e);
+    }
+}, 200);
