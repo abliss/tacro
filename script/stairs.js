@@ -2,6 +2,7 @@
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var Storage = require('./storage.js');
+var Move = require('./move.js');
 
 var storage = new Storage(Engine.fingerprint);
 var log = {};
@@ -305,6 +306,7 @@ function addToShooter(factData, land) {
                     var newWork = Engine.applyFact(state.work,
                                                    state.workPath,
                                                    fact, factPath);
+                    doAnimate(box, factPath);
                     message("");
                     state.url = "";
                     setWorkPath();
@@ -360,6 +362,7 @@ function addToShooter(factData, land) {
             land: land.name,
             turnstile: turnstile
         };
+        box.id = "shooter-" + fact.Skin.Name;
         break;
     case 1:
         // Adding generify to the shooter
@@ -728,3 +731,30 @@ storage.remoteGet("checked/lands", function(lands) {
     }
     console.log("Got checked lands: " + numLands);
 });
+
+
+function getPageCoords(node) {
+    var x = 0;
+    var y = 0;
+    do {
+        y += node.offsetTop;
+        x += node.offsetLeft;
+    } while ((node = node.offsetParent));
+    return [x,y];
+}
+function doAnimate(box, path) {
+    var coords = getPageCoords(box);
+    var clone = box.cloneNode(true);
+    document.body.appendChild(clone);
+    clone.style.position = "absolute";
+    clone.style.left = coords[0] + "px";
+    clone.style.top = coords[1] + "px";
+    clone.className += " animClone";
+    var anim = Move(clone).translate(50,50);
+    //window.setTimeout(anim.end.bind(anim),0);
+    console.log(getPageCoords(clone));
+}
+//XXX
+window.setTimeout(function() {
+    doAnimate(factToShooterBox["yR4Ys"].box,[2]);
+}, 500);
