@@ -47,7 +47,6 @@ function set(ref, val) {
     ref.set(val, done);
 } 
 // ====
-
 /*
 Facts.forEach(function(factData) {
     var fact = new Fact(factData);
