@@ -19,7 +19,7 @@
     display:inline-block;
     vertical-align:top;
     padding:0px;
-    marign:0px;
+    margin:0px;
     overflow:visible;
 }
 .bindingleft>.hyprow>.bindingright,  .bindingleft>.bindingright, .bindingright>.hyprow>.bindingleft,  .bindingright>.bindingleft {
@@ -124,6 +124,9 @@ body, html {
     position:absolute;
     z-index: 2;
 }
+.animClone {
+    z-index: 3;
+}
 #shooterTape {
     text-align:center;
     background: -webkit-gradient(linear, 100% 0%, 0% 100%, from(#70dbdb), to(#000000));
@@ -147,9 +150,11 @@ body, html {
     background: rosybrown;
 }
 
+/*
 .termbox {
     -webkit-transition: all 1s ease;
 }
+*/
 
 .termbox .termbox {
     /* we stick one inside another for 1-hyp inferences, i.e. ax-gen*/
