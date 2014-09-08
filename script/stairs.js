@@ -24,6 +24,17 @@ function fbEscape(str) {
     return encodeURIComponent(str).replace(/\./g,"%2E");
 }
 
+var varColors = [
+    "#9370db",
+    "#70db93",
+    "#f13e44",
+    "#cc4a14",
+    "#99583d",
+    "#3d983d",
+    "#3d9898",
+];
+
+
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -176,10 +187,11 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             throw new Error("TODO: XXX Only arity 0-2 supported: "+termName);
         }
     } else {
+        // Variable
         termSpan = doc.createElement("a");
         //termSpan.href = "#" + tag + "=" + path;
         termSpan.className += " variable";
-        termSpan.className += " var" + varNamer(exp);
+        termSpan.style["background-color"] = varColors[exp];
         width = 1;
         height = 1;
         var txtSpan = doc.createElement("span");
@@ -188,6 +200,12 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
         txtSpan.style.height="100%";
         termSpan.appendChild(txtSpan);
         termSpan.className += " txtBox";
+        var spans = spanMap["v" + exp];
+        if (!spans) {
+            spans = [];
+            spanMap["v" + exp] = spans;
+        }
+        spans.push(termSpan);
         var innerHTML = varNamer(exp);
         var whichChild = path[path.length - 1];
         for (var i = path.length  - 1; (i >= 0) && path[i] == whichChild; i--) {
@@ -199,9 +217,11 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
         }
         txtSpan.innerHTML = innerHTML;
     }
-    var onclick = cb(path);
-    if (onclick) {
-        termSpan.onclick = onclick;
+    if (cb) {
+        var onclick = cb(path);
+        if (onclick) {
+            termSpan.onclick = onclick;
+        }
     }
     termSpan.className += " term";
     termSpan.className += " depth" + path.length;
@@ -258,9 +278,10 @@ function registerNewTool(toolOp) {
     document.head.appendChild(styleEl);
     var styleSheet = styleEl.sheet;
     for (var arg = 1; arg <= 2; arg++) {
-        var rule = "#shooter.tool" + cssEscape(toolOp) + "_" + arg +
-            " .depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
+        var rule = ".tool" + cssEscape(toolOp) + "_" + arg +
+            " .shooter .depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
             " { border: 2px solid black; cursor:pointer;}";
+
         styleSheet.insertRule(rule, 0);
     }
 
@@ -278,7 +299,7 @@ function setWorkPath(wp) {
             className += " tool" + cssEscape(v[0]) + "_" + v[1];
         }
     }
-    document.getElementById("shooter").className = className;
+    document.body.className = className;
 }
 
 function addToShooter(factData, land) {
@@ -302,24 +323,27 @@ function addToShooter(factData, land) {
             var factPath = path.slice();
             return function(ev) {
                 try {
-                    var newWork = Engine.applyFact(state.work,
-                                                   state.workPath,
-                                                   fact, factPath);
-                    doAnimate(box, factPath, workBox, state.workPath);
-                    message("");
-                    state.url = "";
-                    setWorkPath();
-                    setWork(newWork);
+                    doAnimate(fact, box, factPath,
+                              state.work, workBox, state.workPath, function() {
+                                  var newWork = Engine.applyFact(
+                                      state.work, state.workPath,
+                                      fact, factPath);
+                                  message("");
+                                  state.url = "";
+                                  setWorkPath();
+                                  setWork(newWork);
+                                  redraw();
+                              });
                 } catch (e) {
                     console.log("Error in applyFact: " + e);
                     console.log(e.stack);
                     message(e);
                 }
-                redraw();
-                ev.stopPropagation()
+                ev.stopPropagation();
             };
         };
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
+        box.className += " shooter";
         size(box, 2 * SIZE_MULTIPLIER);
         landMap[land.name].pane.appendChild(box);
         var turnstile = document.createElement("span");
@@ -741,31 +765,110 @@ function getPageCoords(node) {
     } while ((node = node.offsetParent));
     return [x,y];
 }
-function doAnimate(factBox, factPath, workBox, workPath) {
+
+function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
     var factRect = factBox.getBoundingClientRect();
     var childRect = factBox.spanMap[factPath].getBoundingClientRect();
     var dstRect = workBox.spanMap[workPath].getBoundingClientRect();
-    var clone = factBox.cloneNode(true);
+    var clone = makeThmBox(fact, fact.Core[Fact.CORE_STMT]);
+    clone.className += " shooter";
+    size(clone, 2 * SIZE_MULTIPLIER);
     document.body.appendChild(clone);
     clone.style.position = "absolute";
-    clone.style.left = factRect.left + 26 + "px"; // TOOD XXX WTF
-    clone.style.top = factRect.top + 26 + "px";// TOOD XXX WTF
+    var xxxWtf = 26;
+    clone.style.left = factRect.left + xxxWtf + "px"; // TOOD XXX WTF
+    clone.style.top = factRect.top + xxxWtf + "px";// TOOD XXX WTF
     clone.className += " animClone";
     var anim = Move(clone);
-    anim = anim.scale(dstRect.width / childRect.width);
-    
-    anim = anim.x(dstRect.left - childRect.left);
-    anim = anim.y(dstRect.top - childRect.top);
+    anim.tag = "grow";
+    var origAnim = anim;
 
-    window.setTimeout(anim.end.bind(anim),0);
+    /* Goal of this matrix, when applied to fact:
+     *    Origin = (ox, oy) = middle of fact
+     * 1. top-right of child moves to top-left of dst, though left 5 px
+     *    M * (childTR-factTL) = (dstTL-factTL) - (5,0)
+     * 2. bottom-right of child moves to bottom-left of dst, left 5px
+     *    M * (childBR-factTL) = (dstBL-factTL) - (5,0)
+     * 3. aspect ratio preserved (x scale == y scale)
+     */
+    var ox = factRect.left + factRect.width / 2.0;
+    var oy = factRect.top + factRect.height / 2.0;
+    var scale = dstRect.width / childRect.width
+    var dx = dstRect.left + xxxWtf - ((factRect.width * scale / 2.0)) - ox;
+    var dy = dstRect.top - (childRect.top - oy) * scale - oy;
+    anim = anim.matrix(scale, 0,
+                       0, scale,
+                       dx, dy);
+    
+    // Now the fact is sitting next to the target. Time to animate the unify.
+    var varMap = Engine.getMandHyps(work, workPath, fact, factPath);
+    var moves = [];
+    var varNamer = newVarNamer(); // TODO: should use work's varNamer
+    for (var v in varMap) if (varMap.hasOwnProperty(v)) {
+        var term = varMap[v];
+        if (term != v) {
+            if (Array.isArray(term)) {
+                var m = Move(span);
+                //TODO: grow
+                moves.push(m);
+            } else {
+                // Change color of all the spans simultaneously.
+                var next;
+                var spans = clone.spanMap["v" + v];
+                spans.forEach(function(span) {
+                    next = Move(span).set("background-color",
+                                          varColors[term]);
+                    next.tag = "background-color";
+                    anim.then(next);
+                });
+                if (next) {
+                    anim = next;
+                }
+            }
+        }
+    };
+    // Now the unify is complete. Move the child onto the dst.
+    var next = Move(clone);
+    next.tag = "slide";
+    next._transforms = origAnim._transforms.slice();
+    next.x(dstRect.width / scale + 15); // TODO: XXX WTF
+    anim.then(next);
+    anim = next;
+
+    // Now move the child and the root-arrow off the screen, along with the 
+    // work
+
+    next = Move(clone.spanMap[factPath]);
+    next.tag = "wipe1";
+    next._transforms = anim._transforms.slice();
+    next.y(document.body.offsetHeight);
+    anim.then(next);
+    
+    next = Move(clone.spanMap[[0]]);
+    next.tag = "wipe2";
+    next._transforms = anim._transforms.slice();
+    next.y(document.body.offsetHeight);
+    anim.then(next);
+    
+    next = Move(workBox).y(document.body.offsetHeight);
+    next.tag = "wipe3";
+    anim.then(next);
+    
+    anim = next;
+
+    anim = anim.then(onDone);
+    // Need to delay to next tick so that the clone shows up in original spot.
+    window.setTimeout(origAnim.end.bind(origAnim),0);
 }
+
 //XXX
 window.setTimeout(function() {
-    try {
-        doAnimate(factToShooterBox["yR4Ys"].box,[2], workBox, []);
-    } catch (e) {
-        console.log(e);
-        console.log(e.stack);
-        message(e);
-    }
-}, 200);
+
+    setWorkPath([]);
+    redrawSelection();
+    var sbox = factToShooterBox["zSg32"];
+    
+    doAnimate(sbox.fact, sbox.box, [2],
+              state.work, workBox, state.workPath,
+              function(){message("XXX done");});
+}, 250);

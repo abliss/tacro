@@ -990,6 +990,7 @@ var Fact = require('./fact.js'); //XXX
     module.exports.applyFact = applyFact;
     module.exports.fingerprint = fingerprint;
     module.exports.forEachGroundableFact = forEachGroundableFact;
-    module.exports.getUsableTools = getUsableTools
+    module.exports.getUsableTools = getUsableTools;
+    module.exports.getMandHyps = getMandHyps;
     module.exports.DEBUG = function() {DEBUG = true;};
 })(module);
