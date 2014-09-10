@@ -808,9 +808,8 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
         var term = varMap[v];
         if (term != v) {
             if (Array.isArray(term)) {
-                var m = Move(span);
                 //TODO: grow
-                moves.push(m);
+
             } else {
                 // Change color of all the spans simultaneously.
                 var next;
@@ -834,21 +833,18 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
     next.x(dstRect.width / scale + 15); // TODO: XXX WTF
     anim.then(next);
     anim = next;
-    anim = anim.then().y(0); // XXX needed otherwise anims bleed together?
-    // Now move the child and the root-arrow off the screen, along with the 
-    // work
+    anim = anim.then().y(0); // XXX needed or anims bleed together?
+    // Now move the child and the root-arrow off the screen, along with the work
 
 
-    var dy = 100; //document.body.offsetHeight / scale;
+    var dy = document.body.offsetHeight;
     next = Move(clone.spanMap[factPath]);
     next.tag = "wipe1";
-    //next._transforms = origAnim._transforms.slice();
     next.y(dy);
     anim.then(next);
     
     next = Move(clone.spanMap[[0]]);
     next.tag = "wipe2";
-    //next._transforms = origAnim._transforms.slice();
     next.y(dy);
     anim.then(next);
     
@@ -856,14 +852,23 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
     next.tag = "wipe3";
     anim.then(next);
     
+    var otherHalf = clone.spanMap[[3-factPath[0]]];
     anim = next;
-
+    //XXX WTF
+    next = Move(otherHalf).translate((factRect.width - childRect.width) / 2,
+                                     (factRect.height - childRect.height) / 2);
+    anim.then(next);
+    anim = next;
+    anim.then(function() { clone.parentNode.removeChild(clone) });
     anim = anim.then(onDone);
+    
     // Need to delay to next tick so that the clone shows up in original spot.
     window.setTimeout(origAnim.end.bind(origAnim),0);
 }
 
 //XXX
+
+/*
 window.setTimeout(function() {
 
     setWorkPath([]);
@@ -874,3 +879,7 @@ window.setTimeout(function() {
               state.work, workBox, state.workPath,
               function(){message("XXX done");});
 }, 250);
+
+
+/*
+*/
