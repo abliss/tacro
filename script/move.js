@@ -1332,7 +1332,7 @@ Move.prototype.end = function(fn){
 
   // emit "end" when complete
   after.once(this.el, function(){
-    self.reset();
+    //XXX self.reset();
     self.emit('end');
   });
 
