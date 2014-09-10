@@ -766,7 +766,36 @@ function getPageCoords(node) {
     return [x,y];
 }
 
+// Forwards to reallyDoAnimate, but sets a timeout to make sure onDone always gets
+// called.
 function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
+    var complete = false;
+    var timeout;
+    var callback = function() {
+        if (!complete) {
+            comblete = true;
+            onDone();
+            if (timeout) {
+                window.clearTimeout(timeout);
+            }
+        }
+    }
+    try {
+        reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, callback);
+        timeout = window.setTimeout(function() {
+            if (!complete) {
+                console.log("Timeout in reallyDoAnimate! ");
+                onDone();
+            }
+        }, 3000);
+    } catch (e) {
+        console.log("Error in reallyDoAnimate: " + e);
+        console.log(e.stack);
+        onDone();
+    }
+}
+
+function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
     var factRect = factBox.getBoundingClientRect();
     var childRect = factBox.spanMap[factPath].getBoundingClientRect();
     var dstRect = workBox.spanMap[workPath].getBoundingClientRect();
@@ -809,7 +838,7 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
         if (term != v) {
             if (Array.isArray(term)) {
                 //TODO: grow
-
+                
             } else {
                 // Change color of all the spans simultaneously.
                 var next;
