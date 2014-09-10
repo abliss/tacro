@@ -834,23 +834,25 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
     next.x(dstRect.width / scale + 15); // TODO: XXX WTF
     anim.then(next);
     anim = next;
-
+    anim = anim.then().y(0); // XXX needed otherwise anims bleed together?
     // Now move the child and the root-arrow off the screen, along with the 
     // work
 
+
+    var dy = 100; //document.body.offsetHeight / scale;
     next = Move(clone.spanMap[factPath]);
     next.tag = "wipe1";
-    next._transforms = anim._transforms.slice();
-    next.y(document.body.offsetHeight);
+    //next._transforms = origAnim._transforms.slice();
+    next.y(dy);
     anim.then(next);
     
     next = Move(clone.spanMap[[0]]);
     next.tag = "wipe2";
-    next._transforms = anim._transforms.slice();
-    next.y(document.body.offsetHeight);
+    //next._transforms = origAnim._transforms.slice();
+    next.y(dy);
     anim.then(next);
     
-    next = Move(workBox).y(document.body.offsetHeight);
+    next = Move(workBox).y(dy);
     next.tag = "wipe3";
     anim.then(next);
     
