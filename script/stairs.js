@@ -88,8 +88,10 @@ function newVarNamer() {
 }
 
 function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
+    if (!spanMap) spanMap = {};
     var termSpan;
     spanMap[path] = termSpan;
+    termSpan.zpath = path.slice();
     var width = 0;
     var height = 0;
 
@@ -105,6 +107,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
                                    spanMap, cb);
             subTree.span.className += " tool" + cssEscape(termName);
             spanMap[path] = subTree.span;
+            subTree.span.zpath = path.slice();
             children.push(subTree);
             path.pop();
         }
@@ -113,6 +116,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             var rowSpan = doc.createElement("span");
             path.push("r");
             spanMap[path] = rowSpan;
+            rowSpan.zpath = path.slice();
             path.pop();
             termSpan.appendChild(rowSpan);
             rowSpan.className += " hyprow";
@@ -122,6 +126,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             rowSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
+            opSpan.zpath = path.slice();
             path.pop();
             opSpan.className += " operator " +" arity2";
             var txtSpan = doc.createElement("span");
@@ -148,6 +153,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
+            opSpan.zpath = path.slice();
             path.pop();
             opSpan.className += " operator arity1";
             var txtSpan = doc.createElement("span");
@@ -170,6 +176,7 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
+            opSpan.zpath = path.slice();
             path.pop();
             opSpan.className += " operator arity1";
             var txtSpan = doc.createElement("span");
@@ -253,7 +260,7 @@ function makeThmBox(fact, exp, cb) {
         fmSpan.className = "freemap";
         termBox.appendChild(fmSpan);
         fm.forEach(function(v) {
-            var vTree = makeTree(document, fact, v, [], -1, namer, {}, nullCb);
+            var vTree = makeTree(document, fact, v, [], -1, namer);
             fmSpan.appendChild(vTree.span);
         });
     });
@@ -322,6 +329,7 @@ function addToShooter(factData, land) {
             }
             var factPath = path.slice();
             return function(ev) {
+                console.log("ApplyFact " + fact.Skin.Name);
                 try {
                     doAnimate(fact, box, factPath,
                               state.work, workBox, state.workPath, function() {
@@ -787,7 +795,7 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
                 console.log("Timeout in reallyDoAnimate! ");
                 onDone();
             }
-        }, 3000);
+        }, 6000);
     } catch (e) {
         console.log("Error in reallyDoAnimate: " + e);
         console.log(e.stack);
@@ -822,7 +830,8 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
      */
     var ox = factRect.left + factRect.width / 2.0;
     var oy = factRect.top + factRect.height / 2.0;
-    var scale = dstRect.width / childRect.width
+    var scale = factBox.tree.width / 2.0;
+    console.log("XXXX Scale="  +scale);
     var dx = dstRect.left + xxxWtf - ((factRect.width * scale / 2.0)) - ox;
     var dy = dstRect.top - (childRect.top - oy) * scale - oy;
     anim = anim.matrix(scale, 0,
@@ -836,23 +845,45 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     for (var v in varMap) if (varMap.hasOwnProperty(v)) {
         var term = varMap[v];
         if (term != v) {
+            var spans = clone.spanMap["v" + v];
+            var next;
             if (Array.isArray(term)) {
-                //TODO: grow
-                
+                // Changing var to term. Need to grow the var square, and all of
+                // its parent squares.
+                var newTree = makeTree(document, work, term, ['x'], -1,
+                                       varNamer);
+                var subScale = newTree.width;
+                spans.forEach(function(span) {
+                    var spanPath = span.zpath.slice();
+                    var ancesTerms = [fact.Core[Fact.CORE_STMT]];
+                    spanPath.forEach(function(z) {
+                        ancesTerms.push(ancesTerms[ancesTerms.length - 1][z]);
+                    });
+                    // ... fuck. PICKUP
+                    var delta = {width: subScale - 1, height: subScale - 1};
+                    while (spanPath.length > 0) {
+                        var argNum = spanPath.pop();
+                        //XXX
+                    }
+                    var targetSpan = workBox.spanMap[spanPath];
+                    next = Move(span).scale(subScale);
+                    next.tag = "subScale";
+                    anim.then(next);
+                });
             } else {
-                // Change color of all the spans simultaneously.
-                var next;
-                var spans = clone.spanMap["v" + v];
+                // Changing var to var. change color of all the spans
+                // simultaneously.
                 spans.forEach(function(span) {
                     next = Move(span).set("background-color",
                                           varColors[term]);
                     next.tag = "background-color";
                     anim.then(next);
                 });
-                if (next) {
-                    anim = next;
-                }
             }
+            if (next) {
+                anim = next;
+            }
+
         }
     };
     // Now the unify is complete. Move the child onto the dst.
@@ -897,12 +928,12 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
 
 //XXX
 
-/*
+
 window.setTimeout(function() {
 
     setWorkPath([]);
     redrawSelection();
-    var sbox = factToShooterBox["zSg32"];
+    var sbox = factToShooterBox["neHAKB"];
     
     doAnimate(sbox.fact, sbox.box, [2],
               state.work, workBox, state.workPath,
