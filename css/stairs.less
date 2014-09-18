@@ -22,9 +22,6 @@
     margin:0px;
     overflow:visible;
 }
-.bindingleft>.hyprow>.bindingright,  .bindingleft>.bindingright, .bindingright>.hyprow>.bindingleft,  .bindingright>.bindingleft {
-    /*-webkit-transform: matrix(0,-1,-1,0,0,0);*/
-}
 .operator>.txt {
 /*    -webkit-transform: rotate(45deg);*/
     position:relative;
@@ -47,15 +44,13 @@
 	text-align:center;
 }
 
+.term { border: 1px solid red; } /*XXX*/
 
 .term a {
     border-left: 1px solid gray;
     border-bottom: 1px solid black;
 }
 
-.termbox .hyprow {
-    position:relative;
-}
 .termbox span, .termbox a{
     box-sizing:border-box;
     -webkit-box-sizing:border-box;
