@@ -90,8 +90,6 @@ function newVarNamer() {
 function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
     if (!spanMap) spanMap = {};
     var termSpan;
-    spanMap[path] = termSpan;
-    termSpan.zpath = path.slice();
     var width = 0;
     var height = 0;
 
@@ -113,17 +111,10 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
         }
         switch (arity) {
         case 2:
-            var rowSpan = doc.createElement("span");
-            path.push("r");
-            spanMap[path] = rowSpan;
-            rowSpan.zpath = path.slice();
-            path.pop();
-            termSpan.appendChild(rowSpan);
-            rowSpan.className += " hyprow";
             var opSpan = doc.createElement("a");
             //opSpan.href = "#" + tag + "=" + path;
-            rowSpan.appendChild(children[0].span);
-            rowSpan.appendChild(opSpan);
+            termSpan.appendChild(children[0].span);
+            termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
             opSpan.zpath = path.slice();
@@ -134,14 +125,17 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             opSpan.className += " txtBox";
             txtSpan.innerHTML = termName;
             txtSpan.className = " txt";
+            opSpan.treeWidth = children[1].width;
+            opSpan.treeHeight = children[0].height;
             width = children[0].width + children[1].width;
             height = children[0].height + children[1].height;
             opSpan.style.height = "100%";
             children[0].span.style.height = "100%";
-            rowSpan.style.height = "" + (100 * children[0].height / height) + "%";
+            opSpan.style.height =
+                children[0].span.style.height =
+                "" + (100 * children[0].height / height) + "%";;
             children[1].span.style.height = "" + (100 * children[1].height / height) + "%";
 
-            rowSpan.style.width = "100%";
             children[0].span.style.width = "" + (100 * children[0].width / width) + "%";
             opSpan.style.width =  "" + (100 * children[1].width / width) + "%";
             children[1].span.style.width = opSpan.style.width;
@@ -163,6 +157,8 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             txtSpan.className = " txt";
             width = 1 + children[0].width;
             height = 1 + children[0].height;
+            opSpan.treeWidth = width;
+            opSpan.treeHeight = 1;
             opSpan.style.width = "100%";
             opSpan.style.height = "" + (100 / height) + "%";
             children[0].span.style.height = "" + (100 * children[0].height / height) + "%";
@@ -176,6 +172,8 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.appendChild(opSpan);
             path.push("0");
             spanMap[path] = opSpan;
+            opSpan.treeWidth = 1;
+            opSpan.treeHeight = 1;
             opSpan.zpath = path.slice();
             path.pop();
             opSpan.className += " operator arity1";
@@ -230,12 +228,16 @@ function makeTree(doc, fact, exp, path, inputTot, varNamer, spanMap, cb) {
             termSpan.onclick = onclick;
         }
     }
+    spanMap[path] = termSpan;
+    termSpan.zpath = path.slice();
     termSpan.className += " term";
     termSpan.className += " depth" + path.length;
     if (path.length > 0) {
         var inputNum = path[path.length - 1];
         termSpan.className += " input" + inputNum + "of" + inputTot;
     }
+    termSpan.treeWidth = width;
+    termSpan.treeHeight = height;
     return ({span:termSpan, width:width, height:height});
 }
 
@@ -840,7 +842,15 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     
     // Now the fact is sitting next to the target. Time to animate the unify.
     var varMap = Engine.getMandHyps(work, workPath, fact, factPath);
-    var moves = [];
+    // This map is used for sizing a new tree in order calculate intermediate
+    // animation scales. Every var is mapped to zero, except for onces which
+    // have already been mapped to terms.
+    var partialVarMap = {};
+    for (var v in varMap) if (varMap.hasOwnProperty(v)) {
+        partialVarMap[v] = 0;
+    }
+    // A map to spans which will be queried for the progressively-computed treeWidth and treeHeight.
+    var partialSpanMap = clone.spanMap;
     var varNamer = newVarNamer(); // TODO: should use work's varNamer
     for (var v in varMap) if (varMap.hasOwnProperty(v)) {
         var term = varMap[v];
@@ -850,26 +860,59 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
             if (Array.isArray(term)) {
                 // Changing var to term. Need to grow the var square, and all of
                 // its parent squares.
-                var newTree = makeTree(document, work, term, ['x'], -1,
-                                       varNamer);
-                var subScale = newTree.width;
-                spans.forEach(function(span) {
-                    var spanPath = span.zpath.slice();
-                    var ancesTerms = [fact.Core[Fact.CORE_STMT]];
-                    spanPath.forEach(function(z) {
-                        ancesTerms.push(ancesTerms[ancesTerms.length - 1][z]);
-                    });
-                    // ... fuck. PICKUP
-                    var delta = {width: subScale - 1, height: subScale - 1};
-                    while (spanPath.length > 0) {
-                        var argNum = spanPath.pop();
-                        //XXX
+                partialVarMap[v] = term;
+                var newSpanMap = {};
+                var newTree = makeTree(document, work, Engine.globalSub(fact, partialVarMap, work),
+                                       [], -1, varNamer, newSpanMap);
+                
+                var scaleMap = {};
+                for (var spanPath in clone.spanMap) {
+                    if (newSpanMap.hasOwnProperty(spanPath) && (spanPath[0] != "v")) {
+                        scaleMap[spanPath] = {}
+                        var newSpan = newSpanMap[spanPath];
+                        var oldSpan = partialSpanMap[spanPath];
+                        scaleMap[spanPath].x = newSpan.treeWidth / oldSpan.treeWidth;
+                        scaleMap[spanPath].y = newSpan.treeHeight / oldSpan.treeHeight;
                     }
-                    var targetSpan = workBox.spanMap[spanPath];
-                    next = Move(span).scale(subScale);
-                    next.tag = "subScale";
+                }
+                console.log("Raw scales: " + JSON.stringify(scaleMap));
+                // Now we have computed the amount by which we want to scale
+                // each span in this anim step. Unfortunately, some are
+                // contained in others and scaling is inherited!
+                var actualScaleMap = {};
+                function actuallyScale(spanPath) {
+                    spanPath = spanPath.slice();
+                    if (actualScaleMap.hasOwnProperty(spanPath)) {
+                        return actualScaleMap[spanPath];
+                    }
+                    var desiredScale = {x: scaleMap[spanPath].x,
+                                        y: scaleMap[spanPath].y};
+                    actualScaleMap[spanPath] = desiredScale;
+                    next = Move(clone.spanMap[spanPath]);
+                    var msg = "Path " + spanPath + " :";
+                    while (spanPath.length > 0) {
+                        spanPath.pop();
+                        var inheritedScale = actuallyScale(spanPath);
+                        desiredScale.x /= inheritedScale.x;
+                        msg += " x /= " + inheritedScale.x;
+                        desiredScale.y /= inheritedScale.y;
+                    }
+                    next.duration(2000); //XXX
+                    next.matrix(desiredScale.x, 0, 0, desiredScale.y, 0, 0);
+                    // TODO: PICKUP: I think these scales are right, but they mess up the positoins.
+                    // screw up all the positions. :(
+                    console.log(msg + " scale (" + desiredScale.x  + "x" + desiredScale.y +")");
                     anim.then(next);
-                });
+                    return desiredScale;
+                }
+                for (var spanPath in clone.spanMap) {
+                    if (newSpanMap.hasOwnProperty(spanPath) && (spanPath[0] != "v")) {
+                        var pathArr = spanPath ? spanPath.split(/,/) : [];
+                        actuallyScale(pathArr);
+                    }
+                }
+                 
+                partialSpanMap = newTree.spanMap;
             } else {
                 // Changing var to var. change color of all the spans
                 // simultaneously.
