@@ -992,5 +992,6 @@ var Fact = require('./fact.js'); //XXX
     module.exports.forEachGroundableFact = forEachGroundableFact;
     module.exports.getUsableTools = getUsableTools;
     module.exports.getMandHyps = getMandHyps;
+    module.exports.globalSub = globalSub;
     module.exports.DEBUG = function() {DEBUG = true;};
 })(module);
