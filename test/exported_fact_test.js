@@ -278,8 +278,10 @@ DEBUG=true
 // ==== Verify ====
 GH = global.GH = {};
 global.log = console.log;
-require('../../caghni/js/verify.js')
-require('../../caghni/js/proofstep.js')
+require('../ghilbert/js/sexpression.js')
+require('../ghilbert/js/typeset.js')
+require('../ghilbert/js/verify.js')
+require('../ghilbert/js/proofstep.js')
 
 var UrlCtx = {
     files: {},
