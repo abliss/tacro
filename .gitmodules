@@ -1,0 +1,3 @@
+[submodule "caghni"]
+	path = caghni
+	url = https://github.com/abliss/caghni.git
