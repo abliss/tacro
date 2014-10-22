@@ -873,7 +873,6 @@ thms.Equivalate = saveGoal();
   applyArrow([], thms.idie, 0);
   thms.con12bi = save();
 
-
   startWith(thms.dfanbi);
   applyArrow([1,0,1,0], thms.dfanbi, 0);
   applyArrow([1,0,1], thms.nnbi, 1);
@@ -1327,14 +1326,7 @@ applyArrow([0,1,1,1],"harr_harr_A_B_harr_not_B_not_A",1)
 applyArrow([0,1,1,1],"harr_harr_A_B_harr_B_A",0)
  saveAs("_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B") //undefined
 
-startWith("rarr_equals_a_b_rarr_equals_a_c_equals_b_c")
-applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
-applyArrow([1,1],"rarr_and_rarr_A_B_rarr_B_A_harr_A_B",0)
-applyArrow([1,0],"rarr_equals_a_b_rarr_equals_a_c_equals_b_c",1)
-applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
-applyArrow([],"rarr_rarr_A_rarr_A_B_rarr_A_B",0)
- saveAs("rarr_equals_a_b_harr_equals_a_c_equals_b_c") //undefined
-
+startWith("rarr_equals_a_b_harr_equals_a_c_equals_b_c")
 applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
 applyArrow([1,1],"harr_equals_a_b_equals_b_a",0)
  saveAs("rarr_equals_a_b_harr_equals_c_a_equals_c_b") //undefined
@@ -1528,8 +1520,10 @@ console.log("proved " + proofCtx.length() + " thms.");
 // ==== Verify ====
 GH = global.GH = {};
 global.log = console.log;
-require('../../caghni/js/verify.js'); //XXX
-require('../../caghni/js/proofstep.js'); //XXX
+require('../ghilbert/js/sexpression.js')
+require('../ghilbert/js/typeset.js')
+require('../ghilbert/js/verify.js'); //XXX
+require('../ghilbert/js/proofstep.js'); //XXX
 var UrlCtx = {
     files: {},
     resolve: function(url) {
