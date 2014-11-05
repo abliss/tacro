@@ -87,6 +87,7 @@ function getLand(filename) {
 function startWork(fact) {
     var work = new Fact(fact);
     work.setHyps([work.Core[Fact.CORE_STMT]]);
+    work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
     work.Skin.HypNames = ["Hyps.0"];
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
@@ -120,6 +121,12 @@ function Context() {
     this.append = function(x) {
         if (!x || !x.Core) {
             throw new Error("Bad fact: " + JSON.stringify(x));
+        }
+        try {
+            x.verify();
+        } catch (e) {
+            console.log("Cannot verify " + JSON.stringify(x));
+            throw e;
         }
         facts.push(x);
         return this;
@@ -397,25 +404,31 @@ function startWith(fact) {
     stack = [[fact]];
 }
 
-function getArity(tok) { // TODO: ugly hack
+function getArrow(tok) { // TODO: ugly hack
+    var arrow = {name: tok, freeMap: []};
     switch(tok) {
     case 'Oslash':
-        return 0;
+        arrow.arity = 0;
+        return arrow;
     case 'not':
     case 'sect':
-        return 1;
+        arrow.arity = 1;
+        return arrow;
+    case 'forall':
+    case 'exist':
+        arrow.freeMap = [[]];
+        // fall through
     case 'rarr':
     case 'harr':
     case 'and':
     case 'or':
-    case 'forall':
-    case 'exist':
     case 'equals':
     case 'plus':
     case 'times':
-        return 2;
+        arrow.arity = 2;
+        return arrow;
     default:
-        return -1;
+        return;
     }
 }
 
@@ -433,12 +446,12 @@ function parseMark(str) { // parse orcat's thm names
     var toks = str.split("_");
     function recurse() {
         var tok = toks.shift();
-        var arity = getArity(tok);
-        if (arity == -1) {
+        var arrow = getArrow(tok);
+        if (!arrow) {
             return out.nameVar(tok);
         } else {
-            var exp = [out.nameTerm('&' + tok + ';')];
-            for (var i = 0; i < arity; i++) {
+            var exp = [out.nameTerm('&' + tok + ';', arrow.freeMap)];
+            for (var i = 0; i < arrow.arity; i++) {
                 exp.push(recurse());
             }
             return exp;
@@ -467,9 +480,9 @@ function generify() {
                                            sfbm('[[0],[0,1,0],[]];["&forall;"]'));
     });
 }
-function addSpecify(path, term, arity) {
+function addSpecify(path, term, arity, freeMap) {
     stack.unshift(function() {
-        state.work = Engine.specifyDummy(state.work, path, term, arity);
+        state.work = Engine.specifyDummy(state.work, path, term, arity, freeMap);
         if (DEBUG) {console.log("Work specced: " + JSON.stringify(state.work));}
     });
 }
@@ -886,7 +899,7 @@ thms.Equivalate = saveGoal();
 
 startNextGoal();
 state.work = applyFact(state.work, [], thms.idie, [2]);
-state.work = Engine.specifyDummy(state.work, [1,1], "&rarr;", 2);
+state.work = Engine.specifyDummy(state.work, [1,1], "&rarr;", 2, []);
 state.work = applyFact(state.work, [1,1,1], thms.conj, [1]);
 state.work = applyFact(state.work, [1,1], thms.imim2, [2]);
 state.work = applyFact(state.work, [2], thms.defbi2, [2]);
@@ -925,9 +938,9 @@ applyArrow([],"rarr_rarr_A_B_rarr_rarr_B_A_harr_A_B",0)
 applyArrow([0,0],"harr_A_and_A_A",0)
 applyArrow([0],"rarr_and_rarr_A_B_rarr_C_D_rarr_and_A_C_and_B_D",1)
 applyArrow([0,0,0,1],"rarr_and_A_B_A",0)
-addSpecify([1,1,1], "&rarr;", 2);
+addSpecify([1,1,1], "&rarr;", 2, []);
 applyArrow([0,1,0,1],"rarr_and_A_B_B",0)
-addSpecify([1,2,1], "&rarr;", 2);
+addSpecify([1,2,1], "&rarr;", 2, []);
 applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",1)
 applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
 applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
@@ -1214,7 +1227,8 @@ saveGoal();
 //NOTE: Again, you can't stop here, because equals will get binding vars.
 // Here's an ugly XXX HACK to keep that from happening.
 state.work = startWork({Core:[[],[0,[1,0,1],[1,0,1]],[]],
-                        Skin:{TermNames:["&equals;","&rarr;"]}});
+                        Skin:{TermNames:["&equals;","&rarr;"]},
+                        FreeMaps:[[],[]]});
 state.work = ground(state.work, "equals_A_A");
 state.land.addFact(state.work);
 proofCtx.append(state.work);
@@ -1428,12 +1442,14 @@ applyArrow([0,0],"rarr_harr_A_B_rarr_B_A",0)
 applyArrow([0],"rarr_A_rarr_rarr_A_B_B",1)
 saveAs("rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
 
-
+/*
+// TODO: WTF? This doesn't verify? And isn't needed?
 startWith("equals_plus_a_Oslash_a")
 applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a",0)
 generify()
 applyArrow([],"_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A",0)
 var tmp = saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
+*/
 
 startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
 applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
@@ -1502,7 +1518,7 @@ applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus
 applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
 applyArrow([0,0],"equals_plus_a_Oslash_a",0)
 applyArrow([0,1,1],"equals_plus_a_Oslash_a",0)
-   addSpecify([1,2], "&plus;", 2);
+addSpecify([1,2], "&plus;", 2, []);
 applyArrow([],"rarr_rarr_equals_a_a_A_A",0)
 applyArrow([0,1,1,0],"equals_plus_a_sect_b_sect_plus_a_b",0)
 applyArrow([0,1,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)

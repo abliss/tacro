@@ -62,6 +62,12 @@ var Fact = require('./fact.js'); //XXX
         }
     };
 
+    function Arrow(name, arity, freeMap) {
+        this.name = name;
+        this.arity = arity;
+        this.freeMap = freeMap;
+    }
+    
     // A data structure for keeping in the scheme.
     // goalOp is an goalOpArity-arg term.
     // goalArg is in 1...goalOpArity, specifying which argchild the goal is
@@ -69,7 +75,7 @@ var Fact = require('./fact.js'); //XXX
     // the current goal's paren'ts [goalArg] equals the current tool's [toolArg]
     // we want to replace it with the tool's other arg.
     // isCovar tells whether the tool args will be reversed in order.
-    function PushUp(axMp, goalOp, goalArg, goalOpArity, toolArg,
+    function PushUp(axMp, goalArrow, goalArg, toolArg,
                     isCovar, parentArrow, grease, fact) {
         this.isCovar = isCovar;
         this.parentArrow = parentArrow;
@@ -78,10 +84,10 @@ var Fact = require('./fact.js'); //XXX
             pusp.newSteps.push(pusp.tool[2]);
             pusp.goalPath.pop();
             var goalParent = zpath(pusp.goal, pusp.goalPath);
-            var goalN = work.nameTerm(goalOp);
+            var goalN = work.nameTerm(goalArrow.name, goalArrow.freeMap);
             var arr1 = [goalN];
             var arr2 = [goalN];
-            for (var i = 1; i < goalOpArity; i++) {
+            for (var i = 1; i < goalArrow.arity; i++) {
                 if (i == goalArg) {
                     arr1.push(pusp.tool[toolArg]);
                     arr2.push(pusp.tool[3 - toolArg]);
@@ -95,7 +101,8 @@ var Fact = require('./fact.js'); //XXX
             if (grease) grease(pusp, work);
             pusp.newSteps.push(nameDep(work, fact));
             pusp.newSteps.push(nameDep(work, axMp));
-            var parentArrowN = work.nameTerm(parentArrow);
+            var parentArrowN = work.nameTerm(parentArrow.name,
+                                             parentArrow.freeMap);
             pusp.tool = [parentArrowN,
                          isCovar ? arr2 : arr1,
                          isCovar ? arr1 : arr2];
@@ -108,7 +115,9 @@ var Fact = require('./fact.js'); //XXX
         function mapper(x) {
             if (Array.isArray(x) && (x.length > 0)) {
                 var out = x.slice(1).map(mapper);
-                out.unshift(work.nameTerm(fact.Skin.TermNames[x[0]]));
+                var op = x[0];
+                out.unshift(work.nameTerm(fact.Skin.TermNames[op],
+                                          fact.FreeMaps[op]));
                 return out;
             } else {
                 if (varMap[x] == undefined) {
@@ -351,8 +360,10 @@ var Fact = require('./fact.js'); //XXX
                     mapVarTo(factSubExp, workSubExp);
                 }
             } else {
-                var factTerm = (alreadyMapped ? work : fact).Skin.TermNames[
-                    factSubExp[0]];
+                var op = factSubExp[0];
+                var factContext = alreadyMapped ? work : fact;
+                var factTerm = factContext.Skin.TermNames[op];
+                var factTermFreeMap = factContext.FreeMaps[op];
                 if (factTerm == undefined) {
                     throw new Error("No factTerm\n" +
                                     JSON.stringify(fact) + "\n" +
@@ -364,7 +375,7 @@ var Fact = require('./fact.js'); //XXX
                         assertEqual("shrug", workSubExp, factSubExp);
                     } else {
                         var newExp = [];
-                        newExp.push(work.nameTerm(factTerm));
+                        newExp.push(work.nameTerm(factTerm, factTermFreeMap));
                         for (var i = 1; i < factSubExp.length; i++) {
                             newExp.push(work.nameVar(newDummy()));
                         }
@@ -396,8 +407,8 @@ var Fact = require('./fact.js'); //XXX
         return varMap;
     }
 
-    // Returns an array of functions to push the given toolOp/toolArg up the tree
-    // to the top and detach. Each one can be called on (pusp, work).
+    // Returns an array of functions to push the given toolOp/toolArg up the
+    // tree to the top and detach. Each one can be called on (pusp, work).
     function getPushUps(work, workPath, toolOp, toolArg) {
         // This looks a lot more complicated than it is.  Here's the concept: at
         // each level of the goal tree, we need to query for and apply a pushUp
@@ -419,7 +430,7 @@ var Fact = require('./fact.js'); //XXX
             q.push(toolArg);
             var pu = scheme.queryPushUp(q);
             pushUps.push(pu.pushUp.bind(pu));
-            toolOp = pu.parentArrow;
+            toolOp = pu.parentArrow.name;
             toolArg = (pu.isCovar ? 2 : 1);
         }
         // Now, since the invariant holds and goalPath = [], and
@@ -622,7 +633,7 @@ var Fact = require('./fact.js'); //XXX
 
     // Replace a dummy variable with a new exp containing the given term and
     // some new dummy variables.  TODO: should not allow specifying binding var
-    function specifyDummy(work, dummyPath, newTerm, newTermArity) {
+    function specifyDummy(work, dummyPath, newTerm, arity, freeMap) {
         // TODO: duplicated code
         var nonDummy = {};
         var dummyMap = {};
@@ -637,8 +648,9 @@ var Fact = require('./fact.js'); //XXX
         if (nonDummy[workExp]) {
             throw new Error("Var " + workExp + " is no dummy!");
         }
-        var newExp = [work.nameTerm(newTerm)];
-        for (var i = 0; i < newTermArity; i++) {
+        // TODO: PICKUP: add freemap
+        var newExp = [work.nameTerm(newTerm, freeMap)];
+        for (var i = 0; i < arity; i++) {
             newExp.push(work.nameVar(newDummy()));
         }
         dummyMap[workExp] = newExp;
@@ -682,7 +694,10 @@ var Fact = require('./fact.js'); //XXX
     function canonicalize(work) {
         var out = new Fact();
         function mapTerm(t) {
-            return out.nameTerm(work.Skin.TermNames[t]);
+            if (!work.FreeMaps[t]) {
+                throw new Error("canon " + JSON.stringify(work));
+            }
+            return out.nameTerm(work.Skin.TermNames[t], work.FreeMaps[t]);
         }
         function mapExp(exp) {
             if (Array.isArray(exp) && (exp.length > 0)) {
@@ -898,12 +913,17 @@ var Fact = require('./fact.js'); //XXX
             // except for the replacement of the antecedent args
             return;
         }
-        var parentArrow = terms[stmt[2][0]];
-        var childArrow = terms[stmt[2][1][0]];
-        var childArity = stmt[2][1].length;
+        var parentTermNum = stmt[2][0];
+        var parentArrow = new Arrow(terms[parentTermNum],
+                                    stmt[2].length,
+                                    fact.FreeMaps[parentTermNum]);
+        var childTermNum = stmt[2][1][0];
+        var childArrow = new Arrow(terms[childTermNum],
+                                   stmt[2][1].length,
+                                   fact.FreeMaps[childTermNum]);
         var whichArg = null;
         var isCov = true;
-        for (var i = 1; i < childArity; i++) {
+        for (var i = 1; i < childArrow.arity; i++) {
             var arg1 = stmt[2][1][i];
             var arg2 = stmt[2][2][i];
             switch (arg1) {
@@ -936,15 +956,15 @@ var Fact = require('./fact.js'); //XXX
                     " child=" + childArrow + "/" + whichArg + 
                     " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow);
         */
-        var halfMemo = scheme.pushUpHalfMemo[[childArrow, whichArg]];
+        var halfMemo = scheme.pushUpHalfMemo[[childArrow.name, whichArg]];
         if (!halfMemo) {
             halfMemo = {};
-            scheme.pushUpHalfMemo[[childArrow, whichArg]] = halfMemo;
+            scheme.pushUpHalfMemo[[childArrow.name, whichArg]] = halfMemo;
         }
         for (var i = 1; i <= 2; i++) {
             halfMemo[[anteArrow, i]] = [anteArrow, i];
-            scheme.pushUpMemo[[childArrow, whichArg, anteArrow, i]] =
-                new PushUp(detacher.fact, childArrow, whichArg, childArity,
+            scheme.pushUpMemo[[childArrow.name, whichArg, anteArrow, i]] =
+                new PushUp(detacher.fact, childArrow, whichArg,
                            i, (i == 2 ? isCov : !isCov),
                            parentArrow, grease, fact);
         }

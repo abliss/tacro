@@ -10,38 +10,49 @@
         // "binding theorems" for rarr over itself.
         // ax-mp
         {Core:[[0,[0,0,1]],1,[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // ax1
         {Core:[[],[0,0,[0,1,0]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // pm2.43
         {Core:[[],[0,[0,0,[0,0,1]],[0,0,1]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // imim1
         {Core:[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // imim2
         {Core:[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
     ],
     goals:[
         // id
         {Core:[[],[0,0,0],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // himp1
         {Core:[[],[0,[0,[0,0,1],2],[0,1,2]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // mp
         {Core:[[],[0,0,[0,[0,0,1],1]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // idie
         {Core:[[],[0,[0,[0,0,0],1],1],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // con12
         {Core:[[],[0,[0,0,[0,1,2]],[0,1,[0,0,2]]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // ax2
         {Core:[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]],
-         Skin:{TermNames:["&rarr;"]}},
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
     ],
 })
