@@ -1442,14 +1442,13 @@ applyArrow([0,0],"rarr_harr_A_B_rarr_B_A",0)
 applyArrow([0],"rarr_A_rarr_rarr_A_B_B",1)
 saveAs("rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
 
-/*
-// TODO: WTF? This doesn't verify? And isn't needed?
+
 startWith("equals_plus_a_Oslash_a")
 applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a",0)
 generify()
 applyArrow([],"_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A",0)
 var tmp = saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
-*/
+
 
 startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
 applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
