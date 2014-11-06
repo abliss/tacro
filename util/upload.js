@@ -3,9 +3,10 @@
 var Firebase = require('firebase');
 var Facts = require('../data/factlog.js').facts;
 var Fact = require('../script/fact.js');
+var Storage = require('../script/storage.js');
 var Fs = require('fs');
 
-var rootRef = new Firebase("https://tacro.firebaseio.com/tacro");
+var rootRef = new Storage().remote;
 var checkedRef = rootRef.child('checked');
 var factsRef = checkedRef.child('facts');
 
@@ -47,6 +48,7 @@ function set(ref, val) {
 } 
 // ====
 
+/*
 Facts.forEach(function(factData) {
     var fact = new Fact(factData);
     var key = getFbKey(fact);
@@ -56,7 +58,7 @@ Facts.forEach(function(factData) {
         console.log("key:" + key);
     }
 });
-
+*/
 // Combine all lands into one object. JSONify the axioms and goals for fast
 // parsing and efficient firebase storage.
 var lands = {};

@@ -745,7 +745,16 @@ var Fact = require('./fact.js'); //XXX
         });
 
         out.setProof(work.Tree.Proof.map(mapExp));
-        out.setCmd(work.Tree.Cmd);
+        if (work.Tree.Cmd) {
+            out.setCmd(work.Tree.Cmd);
+        } else if (work.Tree.Proof.length == 0) {
+            out.setCmd("stmt");
+        } else if (typeof(work.Tree.Definiendum) == 'number') {
+            out.setCmd("defthm");
+        } else {
+            out.setCmd("thm");
+        }
+        
         out.setName(fingerprint(out.getMark()));
         out.Tree.Deps = work.Tree.Deps.map(function(d) {
             return [clone(d[0]), d[1].map(mapTerm)];

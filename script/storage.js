@@ -1,7 +1,7 @@
 (function(module) {
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
-    var FB_URL = "https://tacro.firebaseio.com/tacro";
+    var FB_URL = "https://tacro.firebaseio.com/tacroV001";
     var nextTick;
     var offlineEnabled = false;
     var firebase;
@@ -32,9 +32,8 @@
             var fp = fingerprinter(str);
             var key = "fp/" + kind + "/" + fp;
             this.local.setItem(key, str);
-            var pushRef = this.remote.child("incoming").push(
+            var pushRef = this.remote.child("incoming").child(kind).push(
                 {
-                    "kind":kind,
                     "when":Firebase.ServerValue.TIMESTAMP,
                     "what":str
                 }, function(err) {
@@ -68,7 +67,7 @@
             firebase = require('firebase');
             Firebase = firebase;
         }
-        this.remote = new firebase("https://tacro.firebaseio.com/tacro");
+        this.remote = new firebase(FB_URL);
 
         // Takes a /-delimited firebase path and calls back with the snapshot.
         var fbGet = function(path, callback) {
