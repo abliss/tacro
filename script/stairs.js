@@ -19,6 +19,10 @@ var landMap = {};
 var landDepMap = {}; // XXX
 var currentPane;
 
+function fbEscape(str) {
+    return encodeURIComponent(str).replace(/\./g,"%2E");
+}
+
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -325,7 +329,18 @@ function addToShooter(factData, land) {
                 state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
                 var thm = Engine.ground(state.work, fact);
                 var newFactFp = addToShooter(thm);
-                currentLand().thms.push(newFactFp);
+                currentLand().thms.push(newFactFp.local);
+                if (storage.user) {
+                    // TODO: numbers goals backwards and doesn't carry over
+                    // anonymously-won points when logging in.
+                    storage.remote.child("users").
+                        child(storage.user.uid).
+                        child("points").
+                        child(fbEscape(currentLand().name)).
+                        child(currentLand().goals.length).
+                        set(newFactFp.remote);
+                }
+
                 message("");
                 setWorkPath();
                 nextGoal();
@@ -414,19 +429,20 @@ function setWork(work) {
 }
 
 function save() {
-    var stateFp = storage.fpSave("state", state);
+    var stateKey = storage.fpSave("state", state);
+    var stateFp = stateKey.local;
     if (stateFp != log.now) {
         var oldNow = log.now;
         log.now = stateFp;
-        var logFp = storage.fpSave("log", log);
+        var logFp = storage.fpSave("log", log).local;
         log.parent = logFp;
         storage.local.setItem("childOf/" + oldNow, logFp);
         storage.local.setItem(STATE_KEY, logFp);
         if (storage.user) {
             storage.remote.child("users").child(storage.user.uid).
-                child(STATE_KEY).set(logFp);
+                child("state").set(stateKey.remote);
         }
-        history.pushState(logFp, "state", "#s=" + stateFp + "/" + state.url);
+        history.pushState(logFp, STATE_KEY, "#s=" + stateFp + "/" + state.url);
     }
 }
 
@@ -527,7 +543,7 @@ function enterLand(landData) {
     land.goals = landData.goals.slice();
     if (landData.axioms) {
         landData.axioms.forEach(function(data) {
-            var factFp = addToShooter(data);
+            var factFp = addToShooter(data).local;
             land.thms.push(factFp);
         });
     }
@@ -569,7 +585,7 @@ function cheat(n) {
         thm.Tree.Proof=[];
         thm.Tree.Cmd = 'stmt'
         thm.setHyps([]);
-        var factFp = addToShooter(thm);
+        var factFp = addToShooter(thm).local;
         currentLand().thms.push(factFp);
         message("");
         nextGoal();

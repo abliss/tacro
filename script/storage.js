@@ -24,8 +24,9 @@
             this.local = localStorage;
         }
 
-        // Save the given obj in a content-addressable location and return a
-        // string key.
+        // Save the given obj in a content-addressable location. also upload to
+        // firebase. Returns the local key (content-based) and the remote key
+        // (uniquely generated).
         this.fpSave = function(kind, obj) {
             var that = this;
             var str = JSON.stringify(obj);
@@ -43,6 +44,7 @@
                         that.local.setItem("fb-" + key, pushRef.name());
                     }
                 });
+            return {local: fp, remote: pushRef.name()};
             return fp;
         },
 

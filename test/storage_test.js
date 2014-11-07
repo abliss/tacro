@@ -10,7 +10,7 @@ function done() {
     }
 }
 
-var fp = storage.fpSave('kind', {foo:1});
+var fp = storage.fpSave('kind', {foo:1}).local;
 
 work++;
 storage.fpLoad('kind', fp, function(x) {
