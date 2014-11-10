@@ -864,6 +864,7 @@ function Move(el) {
   this._transitionProps = [];
   this._transforms = [];
   this.duration(Move.defaults.duration)
+  this.delay(Move.defaults.delay|0);
 };
 
 
