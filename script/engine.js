@@ -745,9 +745,7 @@ var Fact = require('./fact.js'); //XXX
         });
 
         out.setProof(work.Tree.Proof.map(mapExp));
-        if (work.Tree.Cmd) {
-            out.setCmd(work.Tree.Cmd);
-        } else if (work.Tree.Proof.length == 0) {
+        if (work.Tree.Proof.length == 0) {
             out.setCmd("stmt");
         } else if (typeof(work.Tree.Definiendum) == 'number') {
             out.setCmd("defthm");
