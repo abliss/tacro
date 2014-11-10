@@ -891,6 +891,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
                     cloneAnim = cloneAnim.then().matrix(cloneScale.x, 0,
                                                         0, cloneScale.y,
                                                         0, 0);
+                    next = cloneAnim;
                     scale *= cloneScale.x;
                 }
                 partialSpanMap = newTree.spanMap;
