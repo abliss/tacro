@@ -513,6 +513,9 @@ var Fact = require('./fact.js'); //XXX
             ((factPath[0] != 1) && (factPath[0] != 2))) {
             throw new Error("factPath must be [1] or [2] for now.");
         }
+        if (!Array.isArray(workPath)) {
+            throw new Error("Bad workPath " + workPath);
+        }
         var varMap = getMandHyps(work, workPath, fact, factPath);
         if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
         // If that didn't throw, we can start mutating

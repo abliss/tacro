@@ -332,7 +332,11 @@ require.register("component-event/index.js", function(exports, require, module){
 
 exports.bind = function(el, type, fn, capture){
   if (el.addEventListener) {
-    el.addEventListener(type, fn, capture || false);
+      el.addEventListener(type, function(ev) {
+          fn();
+          ev.stopPropagation();
+          return false;
+      } , capture || false);
   } else {
     el.attachEvent('on' + type, fn);
   }
