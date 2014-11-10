@@ -783,7 +783,7 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
     var timeout;
     var callback = function() {
         if (!complete) {
-            comblete = true;
+            complete = true;
             onDone();
             if (timeout) {
                 window.clearTimeout(timeout);
@@ -797,7 +797,7 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
                 console.log("Timeout in reallyDoAnimate! ");
                 onDone();
             }
-        }, 6000);
+        }, 7 * Move.defaults.duration);
     } catch (e) {
         console.log("Error in reallyDoAnimate: " + e);
         console.log(e.stack);
