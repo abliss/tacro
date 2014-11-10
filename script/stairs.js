@@ -20,6 +20,8 @@ var landMap = {};
 var landDepMap = {}; // XXX
 var currentPane;
 
+
+Error.stackTraceLimit = Infinity;
 function fbEscape(str) {
     return encodeURIComponent(str).replace(/\./g,"%2E");
 }
@@ -332,9 +334,9 @@ function addToShooter(factData, land) {
             var factPath = path.slice();
             return function(ev) {
                 console.log("ApplyFact " + fact.Skin.Name);
-                try {
                     doAnimate(fact, box, factPath,
                               state.work, workBox, state.workPath, function() {
+                try {
                                   var newWork = Engine.applyFact(
                                       state.work, state.workPath,
                                       fact, factPath);
@@ -343,12 +345,12 @@ function addToShooter(factData, land) {
                                   setWorkPath();
                                   setWork(newWork);
                                   redraw();
-                              });
                 } catch (e) {
                     console.log("Error in applyFact: " + e);
                     console.log(e.stack);
                     message(e);
                 }
+                              });
                 ev.stopPropagation();
             };
         };
@@ -810,6 +812,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     var childRect = factBox.spanMap[factPath].getBoundingClientRect();
     var dstRect = workBox.spanMap[workPath].getBoundingClientRect();
     var clone = makeThmBox(fact, fact.Core[Fact.CORE_STMT]);
+    clone.id = "CLONE";
     clone.className += " shooter";
     size(clone, 2 * SIZE_MULTIPLIER);
     document.body.appendChild(clone);
@@ -818,9 +821,9 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     clone.style.left = factRect.left + xxxWtf + "px"; // TOOD XXX WTF
     clone.style.top = factRect.top + xxxWtf + "px";// TOOD XXX WTF
     clone.className += " animClone";
-    var anim = Move(clone);
-    anim.tag = "grow";
+    var anim = Move(clone, "grow");
     var origAnim = anim;
+    var cloneAnim = anim;
 
     /* Goal of this matrix, when applied to fact:
      *    Origin = (ox, oy) = middle of fact
@@ -852,6 +855,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     // A map to spans which will be queried for the progressively-computed treeWidth and treeHeight.
     var partialSpanMap = clone.spanMap;
     var varNamer = newVarNamer(); // TODO: should use work's varNamer
+    var animMap = {};
     for (var v in varMap) if (varMap.hasOwnProperty(v)) {
         var term = varMap[v];
         if (term != v) {
@@ -868,10 +872,15 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
                     if (newSpanMap.hasOwnProperty(spanPath) && (spanPath[0] != "v") && spanPath != "") {
                         var newSpan = newSpanMap[spanPath];
                         var oldSpan = partialSpanMap[spanPath];
-                        next = Move(oldSpan).
-                            setProperty('width',newSpan.style.width).
-                            setProperty('height', newSpan.style.height);
-                        anim.then(next);
+                        if ((newSpan.style.width != oldSpan.style.width) ||
+                            (newSpan.style.height != oldSpan.style.height)) {
+                            oldSpan.id = "oldSpan[" + spanPath + "]";
+                            next = Move(oldSpan, "["+ spanPath +"]").
+                                setProperty('width',newSpan.style.width).
+                                setProperty('height', newSpan.style.height);
+                            animMap[spanPath] = next;
+                            anim.then(next);
+                        }
                     }
                 }
                 var cloneScale = {
@@ -879,18 +888,20 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
                     y: newSpanMap[[]].treeHeight / partialSpanMap[[]].treeHeight
                 };
                 if (cloneScale.x !== 1 || cloneScale.y !== 1) {
-                    anim.then(Move(clone).matrix(scale * cloneScale.x, 0,
-                                                 0, scale * cloneScale.y,
-                                                 dx, dy));
+                    cloneAnim = cloneAnim.then().matrix(cloneScale.x, 0,
+                                                        0, cloneScale.y,
+                                                        0, 0);
+                    scale *= cloneScale.x;
                 }
                 partialSpanMap = newTree.spanMap;
             } else {
                 // Changing var to var. change color of all the spans
                 // simultaneously.
+                var i = 0;
                 spans.forEach(function(span) {
-                    next = Move(span).set("background-color",
-                                          varColors[term]);
-                    next.tag = "background-color";
+                    next = Move(span, "background-color" + (i++)).
+                        set("background-color",
+                            varColors[term]);
                     anim.then(next);
                 });
             }
@@ -900,24 +911,25 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
 
         }
     };
-    // Now the unify is complete. Move the child onto the dst.
-/*
-    var next = Move(clone);
-    next.tag = "slide";
-    next._transforms = origAnim._transforms.slice();
-    next.x(dstRect.width / scale + 15); // TODO: XXX WTF
+    var next = Move(clone, "slide");
+    next._transforms = cloneAnim._transforms.slice();
+    next.x(dstRect.width / scale); // TODO: XXX WTF
     anim.then(next);
     anim = next;
-    anim = anim.then().y(0); // XXX needed or anims bleed together?
+    cloneAnim = next;
+
+
     // Now move the child and the root-arrow off the screen, along with the work
-
-
     var dy = document.body.offsetHeight;
+
     next = Move(clone.spanMap[factPath]);
+    if (animMap.hasOwnProperty(factPath)) {
+        next._transforms = animMap[factPath]._transforms.slice();
+    }
     next.tag = "wipe1";
     next.y(dy);
     anim.then(next);
-    
+
     next = Move(clone.spanMap[[0]]);
     next.tag = "wipe2";
     next.y(dy);
@@ -936,14 +948,17 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     anim = next;
     anim.then(function() { clone.parentNode.removeChild(clone) });
     anim = anim.then(onDone);
-  */  
+
+    if (onDone) {
+        anim.then(onDone);
+    }
     // Need to delay to next tick so that the clone shows up in original spot.
     window.setTimeout(origAnim.end.bind(origAnim),0);
 }
 
 //XXX
 
-
+/*
 window.setTimeout(function() {
 
     setWorkPath([]);
