@@ -848,7 +848,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     // Now the fact is sitting next to the target. Time to animate the unify.
     var varMap = Engine.getMandHyps(work, workPath, fact, factPath);
     // This map is used for sizing a new tree in order calculate intermediate
-    // animation scales. Every var is mapped to zero, except for onces which
+    // animation scales. Every var is mapped to zero, except for ones which
     // have already been mapped to terms.
     var partialVarMap = {};
     for (var v in varMap) if (varMap.hasOwnProperty(v)) {
