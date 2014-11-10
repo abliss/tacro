@@ -864,58 +864,25 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
                 var newSpanMap = {};
                 var newTree = makeTree(document, work, Engine.globalSub(fact, partialVarMap, work),
                                        [], -1, varNamer, newSpanMap);
-                
-                var scaleMap = {};
                 for (var spanPath in clone.spanMap) {
-                    if (newSpanMap.hasOwnProperty(spanPath) && (spanPath[0] != "v")) {
-                        scaleMap[spanPath] = {}
+                    if (newSpanMap.hasOwnProperty(spanPath) && (spanPath[0] != "v") && spanPath != "") {
                         var newSpan = newSpanMap[spanPath];
                         var oldSpan = partialSpanMap[spanPath];
-                        scaleMap[spanPath].x = newSpan.treeWidth / oldSpan.treeWidth;
-                        scaleMap[spanPath].y = newSpan.treeHeight / oldSpan.treeHeight;
+                        next = Move(oldSpan).
+                            setProperty('width',newSpan.style.width).
+                            setProperty('height', newSpan.style.height);
+                        anim.then(next);
                     }
                 }
-                console.log("Raw scales: " + JSON.stringify(scaleMap));
-                // Now we have computed the amount by which we want to scale
-                // each span in this anim step. Unfortunately, some are
-                // contained in others and scaling is inherited!
-                var actualScaleMap = {};
-                function actuallyScale(spanPath) {
-                    spanPath = spanPath.slice();
-                    if (actualScaleMap.hasOwnProperty(spanPath)) {
-                        return actualScaleMap[spanPath];
-                    }
-                    var desiredScale = {x: scaleMap[spanPath].x,
-                                        y: scaleMap[spanPath].y};
-                    actualScaleMap[spanPath] = desiredScale;
-                    next = Move(clone.spanMap[spanPath]);
-                    var msg = "Path " + spanPath + " :";
-                    var oldSpanPath = spanPath.slice();
-                    while (spanPath.length > 0) {
-                        spanPath.pop();
-                        var inheritedScale = actuallyScale(spanPath);
-                        desiredScale.x /= inheritedScale.x;
-                        msg += " x /= " + inheritedScale.x;
-                        msg += " y /= " + inheritedScale.y;
-                        desiredScale.y /= inheritedScale.y;
-                    }
-                    next.matrix(desiredScale.x, 0, 0, desiredScale.y, 0, 0);
-                    // TODO: PICKUP: I think these scales are right, but they mess up the positoins.
-                    // screw up all the positions. :(
-                    console.log(msg + " scale (" + desiredScale.x  + "x" + desiredScale.y +")");
-                    var oldNext = next;
-                    next.then(function() {
-                        message("span " + oldSpanPath + " xform " + getComputedStyle(oldNext.el).getPropertyValue('transform'));});
-                    anim.then(next);
-                    return desiredScale;
+                var cloneScale = {
+                    x: newSpanMap[[]].treeWidth / partialSpanMap[[]].treeWidth,
+                    y: newSpanMap[[]].treeHeight / partialSpanMap[[]].treeHeight
+                };
+                if (cloneScale.x !== 1 || cloneScale.y !== 1) {
+                    anim.then(Move(clone).matrix(scale * cloneScale.x, 0,
+                                                 0, scale * cloneScale.y,
+                                                 dx, dy));
                 }
-                for (var spanPath in clone.spanMap) {
-                    if (newSpanMap.hasOwnProperty(spanPath) && (spanPath[0] != "v")) {
-                        var pathArr = spanPath ? spanPath.split(/,/) : [];
-                        actuallyScale(pathArr);
-                    }
-                }
-                 
                 partialSpanMap = newTree.spanMap;
             } else {
                 // Changing var to var. change color of all the spans
