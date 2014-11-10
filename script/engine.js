@@ -243,11 +243,13 @@ var Fact = require('./fact.js'); //XXX
     // fact, such that the named subexpression of the fact's stmt matches the
     // named subexpression of the work's first hyp.
     //
+    // Assumes fact has no hypotheses.
+    //
     // Modifies the work as necessary (but only once success is guaranteed) by
     // specifying dummy vars and adding Free constraints.
     //
     // @return a map from fact vars to terms in the work's variables. dummy
-    //     variables will get no assignment.
+    //     variables will get new names for use in the work.
     //
     // @throws an error if the unification is impossible or would violate a Free
     //     constraint.
@@ -404,6 +406,12 @@ var Fact = require('./fact.js'); //XXX
             varMap[x] = undummy(varMap[x], dummyMap);
         }
         checkVarMapForFreeness(varMap);
+
+        eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
+            if (!varMap.hasOwnProperty(v)) {
+                varMap[v] = work.nameVar(newDummy());
+            }
+        });
         return varMap;
     }
 
@@ -525,14 +533,7 @@ var Fact = require('./fact.js'); //XXX
         pusp.newSteps = [];
         if (DEBUG) console.log("Vars from " + JSON.stringify(fact));
         eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
-            var newV = varMap[v];
-            if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
-            if (newV == undefined) {
-                newV = work.nameVar(newDummy());
-                varMap[v] = newV;
-            }
-            if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
-            pusp.newSteps.push(newV);
+            pusp.newSteps.push(varMap[v]);
         });
         pusp.newSteps.push(nameDep(work, fact));
         // Now on the stack: an instance of fact, with factPath equalling a
@@ -606,15 +607,8 @@ var Fact = require('./fact.js'); //XXX
         // appear in the hyps.
         var varToStepIndex = {};
         eachVarOnce([infFact.Core[Fact.CORE_STMT]], function(v) {
-            var newV = varMap[v];
-            if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
-            if (newV == undefined) {
-                newV = work.nameVar(newDummy());
-                varMap[v] = newV;
-            }
-            if (DEBUG) {console.log("v=" + v + ", newV=" + varMap[v]);}
             varToStepIndex[v] = newSteps.length;
-            newSteps.push(newV);
+            newSteps.push(varMap[v]);
         });
         eachVarOnce(infFact.Core[Fact.CORE_HYPS], function(v) {
             if (varToStepIndex.hasOwnProperty(v)) {
@@ -670,12 +664,7 @@ var Fact = require('./fact.js'); //XXX
         work.Core[Fact.CORE_HYPS].shift();
         var newSteps = [];
         eachVarOnce([dirtFact.Core[Fact.CORE_STMT]], function(v) {
-            var newV = varMap[v];
-            if (newV == undefined) {
-                newV = work.nameVar(newDummy());
-                varMap[v] = newV;
-            }
-            newSteps.push(newV);
+            newSteps.push(varMap[v]);
         });
         newSteps.push(nameDep(work, dirtFact));
 
