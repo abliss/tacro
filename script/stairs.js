@@ -793,13 +793,13 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
         }
     }
     try {
-        reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, callback);
+        var steps = reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, callback);
         timeout = window.setTimeout(function() {
             if (!complete) {
                 console.log("Timeout in reallyDoAnimate! ");
                 onDone();
             }
-        }, 7 * Move.defaults.duration);
+        }, (steps + 1) * Move.defaults.duration);
     } catch (e) {
         console.log("Error in reallyDoAnimate: " + e);
         console.log(e.stack);
@@ -808,6 +808,7 @@ function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
 }
 
 function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
+    var steps = 0;
     var factRect = factBox.getBoundingClientRect();
     var childRect = factBox.spanMap[factPath].getBoundingClientRect();
     var dstRect = workBox.spanMap[workPath].getBoundingClientRect();
@@ -822,6 +823,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     clone.style.top = factRect.top + xxxWtf + "px";// TOOD XXX WTF
     clone.className += " animClone";
     var anim = Move(clone, "grow");
+    steps++;
     var origAnim = anim;
     var cloneAnim = anim;
 
@@ -908,6 +910,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
             }
             if (next) {
                 anim = next;
+                steps++;
             }
 
         }
@@ -918,7 +921,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     anim.then(next);
     anim = next;
     cloneAnim = next;
-
+    steps++;
 
     // Now move the child and the root-arrow off the screen, along with the work
     var dy = document.body.offsetHeight;
@@ -936,25 +939,28 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     next.y(dy);
     anim.then(next);
     
-    next = Move(workBox).y(dy);
+    next = Move(workBox.spanMap[workPath]).y(dy);
     next.tag = "wipe3";
     anim.then(next);
     
     var otherHalf = clone.spanMap[[3-factPath[0]]];
     anim = next;
+    steps++;
     //XXX WTF
     next = Move(otherHalf).translate((factRect.width - childRect.width) / 2,
                                      (factRect.height - childRect.height) / 2);
     anim.then(next);
     anim = next;
+    steps++;
     anim.then(function() { clone.parentNode.removeChild(clone) });
     anim = anim.then(onDone);
-
+    steps++;
     if (onDone) {
         anim.then(onDone);
     }
     // Need to delay to next tick so that the clone shows up in original spot.
     window.setTimeout(origAnim.end.bind(origAnim),0);
+    return steps;
 }
 
 //XXX
