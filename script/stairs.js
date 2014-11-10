@@ -890,18 +890,22 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
                     actualScaleMap[spanPath] = desiredScale;
                     next = Move(clone.spanMap[spanPath]);
                     var msg = "Path " + spanPath + " :";
+                    var oldSpanPath = spanPath.slice();
                     while (spanPath.length > 0) {
                         spanPath.pop();
                         var inheritedScale = actuallyScale(spanPath);
                         desiredScale.x /= inheritedScale.x;
                         msg += " x /= " + inheritedScale.x;
+                        msg += " y /= " + inheritedScale.y;
                         desiredScale.y /= inheritedScale.y;
                     }
-                    next.duration(2000); //XXX
                     next.matrix(desiredScale.x, 0, 0, desiredScale.y, 0, 0);
                     // TODO: PICKUP: I think these scales are right, but they mess up the positoins.
                     // screw up all the positions. :(
                     console.log(msg + " scale (" + desiredScale.x  + "x" + desiredScale.y +")");
+                    var oldNext = next;
+                    next.then(function() {
+                        message("span " + oldSpanPath + " xform " + getComputedStyle(oldNext.el).getPropertyValue('transform'));});
                     anim.then(next);
                     return desiredScale;
                 }
@@ -930,6 +934,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
         }
     };
     // Now the unify is complete. Move the child onto the dst.
+/*
     var next = Move(clone);
     next.tag = "slide";
     next._transforms = origAnim._transforms.slice();
@@ -964,7 +969,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
     anim = next;
     anim.then(function() { clone.parentNode.removeChild(clone) });
     anim = anim.then(onDone);
-    
+  */  
     // Need to delay to next tick so that the clone shows up in original spot.
     window.setTimeout(origAnim.end.bind(origAnim),0);
 }
@@ -977,11 +982,16 @@ window.setTimeout(function() {
     setWorkPath([]);
     redrawSelection();
     var sbox = factToShooterBox["neHAKB"];
-    
+    state.work = startWork(
+        {Core:[[],[0,[0,[0,0,1],2],[0,1,2]],[]],
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]});
+    state.workPath = [];
+    redraw();
     doAnimate(sbox.fact, sbox.box, [2],
               state.work, workBox, state.workPath,
               function(){message("XXX done");});
-}, 250);
+}, 400);
 
 
 /*
