@@ -737,35 +737,34 @@ if (logFp) {
         lands: [],
         url:"",
     };
-}
-
-storage.remoteGet("checked/lands", function(lands) {
-    var numLands = 0;
-    for (var n in lands) if (lands.hasOwnProperty(n)) {
-        numLands++;
-        land = JSON.parse(lands[n].land);
-        landMap[land.name] = {land:land};
-        if (land.depends && land.depends.length > 0) {
-            landDepMap[land.depends[0]] = land; // TODO: multidep
-        } else {
-            landDepMap[undefined] = land;
-            if (!state) {
-                state = {
-                    lands:[],
-                    url: "",
+    storage.remoteGet("checked/lands", function(lands) {
+        var numLands = 0;
+        for (var n in lands) if (lands.hasOwnProperty(n)) {
+            numLands++;
+            land = JSON.parse(lands[n].land);
+            landMap[land.name] = {land:land};
+            if (land.depends && land.depends.length > 0) {
+                landDepMap[land.depends[0]] = land; // TODO: multidep
+            } else {
+                landDepMap[undefined] = land;
+                if (!state) {
+                    state = {
+                        lands:[],
+                        url: "",
+                    }
+                }
+                if (state.lands.length == 0) {
+                    enterLand(land);
+                    nextGoal();
+                    state.url = "";
+                    save();
+                    redraw();
                 }
             }
-            if (state.lands.length == 0) {
-                enterLand(land);
-                nextGoal();
-                state.url = "";
-                save();
-                redraw();
-            }
         }
-    }
-    console.log("Got checked lands: " + numLands);
-});
+        console.log("Got checked lands: " + numLands);
+    });
+}
 
 
 function getPageCoords(node) {
