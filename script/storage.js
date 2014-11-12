@@ -1,6 +1,7 @@
 (function(module) {
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
+    var OFFLINE = true;
     var FB_URL = "https://tacro.firebaseio.com/tacroV001";
     var nextTick;
     var offlineEnabled = false;
@@ -13,6 +14,18 @@
     } else {
         throw new Error("No nextTick");
     }
+
+    function FirebaseStub() {
+    }
+    FirebaseStub.prototype.child =
+        FirebaseStub.prototype.push =
+        FirebaseStub.prototype.set =
+        FirebaseStub.prototype.on =
+        FirebaseStub.prototype.name =
+        function() {
+            return new FirebaseStub();
+        };
+    
 
     function Storage(fingerprinter) {
         var thatStorage = this;
@@ -62,15 +75,20 @@
         };
 
 
-        if (typeof OfflineFirebase !== 'undefined') {
+        if (OFFLINE) {
+            firebase = FirebaseStub;
+        } else if (typeof OfflineFirebase !== 'undefined') {
             firebase = OfflineFirebase;
             offlineEnabled = true;
         } else {
             firebase = require('firebase');
             Firebase = firebase;
         }
-        this.remote = new firebase(FB_URL);
-
+        try {
+            this.remote = new firebase(FB_URL);
+        } catch (e) {
+            console.log("no remote: " + e);
+        }
         // Takes a /-delimited firebase path and calls back with the snapshot.
         var fbGet = function(path, callback) {
             var ref = thatStorage.remote;
