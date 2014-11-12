@@ -913,7 +913,7 @@ function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDon
                 cloneAnim = next;
                 scale *= cloneScale.x;
             }
-            partialSpanMap = newTree.spanMap;
+            partialSpanMap = newSpanMap;
         } else {
             // Changing var to var. change color of all the spans
             // simultaneously.
