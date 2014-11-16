@@ -657,29 +657,6 @@ function exportFacts() {
 
 
 
-window.addEventListener('popstate', function(ev) {
-    console.log("popstate to " + ev.state);
-    if (ev.state) {
-        loadLogFp(ev.state);
-    }
-});
-document.getElementById("rewind").onclick = function() {
-    var parentFp = log.parent;
-    if (parentFp) {
-        loadLogFp(parentFp);
-    }
-    return false;
-};
-document.getElementById("forward").onclick = function() {
-    var childLogFp = storage.local.getItem("childOf/" + log.now);
-    if (childLogFp) {
-        loadLogFp(childLogFp);
-    } else {
-        document.getElementById("forward").style.visibility="hidden";
-    }
-    return false;
-};
-
 
 function firebaseLoginLoaded() {
     console.log("Firebase Login loaded.");
@@ -715,57 +692,6 @@ function resetLoginLink() {
         return false;
     };
 }
-
-
-var logFp = storage.local.getItem(STATE_KEY);
-if (logFp) {
-    loadLogFp(logFp, function() {
-        state.lands.forEach(function(land) {
-            addLandToUi(land);
-            land.thms.forEach(function(thmFp) {
-                storage.fpLoad("fact", thmFp, function(thmObj) {
-                    addToShooter(thmObj, land);
-                });
-            });
-        });
-        if (window.location.search.match("CHEAT")) {
-            cheat(1);
-        }
-    });
-} else {
-    state = {
-        lands: [],
-        url:"",
-    };
-    storage.remoteGet("checked/lands", function(lands) {
-        var numLands = 0;
-        for (var n in lands) if (lands.hasOwnProperty(n)) {
-            numLands++;
-            land = JSON.parse(lands[n].land);
-            landMap[land.name] = {land:land};
-            if (land.depends && land.depends.length > 0) {
-                landDepMap[land.depends[0]] = land; // TODO: multidep
-            } else {
-                landDepMap[undefined] = land;
-                if (!state) {
-                    state = {
-                        lands:[],
-                        url: "",
-                    }
-                }
-                if (state.lands.length == 0) {
-                    enterLand(land);
-                    nextGoal();
-                    state.url = "";
-                    save();
-                    redraw();
-                }
-            }
-        }
-        console.log("Got checked lands: " + numLands);
-    });
-}
-
 
 function getPageCoords(node) {
     var x = 0;
@@ -1000,3 +926,78 @@ window.setTimeout(function() {
 
 /*
 */
+
+// ==== STARTUP ====
+
+window.addEventListener('popstate', function(ev) {
+    console.log("popstate to " + ev.state);
+    if (ev.state) {
+        loadLogFp(ev.state);
+    }
+});
+document.getElementById("rewind").onclick = function() {
+    var parentFp = log.parent;
+    if (parentFp) {
+        loadLogFp(parentFp);
+    }
+    return false;
+};
+document.getElementById("forward").onclick = function() {
+    var childLogFp = storage.local.getItem("childOf/" + log.now);
+    if (childLogFp) {
+        loadLogFp(childLogFp);
+    } else {
+        document.getElementById("forward").style.visibility="hidden";
+    }
+    return false;
+};
+
+var logFp = storage.local.getItem(STATE_KEY);
+if (logFp) {
+    loadLogFp(logFp, function() {
+        state.lands.forEach(function(land) {
+            addLandToUi(land);
+            land.thms.forEach(function(thmFp) {
+                storage.fpLoad("fact", thmFp, function(thmObj) {
+                    addToShooter(thmObj, land);
+                });
+            });
+        });
+        if (window.location.search.match("CHEAT")) {
+            cheat(1);
+        }
+    });
+} else {
+    state = {
+        lands: [],
+        url:"",
+    };
+}
+
+storage.remoteGet("checked/lands", function(lands) {
+    var numLands = 0;
+    for (var n in lands) if (lands.hasOwnProperty(n)) {
+        numLands++;
+        land = JSON.parse(lands[n].land);
+        landMap[land.name] = {land:land};
+        if (land.depends && land.depends.length > 0) {
+            landDepMap[land.depends[0]] = land; // TODO: multidep
+        } else {
+            landDepMap[undefined] = land;
+            if (!state) {
+                state = {
+                    lands:[],
+                    url: "",
+                }
+            }
+            if (state.lands.length == 0) {
+                enterLand(land);
+                nextGoal();
+                state.url = "";
+                save();
+                redraw();
+            }
+        }
+    }
+    console.log("Got checked lands: " + numLands);
+});
