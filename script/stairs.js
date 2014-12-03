@@ -498,11 +498,12 @@ function nextGoal() {
             return nextGoal();
         } else {
             message("No more lands! You win! Now go write a land.");
+            return;
         }
     }
     state.work = startWork(goal);
     save();
-    return goal;
+    return;
 }
 
 function onNextRedraw(f) {
@@ -588,6 +589,7 @@ function enterLand(landData) {
 }
 
 function addLandToUi(land) {
+    console.log("XXX adding land to ui: " + land.name);
     if (landMap[land.name] && landMap[land.name].pane) {
         console.log("Warning: Skipping already-added land " + land.name);
         return;
@@ -926,7 +928,29 @@ window.setTimeout(function() {
 
 /*
 */
-
+function loadLands(lands) { // TODO: this has become totally gefucked
+    var numLands = 0;
+    for (var n in lands) if (lands.hasOwnProperty(n)) {
+        numLands++;
+        land = JSON.parse(lands[n].land);
+        if (!landMap[land.name]) {
+            landMap[land.name] = {land:land};
+        }
+        if (land.depends && land.depends.length > 0) {
+            landDepMap[land.depends[0]] = land; // TODO: multidep
+        } else {
+            landDepMap[undefined] = land;
+            if (state.lands.length == 0) {
+                enterLand(land);
+                nextGoal();
+                state.url = "";
+                save();
+                redraw();
+            }
+        }
+    }
+    console.log("Got checked lands: " + numLands);
+}
 // ==== STARTUP ====
 
 window.addEventListener('popstate', function(ev) {
@@ -963,6 +987,7 @@ if (logFp) {
                 });
             });
         });
+        loadLands(JSON.parse(storage.local.getItem("my-checked-lands")));
         var match = window.location.search.match(/CHEAT=(\d+)/);
         if (match) {
             cheat(match[1]);
@@ -974,30 +999,7 @@ if (logFp) {
         url:"",
     };
     storage.remoteGet("checked/lands", function(lands) {
-        var numLands = 0;
-        for (var n in lands) if (lands.hasOwnProperty(n)) {
-            numLands++;
-            land = JSON.parse(lands[n].land);
-            landMap[land.name] = {land:land};
-            if (land.depends && land.depends.length > 0) {
-                landDepMap[land.depends[0]] = land; // TODO: multidep
-            } else {
-                landDepMap[undefined] = land;
-                if (!state) {
-                    state = {
-                        lands:[],
-                        url: "",
-                    }
-                }
-                if (state.lands.length == 0) {
-                    enterLand(land);
-                    nextGoal();
-                    state.url = "";
-                    save();
-                    redraw();
-                }
-            }
-        }
-        console.log("Got checked lands: " + numLands);
+        storage.local.setItem("my-checked-lands", JSON.stringify(lands));
+        loadLands(lands);
     });
 }
