@@ -963,8 +963,9 @@ if (logFp) {
                 });
             });
         });
-        if (window.location.search.match("CHEAT")) {
-            cheat(1);
+        var match = window.location.search.match(/CHEAT=(\d+)/);
+        if (match) {
+            cheat(match[1]);
         }
     });
 } else {
