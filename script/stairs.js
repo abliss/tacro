@@ -639,21 +639,21 @@ function exportFacts() {
     console.log("==== EXPORT BEGIN ====");
     state.lands.forEach(function(land) {
         land.thms.forEach(function(thmFp) {
-            var factData = storage.fpLoad("fact",thmFp);
-            if (factData.length < 4000) {
-                console.log("addFact(" + factData + ")");
-            } else {
-                console.log("addFact(" + factData.substring(0,4000));
-                while (factData.length > 0) {
-                    factData = factData.substring(4000);
-                    console.log("        " + factData.substring(0, 4000));
+            storage.fpLoad("fact",thmFp, function(fact) {
+                var factData = JSON.stringify(fact);
+                if (factData.length < 4000) {
+                    console.log("addFact(" + factData + ")");
+                } else {
+                    console.log("addFact(" + factData.substring(0,4000));
+                    while (factData.length > 0) {
+                        factData = factData.substring(4000);
+                        console.log("        " + factData.substring(0, 4000));
+                    }
+                    console.log("      )");
                 }
-                console.log("      )");
-            }
+            });
         });
     });
-   
-    console.log("==== EXPORT END ====");
 }
 
 
