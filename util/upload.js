@@ -5,6 +5,7 @@ var Facts = require('../data/factlog.js').facts;
 var Fact = require('../script/fact.js');
 var Storage = require('../script/storage.js');
 var Fs = require('fs');
+var He = require('he');
 
 var rootRef = new Storage().remote;
 var checkedRef = rootRef.child('checked');
@@ -58,6 +59,12 @@ Facts.forEach(function(factData) {
     }
 });
 */
+
+// Decodes HTML named character references to unicode characters,
+// so that they can be put directly into SVG.
+function normalizeTerm(term) {
+    term.Skin.TermNames = term.Skin.TermNames.map(He.decode);
+}
 // Combine all lands into one object. JSONify the axioms and goals for fast
 // parsing and efficient firebase storage.
 var lands = {};
@@ -65,6 +72,8 @@ Fs.readdirSync("../data").forEach(function(fn) {
     if (fn.match(/^land_/)) {
         var landData = Fs.readFileSync("../data/" + fn,"utf8");
         var land = eval(landData);
+        (land.axioms||[]).forEach(normalizeTerm);
+        (land.goals||[]).forEach(normalizeTerm);
         var path = encodeURIComponent(land.name).replace(/\./g,"%2E");
         if (!path) {
             throw new Error("Bad land " + fn + ": " + landData + "\n=>\n" +
