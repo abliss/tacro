@@ -195,6 +195,8 @@ span.turnstile  {
 }
 
 /* SVG nodes */
+@nodeSize: 20px;  /* XXX sync with treeMaker.js */
+@radius: @nodeSize * (3/8);
 .treeLink {
   fill: none;
   stroke: #ccc;
@@ -209,11 +211,31 @@ span.turnstile  {
 .treeLeaf text {
     fill: white;
 }
-.treeLeaf.treeText0 circle { fill: #9370db; }
-.treeLeaf.treeText1 circle { fill: #70db93; }
-.treeLeaf.treeText2 circle { fill: #f13e44; }
-.treeLeaf.treeText3 circle { fill: #cc4a14; }
-.treeLeaf.treeText4 circle { fill: #99583d; }
-.treeLeaf.treeText5 circle { fill: #3d983d; }
-.treeLeaf.treeText6 circle { fill: #3d9898; }
-.treeLeaf.treeText7 circle { fill: #3d3d98; }
+
+#shooter .treeLeaf {
+    font-size: 0;
+}
+#shooter .treeLeaf.treeText0 circle { fill: #9370db; }
+#shooter .treeLeaf.treeText1 circle { fill: #70db93; }
+#shooter .treeLeaf.treeText2 circle { fill: #f13e44; }
+#shooter .treeLeaf.treeText3 circle { fill: #cc4a14; }
+#shooter .treeLeaf.treeText4 circle { fill: #99583d; }
+#shooter .treeLeaf.treeText5 circle { fill: #3d983d; }
+#shooter .treeLeaf.treeText6 circle { fill: #3d9898; }
+#shooter .treeLeaf.treeText7 circle { fill: #3d3d98; }
+
+#well .treeLeaf {
+    font-size: @radius / 0.707
+}
+/* http://www.colourlovers.com/palette/34448/2_Kool_for_Skool */
+#well .treeLeaf.treeText0 circle { fill: #020304; }
+#well .treeLeaf.treeText1 circle { fill: #541f14; }
+#well .treeLeaf.treeText2 circle { fill: #938172; }
+#well .treeLeaf.treeText3 circle { fill: #cc9e61; }
+#well .treeLeaf.treeText4 circle { fill: #626266; }
+/* http://www.colourlovers.com/palette/86324/Clint */
+#well .treeLeaf.treeText5 circle { fill: #fff4bc; }
+#well .treeLeaf.treeText6 circle { fill: #c4704b; }
+#well .treeLeaf.treeText7 circle { fill: #702426; }
+#well .treeLeaf.treeText8 circle { fill: #4c2923; }
+#well .treeLeaf.treeText9 circle { fill: #bb9c88; }

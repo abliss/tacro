@@ -8,15 +8,17 @@
      * @param treeSize dimenions of whole tree. Exclusive of nodeSize
      * @return a DOM element containing the tree
      */
-    var tm = function(fact, exp, nodeSize, treeSize) {
-        var d3tree = d3.layout.tree();
-        var radius;
-        if (nodeSize) {
-            d3tree.nodeSize([nodeSize, nodeSize]);
-            radius = nodeSize * (3/8); //XXX
-        } else {
-            d3tree.size(treeSize);
-        }
+    var tm = function(opts) {
+        var fact = opts.fact
+        ,exp = opts.exp
+        ,nodeSize = 20 // XXX Sync with stairs.less
+        ,radius = nodeSize * (3/8) //XXX
+        ,d3tree = d3.layout.tree()
+        ,nodes = null
+        ,links = null
+        ,svg = null
+        
+        d3tree.nodeSize([nodeSize, nodeSize]);
         // Turning a term into a graph structure for d3: since our leaves are
         // numbers and numbers cannot have properties, we must objectify them.
         function objectify(n) {
@@ -26,29 +28,27 @@
             // Must return null, not an empty array, for leaves.
             return (!Array.isArray(x) || x.length == 1) ? null : x.slice(1).map(objectify);
         });
-        var nodes = d3tree.nodes(exp);
-        var minX = 0, minY = 0, maxX = 0, maxY = 0;
-        nodes.forEach(function(n) {
-            minX = Math.min(minX, n.x);
-            minY = Math.min(minY, n.y);
-            maxX = Math.max(maxX, n.x);
-            maxY = Math.max(maxY, n.y);
-        });
-        minX -= radius + 1;
-        minY -= radius + 1;
-        maxX += radius + 1;
-        maxY += radius + 1;
-        var svgWidth  = (maxX - minX);
-        var svgHeight = (maxY - minY);
-        var links = d3tree.links(nodes);
-        var el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        var svg = d3.select(el);
-        svg.attr("viewBox", [minX, minY, svgWidth, svgHeight].join(' '));
+        nodes = d3tree.nodes(exp);
+        links = d3tree.links(nodes);
+        svg = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "svg"));
 
-        if (treeSize) {
-            svg.attr("width", treeSize[0])
-                .attr("height", treeSize[1]);
-        }
+        !function() {
+            var minX = 0, minY = 0, maxX = 0, maxY = 0;
+            nodes.forEach(function(n) {
+                minX = Math.min(minX, n.x);
+                minY = Math.min(minY, n.y);
+                maxX = Math.max(maxX, n.x);
+                maxY = Math.max(maxY, n.y);
+            });
+            minX -= radius + 1;
+            minY -= radius + 1;
+            maxX += radius + 1;
+            maxY += radius + 1;
+            var svgWidth  = (maxX - minX);
+            var svgHeight = (maxY - minY);
+            svg.attr("viewBox", [minX, minY, svgWidth, svgHeight].join(' '));
+        }();
+
         function getText(d) {
             var symbols = ['!','@','#','$','%','&','*','?'];
             return d.children ? fact.Skin.TermNames[d[0]] : symbols[d];
@@ -80,7 +80,6 @@
         .text(getText)
             .attr("text-anchor", "middle")
             .attr("transform", "translate(0 " + radius/3.1 + ")")
-            .attr("font-size", radius / 0.707)
         return svg[0][0];
     };
     

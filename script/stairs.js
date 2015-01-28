@@ -248,7 +248,10 @@ function makeThmBox(fact, exp, cb) {
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var spanMap = {};
-    var tree = TreeMaker(fact, exp, 20);
+    var tree = TreeMaker({
+        fact: fact,
+        exp: exp
+    });
     termBox.appendChild(tree);
     termBox.spanMap = spanMap;
     spanMap[[]] = tree.span;
