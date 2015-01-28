@@ -1,6 +1,5 @@
 var Fact = require('./fact.js'); //XXX
 //var Crypto = require('crypto');
-
 // This engine assists in authoring proofs by working backwards from a target
 // goal. The exported methods operate on a "workspace", i.e. a Fact whose
 // statement is the target, and whose only hypothesis represents "what we must
