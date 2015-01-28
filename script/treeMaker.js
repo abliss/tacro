@@ -62,19 +62,21 @@
         var gEnter = svg.selectAll("nodes")
             .data(nodes)
             .enter()
-            .append("svg:g");
-        gEnter.append("svg:circle")
-            .attr("cx", getter("x"))
-            .attr("cy", getter("y"))
-            .attr("r", radius + "px")
+            .append("svg:g")
             .attr("class", function(d) {
                 return "treeNode " +
                     (d.children?("treeKids"+d.children.length):"treeLeaf") +
                     " treeText" + getText(d);});
+
+        gEnter.append("svg:circle")
+            .attr("cx", getter("x"))
+            .attr("cy", getter("y"))
+            .attr("r", radius + "px")
         gEnter.append("svg:text")
             .attr("x", getter("x"))
             .attr("y", getter("y"))
-            .text(getText)
+            //.text(function(d) {return d.children?getText(d):""})
+        .text(getText)
             .attr("text-anchor", "middle")
             .attr("transform", "translate(0 " + radius/3.1 + ")")
             .attr("font-size", radius / 0.707)
