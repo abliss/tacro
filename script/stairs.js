@@ -269,12 +269,6 @@ function makeThmBox(fact, exp, cb) {
 }
 
 
-function size(thmBox, ems) {
-    thmBox.style.width = ems + "em";
-    thmBox.style.height = ems + "em";
-    //XXX thmBox.tree.span.style["font-size"] = "" + (50 * ems / thmBox.tree.width) + "%";
-}
-
 function cssEscape(str) {
     // TODO: collisions
     return encodeURIComponent(str).replace(/%/g,"_");
@@ -353,7 +347,6 @@ function addToShooter(factData, land) {
         };
         box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
         box.className += " shooter";
-        size(box, 2 * SIZE_MULTIPLIER);
         landMap[land.name].pane.appendChild(box);
         var turnstile = document.createElement("span");
         turnstile.className = "turnstile";
@@ -404,8 +397,6 @@ function addToShooter(factData, land) {
         };
         var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0],factOnclickMaker);
         var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
-        size(hyp0box, 2 * SIZE_MULTIPLIER);
-        size(stmtbox, 2 * SIZE_MULTIPLIER);
         landMap[land.name].pane.appendChild(hyp0box);
         hyp0box.appendChild(stmtbox);
         hyp0box.onclick = function(ev) {
@@ -526,7 +517,6 @@ function redraw() {
         var box = makeThmBox(state.work,
                              state.work.Core[Fact.CORE_HYPS][0],
                              workOnclickMaker);
-        //XXX size(box, box.tree.width * SIZE_MULTIPLIER);
         well.removeChild(well.firstChild);
         well.appendChild(box);
         workBox = box;
