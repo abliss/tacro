@@ -13,7 +13,7 @@
         var radius;
         if (nodeSize) {
             d3tree.nodeSize([nodeSize, nodeSize]);
-            radius = nodeSize / 4;
+            radius = nodeSize * (3/8); //XXX
         } else {
             d3tree.size(treeSize);
         }
@@ -34,14 +34,16 @@
             maxX = Math.max(maxX, n.x);
             maxY = Math.max(maxY, n.y);
         });
-        minX -= radius;
-        minY -= radius;
-        maxX += radius;
-        maxY += radius;
+        minX -= radius + 1;
+        minY -= radius + 1;
+        maxX += radius + 1;
+        maxY += radius + 1;
+        var svgWidth  = (maxX - minX);
+        var svgHeight = (maxY - minY);
         var links = d3tree.links(nodes);
         var el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         var svg = d3.select(el);
-        svg.attr("viewBox", [minX, minY, (maxX - minX), (maxY - minY)].join(' '));
+        svg.attr("viewBox", [minX, minY, svgWidth, svgHeight].join(' '));
 
         if (treeSize) {
             svg.attr("width", treeSize[0])
@@ -74,7 +76,8 @@
             .attr("y", getter("y"))
             .text(getText)
             .attr("text-anchor", "middle")
-
+            .attr("transform", "translate(0 " + radius/3.1 + ")")
+            .attr("font-size", radius / 0.707)
         return svg[0][0];
     };
     
