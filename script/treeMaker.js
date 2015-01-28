@@ -50,7 +50,8 @@
                 .attr("height", treeSize[1]);
         }
         function getText(d) {
-            return d.children ? fact.Skin.TermNames[d[0]] : d;
+            var symbols = ['!','@','#','$','%','&','*','?'];
+            return d.children ? fact.Skin.TermNames[d[0]] : symbols[d];
         }
         function getter(prop) { return function(d) {return d[prop]; };}
 
@@ -66,7 +67,7 @@
             .attr("class", function(d) {
                 return "treeNode " +
                     (d.children?("treeKids"+d.children.length):"treeLeaf") +
-                    " treeText" + getText(d);});
+                    " treeText" + d;});
 
         gEnter.append("svg:circle")
             .attr("cx", getter("x"))
