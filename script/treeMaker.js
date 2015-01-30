@@ -96,10 +96,15 @@
             .datum(function(g) { return this.node; })
             .attr("class", getter("className"))
             .on("click", function(d) {
-                if (opts.callback) {
-                    // TODO: fix this
-                    var f = opts.callback(d.path);
-                    if (f) f(d3.event);
+                if (opts.onclick) {
+                    try {
+                        opts.onclick(d3.event, d.path);
+                    } catch (err) {
+                        console.log("Error on click");
+                        console.error(err);
+                        console.log(err.stack);
+                        throw err;
+                    }
                 }
             })
         leafGroups.append("svg:circle")
