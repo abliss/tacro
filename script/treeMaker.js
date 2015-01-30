@@ -21,14 +21,24 @@
         d3tree.nodeSize([nodeSize, nodeSize]);
         // Turning a term into a graph structure for d3: since our leaves are
         // numbers and numbers cannot have properties, we must objectify them.
-        function objectify(n) {
-            return ("number" == typeof n) ? new Number(n) : n;
-        }
+        var graph = (function makeGraph() {
+            var path = [];
+            function recurse(e, i) {
+                path.push(i);
+                var n = ("number" == typeof e) ? new Number(e) : e.map(recurse);
+                n.path = path.slice();
+                path.pop();
+                return n;
+            }
+            return recurse(exp);
+        })();
+        
+        
         d3tree.children(function children(x) {
             // Must return null, not an empty array, for leaves.
-            return (!Array.isArray(x) || x.length == 1) ? null : x.slice(1).map(objectify);
+            return (!Array.isArray(x) || x.length == 1) ? null : x.slice(1);
         });
-        nodes = d3tree.nodes(exp);
+        nodes = d3tree.nodes(graph);
         links = d3tree.links(nodes);
         svg = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "svg"));
 
@@ -55,6 +65,7 @@
         }
         function getter(prop) { return function(d) {return d[prop]; };}
 
+           
         svg.selectAll("paths")
             .data(links)
             .enter().append("svg:path")
@@ -66,13 +77,21 @@
             .append("svg:g")
             .attr("class", function(d) {
                 return "treeNode " +
-                    (d.children?("treeKids"+d.children.length):"treeLeaf") +
+                    (Array.isArray(d) ? ("treeKids" + d.length) : "treeLeaf") +
                     " treeText" + d;});
 
         gEnter.append("svg:circle")
             .attr("cx", getter("x"))
             .attr("cy", getter("y"))
             .attr("r", radius + "px")
+            .on("click", function(d) {
+                if (opts.callback) {
+                    console.log("Clicked: " + JSON.stringify(d));
+                    var f = opts.callback(d.path);
+                    if (f) return f();
+                }
+                return false;
+            });
         gEnter.append("svg:text")
             .attr("x", getter("x"))
             .attr("y", getter("y"))
