@@ -94,15 +94,13 @@ function newVarNamer() {
 function makeThmBox(fact, exp, cb) {
     var termBox = document.createElement("span");
     termBox.className += " termbox";
-    var spanMap = {};
     var tree = TreeMaker({
         fact: fact,
         exp: exp,
         callback: cb
     });
     termBox.appendChild(tree);
-    termBox.spanMap = spanMap;
-    spanMap[[]] = tree.span;
+    termBox.spanMap = tree.spanMap;
     termBox.tree = tree;
     /*
     var nullCb = function(){};
