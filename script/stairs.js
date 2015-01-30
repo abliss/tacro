@@ -91,13 +91,13 @@ function newVarNamer() {
 }
 
 
-function makeThmBox(fact, exp, cb) {
+function makeThmBox(fact, exp, onclick) {
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var tree = TreeMaker({
         fact: fact,
         exp: exp,
-        callback: cb
+        onclick: onclick
     });
     termBox.appendChild(tree);
     termBox.spanMap = tree.spanMap;
@@ -167,34 +167,32 @@ function addToShooter(factData, land) {
     switch (fact.Core[Fact.CORE_HYPS].length) {
     case 0:
         var box;
-        var factOnclickMaker = function(path) {
+        var factOnclick = function(ev, path) {
             if (path.length != 1) {
-                return null;
+                return;
             }
             var factPath = path.slice();
-            return function(ev) {
-                console.log("ApplyFact " + fact.Skin.Name);
-                    doAnimate(fact, box, factPath,
-                              state.work, workBox, state.workPath, function() {
-                try {
-                                  var newWork = Engine.applyFact(
-                                      state.work, state.workPath,
-                                      fact, factPath);
-                                  message("");
-                                  state.url = "";
-                                  setWorkPath();
-                                  setWork(newWork);
-                                  redraw();
-                } catch (e) {
-                    console.log("Error in applyFact: " + e);
-                    console.log(e.stack);
-                    message(e);
-                }
-                              });
-                ev.stopPropagation();
-            };
+            console.log("ApplyFact " + fact.Skin.Name);
+            doAnimate(fact, box, factPath,
+                      state.work, workBox, state.workPath, function() {
+                          try {
+                              var newWork = Engine.applyFact(
+                                  state.work, state.workPath,
+                                  fact, factPath);
+                              message("");
+                              state.url = "";
+                              setWorkPath();
+                              setWork(newWork);
+                              redraw();
+                          } catch (e) {
+                              console.log("Error in applyFact: " + e);
+                              console.log(e.stack);
+                              message(e);
+                          }
+                      });
+            ev.stopPropagation();
         };
-        box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
+        box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclick);
         box.className += " shooter";
         landMap[land.name].pane.appendChild(box);
         var turnstile = document.createElement("span");
@@ -241,11 +239,8 @@ function addToShooter(factData, land) {
     case 1:
         // Adding generify to the shooter
         var box;
-        var factOnclickMaker = function(path) {
-            return null;
-        };
-        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0],factOnclickMaker);
-        var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclickMaker);
+        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0], null);
+        var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], null);
         landMap[land.name].pane.appendChild(hyp0box);
         hyp0box.appendChild(stmtbox);
         hyp0box.onclick = function(ev) {
@@ -270,20 +265,18 @@ function addToShooter(factData, land) {
 }
 
 
-function workOnclickMaker(path) {
+function workOnclick(ev, path) {
     var goalPath = path.slice();
     if (goalPath[goalPath.length-1] == 0) {
         goalPath.pop();
     }
-    return function(e) {
-        setWorkPath(goalPath);
-        // Highlight usable tools.
-        // TODO: move this somewhere else
-        state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
-        save();
-        redrawSelection();
-        e.stopPropagation();
-    }
+    setWorkPath(goalPath);
+    // Highlight usable tools.
+    // TODO: move this somewhere else
+    state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
+    save();
+    redrawSelection();
+    ev.stopPropagation();
 }
 
 function startWork(fact) {
@@ -365,7 +358,7 @@ function redraw() {
     try {
         var box = makeThmBox(state.work,
                              state.work.Core[Fact.CORE_HYPS][0],
-                             workOnclickMaker);
+                             workOnclick);
         well.removeChild(well.firstChild);
         well.appendChild(box);
         workBox = box;
