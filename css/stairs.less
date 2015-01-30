@@ -197,13 +197,13 @@ span.turnstile  {
 /* SVG nodes */
 @nodeSize: 20px;  /* XXX sync with treeMaker.js */
 @radius: @nodeSize * (3/8);
-.treeLink {
+.linkGroup {
   fill: none;
   stroke: #ccc;
   stroke-width: 3px;
 }
 
-.treeNode circle {
+.nodeGroup circle {
   fill: white;
   stroke: black;
   stroke-width: .1%;
@@ -224,7 +224,7 @@ span.turnstile  {
 #shooter .treeLeaf.treeText6 circle { fill: #3d9898; }
 #shooter .treeLeaf.treeText7 circle { fill: #3d3d98; }
 
-#well .treeLeaf {
+#well .nodeGroup {
     font-size: @radius / 0.707
 }
 /* http://www.colourlovers.com/palette/34448/2_Kool_for_Skool */

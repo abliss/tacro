@@ -16,33 +16,58 @@
         ,d3tree = d3.layout.tree()
         ,nodes = null
         ,links = null
-        ,svg = null
-        
+        ,svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+        ,linkGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
+        ,nodeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
+        ,symbols = ['!','@','#','$','%','&','*','?'];
+
+        svg.appendChild(linkGroup);
+        svg.appendChild(nodeGroup);
+        linkGroup.setAttribute("class", "linkGroup");
+        nodeGroup.setAttribute("class", "nodeGroup");
+        svg.spanMap = {};
+
         d3tree.nodeSize([nodeSize, nodeSize]);
-        // Turning a term into a graph structure for d3: since our leaves are
-        // numbers and numbers cannot have properties, we must objectify them.
+        // Turning a term into a graph structure for d3. Also contsructing
+        // nested svg groups to mirror the graph structure.
         var graph = (function makeGraph() {
             var path = [];
+            var groups = [nodeGroup];
             function recurse(e, i) {
-                path.push(i);
-                var n = ("number" == typeof e) ? new Number(e) : e.map(recurse);
-                n.path = path.slice(1);
+                var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                groups[groups.length-1].appendChild(g);
+                path.push(i + 1);
+                groups.push(g);
+                var n = {
+                    path: path.slice(1),
+                    argNum: i,
+                    className: "argNum" + i
+                };
+                if ("number" == typeof e) {
+                    n.d = e;
+                    n.text = symbols[e];
+                    n.className += " treeLeaf treeText" + e;
+                } else {
+                    n.d = e[0];
+                    n.children = e.slice(1).map(recurse);
+                    //n.path.push(0);
+                    n.text = fact.Skin.TermNames[e[0]];
+                    n.className += " treeKids" + (e.length - 1);
+                }
+                svg.spanMap[n.path] = g;
+                g.node = n;
+                groups.pop();
                 path.pop();
                 return n;
             }
             return recurse(exp);
         })();
-        
-        
-        d3tree.children(function children(x) {
-            // Must return null, not an empty array, for leaves.
-            return (!Array.isArray(x) || x.length == 1) ? null : x.slice(1);
-        });
+
         nodes = d3tree.nodes(graph);
         links = d3tree.links(nodes);
-        svg = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "svg"));
 
-        !function() {
+        // Calculate and set viewbox
+        (function() {
             var minX = 0, minY = 0, maxX = 0, maxY = 0;
             nodes.forEach(function(n) {
                 minX = Math.min(minX, n.x);
@@ -54,60 +79,41 @@
             minY -= radius + 1;
             maxX += radius + 1;
             maxY += radius + 1;
-            var svgWidth  = (maxX - minX);
-            var svgHeight = (maxY - minY);
-            svg.attr("viewBox", [minX, minY, svgWidth, svgHeight].join(' '));
-        }();
+            var w  = (maxX - minX);
+            var h = (maxY - minY);
+            svg.setAttribute("viewBox", [minX, minY, w, h].join(' '));
+        })();
 
-        function getText(d) {
-            var symbols = ['!','@','#','$','%','&','*','?'];
-            return d.length ? fact.Skin.TermNames[d[0]] : symbols[d];
-        }
-        function getter(prop) { return function(d) {return d[prop]; };}
+        function getter(prop) { return function(d) { return d[prop]; };}
 
-
-        var spanMap = {};
-
-        svg.selectAll("paths")
+        d3.select(linkGroup)
+            .selectAll("paths")
             .data(links)
             .enter().append("svg:path")
             .attr("d", d3.svg.diagonal())
-            .attr("class", "treeLink");
-        var gEnter = svg.selectAll("nodes")
-            .data(nodes)
-            .enter()
-            .append("svg:g")
-            .attr("class", function(d) {
-                return "treeNode "+ 
-                    ((d.length >= 0) ?
-                     ("treeKids" + d.length) :
-                     ("treeLeaf treeText" + d));})
+
+        var leafGroups = d3.select(nodeGroup).selectAll("g")
+            .datum(function(g) { return this.node; })
+            .attr("class", getter("className"))
             .on("click", function(d) {
                 if (opts.callback) {
-                    console.log("Clicked: " + JSON.stringify(d));
-                    console.log("At: " + JSON.stringify(d.path));
+                    // TODO: fix this
                     var f = opts.callback(d.path);
                     if (f) f(d3.event);
                 }
             })
-            .each(function(d) {
-                spanMap[d.path] = this;
-            })
-        gEnter.append("svg:circle")
+        leafGroups.append("svg:circle")
             .attr("cx", getter("x"))
             .attr("cy", getter("y"))
             .attr("r", radius + "px")
-        gEnter.append("svg:text")
+        leafGroups.append("svg:text")
             .attr("x", getter("x"))
             .attr("y", getter("y"))
-            //.text(function(d) {return d.children?getText(d):""})
-        .text(getText)
+            .text(getter("text"))
             .attr("text-anchor", "middle")
             .attr("transform", "translate(0 " + radius/3.1 + ")")
-        var tree = svg[0][0];
-        tree.spanMap = spanMap;
-        
-        return tree;
+
+        return svg;
     };
     
 
