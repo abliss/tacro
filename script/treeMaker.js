@@ -26,7 +26,7 @@
             function recurse(e, i) {
                 path.push(i);
                 var n = ("number" == typeof e) ? new Number(e) : e.map(recurse);
-                n.path = path.slice();
+                n.path = path.slice(1);
                 path.pop();
                 return n;
             }
@@ -61,11 +61,13 @@
 
         function getText(d) {
             var symbols = ['!','@','#','$','%','&','*','?'];
-            return d.children ? fact.Skin.TermNames[d[0]] : symbols[d];
+            return d.length ? fact.Skin.TermNames[d[0]] : symbols[d];
         }
         function getter(prop) { return function(d) {return d[prop]; };}
 
-           
+
+        var spanMap = {};
+
         svg.selectAll("paths")
             .data(links)
             .enter().append("svg:path")
@@ -76,22 +78,25 @@
             .enter()
             .append("svg:g")
             .attr("class", function(d) {
-                return "treeNode " +
-                    (Array.isArray(d) ? ("treeKids" + d.length) : "treeLeaf") +
-                    " treeText" + d;});
-
+                return "treeNode "+ 
+                    ((d.length >= 0) ?
+                     ("treeKids" + d.length) :
+                     ("treeLeaf treeText" + d));})
+            .on("click", function(d) {
+                if (opts.callback) {
+                    console.log("Clicked: " + JSON.stringify(d));
+                    console.log("At: " + JSON.stringify(d.path));
+                    var f = opts.callback(d.path);
+                    if (f) f(d3.event);
+                }
+            })
+            .each(function(d) {
+                spanMap[d.path] = this;
+            })
         gEnter.append("svg:circle")
             .attr("cx", getter("x"))
             .attr("cy", getter("y"))
             .attr("r", radius + "px")
-            .on("click", function(d) {
-                if (opts.callback) {
-                    console.log("Clicked: " + JSON.stringify(d));
-                    var f = opts.callback(d.path);
-                    if (f) return f();
-                }
-                return false;
-            });
         gEnter.append("svg:text")
             .attr("x", getter("x"))
             .attr("y", getter("y"))
@@ -99,7 +104,10 @@
         .text(getText)
             .attr("text-anchor", "middle")
             .attr("transform", "translate(0 " + radius/3.1 + ")")
-        return svg[0][0];
+        var tree = svg[0][0];
+        tree.spanMap = spanMap;
+        
+        return tree;
     };
     
 
