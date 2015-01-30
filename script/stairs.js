@@ -97,7 +97,8 @@ function makeThmBox(fact, exp, cb) {
     var spanMap = {};
     var tree = TreeMaker({
         fact: fact,
-        exp: exp
+        exp: exp,
+        callback: cb
     });
     termBox.appendChild(tree);
     termBox.spanMap = spanMap;
