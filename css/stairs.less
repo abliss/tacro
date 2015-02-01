@@ -181,9 +181,6 @@ body, html {
 #login {
     float:right;
 }
-.selected {
-    border: 5px solid black;
-}
 
 span.turnstile  {
     border: 2px solid black;
@@ -216,6 +213,12 @@ span.turnstile  {
   stroke: black;
   stroke-width: .1%;
 }
+
+#well .selected circle {
+    stroke: blue;
+    stroke-width: @radius/10;
+}
+
 .treeLeaf text {
     fill: white;
 }

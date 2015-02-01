@@ -70,11 +70,6 @@ if (typeof document == 'undefined') {
 if (window.location.search.match("CLEAR")) {
     localStorage.clear();
 }
-function removeClass(node, className) {
-    while (node.className.match(className)) {
-        node.className = node.className.replace(className,'');
-    }
-}
 
 function newVarNamer() {
     var names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
@@ -131,11 +126,11 @@ function registerNewTool(toolOp) {
     for (var arg = 1; arg <= 2; arg++) {
         var rule = ".tool" + cssEscape(toolOp) + "_" + arg +
             " .shooter .depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
-            " { border: 2px solid black; cursor:pointer;}";
-
+            " circle { stroke: blue; stroke-width: 1; cursor:pointer;}";
+        console.log("Added Rule: " + rule);
         styleSheet.insertRule(rule, 0);
     }
-
+    
 }
 
 function setWorkPath(wp) {
@@ -341,14 +336,14 @@ function onNextRedraw(f) {
 }
 function redrawSelection() {
     if (selectedNode) {
-        selectedNode.className += "NOT";
+        d3.select(selectedNode).classed("selected", false);
     }
     if (typeof state.workPath !== 'undefined') {
         selectedNode = workBox.spanMap[state.workPath];
         if (!selectedNode) {
             throw new Error("Selected node not found:" + state.workPath);
         }
-        selectedNode.className += " selected";
+        d3.select(selectedNode).classed("selected", true);
     }
 }
 function redraw() {

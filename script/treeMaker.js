@@ -33,6 +33,8 @@
         var graph = (function makeGraph() {
             var path = [];
             var groups = [nodeGroup];
+            var numArgs;
+            var tool;
             function recurse(e, i) {
                 var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 groups[groups.length-1].appendChild(g);
@@ -41,7 +43,9 @@
                 var n = {
                     path: path.slice(1),
                     argNum: i,
-                    className: "argNum" + i
+                    className: "depth" + (path.length - 1) +
+                        " input" + (i+1) + "of" + numArgs +
+                        " tool" + tool
                 };
                 if ("number" == typeof e) {
                     n.d = e;
@@ -49,9 +53,12 @@
                     n.className += " treeLeaf treeText" + e;
                 } else {
                     n.d = e[0];
+                    numArgs = e.length - 1;
+                    n.text = fact.Skin.TermNames[e[0]];
+                    tool = cssEscape(n.text);
                     n.children = e.slice(1).map(recurse);
                     //n.path.push(0);
-                    n.text = fact.Skin.TermNames[e[0]];
+
                     n.className += " treeKids" + (e.length - 1);
                 }
                 svg.spanMap[n.path] = g;
