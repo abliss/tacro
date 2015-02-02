@@ -1,4 +1,14 @@
 !function(d3) {
+    var nodeSize = 20 // XXX Sync with stairs.less
+    ,radius = nodeSize * (3/8) //XXX
+
+    function makeSpan(txt) {
+        if (txt === undefined) throw new Error("undef");
+        var s = document.createElement("span");
+        s.innerHTML = txt;
+        return s;
+    }
+    
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -11,124 +21,112 @@
     var tm = function(opts) {
         var fact = opts.fact
         ,exp = opts.exp
-        ,nodeSize = 20 // XXX Sync with stairs.less
-        ,radius = nodeSize * (3/8) //XXX
         ,d3tree = d3.layout.tree()
         ,nodes = null
         ,links = null
-        ,svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-        ,linkGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
-        ,nodeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g")
+        ,root = document.createElement("div")
+        ,linkGroup = document.createElement("div")
+        ,nodeGroup = document.createElement("div")
         ,symbols = ['!','@','#','$','%','&','*','?'];
 
-        svg.appendChild(linkGroup);
-        svg.appendChild(nodeGroup);
+        root.setAttribute("class", "root");
+        root.appendChild(linkGroup);
+        root.appendChild(nodeGroup);
         linkGroup.setAttribute("class", "linkGroup");
         nodeGroup.setAttribute("class", "nodeGroup");
-        svg.spanMap = {};
+        root.spanMap = {};
 
         d3tree.nodeSize([nodeSize, nodeSize]);
-        // Turning a term into a graph structure for d3. Also contsructing
-        // nested svg groups to mirror the graph structure.
+        // Turning a term into a graph structure for d3. Also constructing
+        // nested divs to mirror the graph structure.
         var graph = (function makeGraph() {
-            var path = [];
-            var groups = [nodeGroup];
-            var numArgs;
-            var tool;
-            function recurse(e, i) {
-                var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                groups[groups.length-1].appendChild(g);
-                path.push(i + 1);
-                groups.push(g);
+            var ancestors = [{div: nodeGroup, path:[]}];
+            var numArgs = null;
+            var tool = null;
+            function recurse(exp, i) {
+                var parent = ancestors[ancestors.length-1];
                 var n = {
-                    path: path.slice(1),
-                    argNum: i,
-                    className: "depth" + (path.length - 1) +
-                        " input" + (i+1) + "of" + numArgs +
-                        " tool" + tool
+                    exp: exp,
+                    path: parent.path.slice(),
+                    div: document.createElement("div")
                 };
-                if ("number" == typeof e) {
-                    n.d = e;
-                    n.text = symbols[e];
-                    n.className += " treeLeaf treeText" + e;
-                } else {
-                    n.d = e[0];
-                    numArgs = e.length - 1;
-                    n.text = fact.Skin.TermNames[e[0]];
-                    tool = cssEscape(n.text);
-                    n.children = e.slice(1).map(recurse);
-                    //n.path.push(0);
-
-                    n.className += " treeKids" + (e.length - 1);
+                if (i !== undefined) {
+                    n.path.push(i);
                 }
-                svg.spanMap[n.path] = g;
-                g.node = n;
-                groups.pop();
-                path.pop();
+                parent.div.appendChild(n.div);
+                root.spanMap[n.path] = n.div;
+                n.div.className = "depth" + (n.path.length - 1) +
+                    " input" + (i+1) + "of" + numArgs +
+                    " tool" + tool
+                if (Array.isArray(exp)) {
+                    var termName = fact.Skin.TermNames[exp[0]];
+                    tool = cssEscape(termName);
+                    n.span = makeSpan(termName);
+                    n.div.appendChild(n.span);
+                    n.div.className += " treeKids" + (exp.length - 1);
+                    numArgs = exp.length - 1;
+                    ancestors.push(n);
+                    n.children = exp.slice(1).map(recurse);
+                    ancestors.pop();
+                } else {
+                    n.span = makeSpan(symbols[exp]);
+                    n.div.appendChild(n.span);
+
+                    n.div.className += " treeLeaf treeText" + exp;
+                }
                 return n;
             }
             return recurse(exp);
         })();
 
-        nodes = d3tree.nodes(graph);
-        links = d3tree.links(nodes);
+        
+        links = d3tree.links(d3tree.nodes(graph));
 
-        // Calculate and set viewbox
-        (function() {
-            var minX = 0, minY = 0, maxX = 0, maxY = 0;
-            nodes.forEach(function(n) {
-                minX = Math.min(minX, n.x);
-                minY = Math.min(minY, n.y);
-                maxX = Math.max(maxX, n.x);
-                maxY = Math.max(maxY, n.y);
-            });
-            minX -= radius + 1;
-            minY -= radius + 1;
-            maxX += radius + 1;
-            maxY += radius + 1;
-            var w  = (maxX - minX);
-            var h = (maxY - minY);
-            svg.setAttribute("viewBox", [minX, minY, w, h].join(' '));
-        })();
-
-        function getter(prop) { return function(d) { return d[prop]; };}
-
-        d3.select(linkGroup)
-            .selectAll("paths")
-            .data(links)
-            .enter().append("svg:path")
-            .attr("d", d3.svg.diagonal())
-
-        var leafGroups = d3.select(nodeGroup).selectAll("g")
-            .datum(function(g) { return this.node; })
-            .attr("class", getter("className"))
-            .on("click", function(d) {
-                if (opts.onclick) {
-                    try {
-                        opts.onclick(d3.event, d.path);
-                    } catch (err) {
-                        console.log("Error on click");
-                        console.error(err);
-                        console.log(err.stack);
-                        throw err;
-                    }
-                }
-            })
-        leafGroups.append("svg:circle")
-            .attr("cx", getter("x"))
-            .attr("cy", getter("y"))
-            .attr("r", radius + "px")
-        leafGroups.append("svg:text")
-            .attr("x", getter("x"))
-            .attr("y", getter("y"))
-            .text(getter("text"))
-            .attr("text-anchor", "middle")
-            .attr("transform", "translate(0 " + radius/3.1 + ")")
-
-        return svg;
+        // Walk tree, positioning and sizing container divs. Grows sets
+        // node.divRect, and grows parentRect to contain it.
+        function layoutDivs(parentRect, node) {
+            var myRect = {top: node.y - nodeSize / 2,
+                          left: node.x - nodeSize / 2,
+                          right:node.x + nodeSize / 2,
+                          bottom:node.y + nodeSize / 2};
+            if (node.children) {
+                myRect = node.children.reduce(layoutDivs, myRect);
+                node.divRect = myRect;
+            } else {
+                node.divRect = myRect;
+            }
+            parentRect.top = Math.min(parentRect.top, myRect.top);
+            parentRect.left = Math.min(parentRect.left, myRect.left);
+            parentRect.right = Math.max(parentRect.right, myRect.right);
+            parentRect.bottom = Math.max(parentRect.bottom, myRect.bottom);
+            return parentRect;
+        }
+        var rect = {left:Infinity, right:-Infinity, bottom:-Infinity, top: Infinity};
+        layoutDivs(rect, graph, 0);
+        nodeGroup.style.width = (rect.right - rect.left) + "px";
+        nodeGroup.style.height = (rect.bottom - rect.top) + "px";
+        nodeGroup.style.left=0;
+        nodeGroup.style.top=0;
+        var origins = [rect]
+        function positionDivs(node) {
+            node.div.style.width = (node.divRect.right - node.divRect.left) + "px";
+            node.div.style.height = (node.divRect.bottom - node.divRect.top) + "px";
+            var origin = origins[origins.length-1];
+            node.div.style.left = (node.divRect.left - origin.left) + "px";
+            node.div.style.top = (node.divRect.top - origin.top) + "px";
+            node.span.style.left = (node.x - radius - node.divRect.left) + "px";
+            node.span.style.top = (node.y - radius - node.divRect.top) + "px";
+            if (node.children) {
+                origins.push(node.divRect);
+                node.children.map(positionDivs);
+                origins.pop();
+            }
+        }
+        positionDivs(graph);
+        return root;
     };
     
 
     if (typeof define === "function" && define.amd) define(tm); else if (typeof module === "object" && module.exports) module.exports = tm;
-  this.tm = tm;
+    this.tm = tm;
 }(d3);
