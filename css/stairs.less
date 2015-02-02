@@ -1,90 +1,9 @@
 /* *-*- css -*-* */
-.bindingright>.txt { color:white; }
-.varA { background: #9370db; }
-.varB { background: #70db93; }
-.varC { background: #f13e44; }
-.varD { background: #cc4a14; }
-.varE { background: #99583d; }
-.varF { background: #3d983d; }
-.varG { background: #3d9898; }
-/*
-.varA.bindingright { background: #7f00ff; }
-.varB.bindingright { background: #426f42; }
-.varC.bindingright { background: #7d0000; }
-*/
-.termbox {
-    display:inline-block;
-}
-.termbox span, .termbox a {
-    display:inline-block;
-    vertical-align:top;
-    padding:0px;
-    margin:0px;
-    overflow:visible;
-}
-.operator>.txt {
-/*    -webkit-transform: rotate(45deg);*/
-    position:relative;
-    padding:0 0;
-	top: 50%;
-	margin:0;
-	margin-top:-.5em;
-	height:1em;
-	text-align:center;
-}
-.operator.arity2>.txt {
-}
-.operator.arity1 {
-}
-.operator.arity1>.txt {
-}
 
-.termbox, .termbox .variable, .termbox .operator, .termbox .term {
-    position:relative;
-	text-align:center;
-}
-
-.term { border: 1px solid red; } /*XXX*/
-
-.term a {
-    border-left: 1px solid gray;
-    border-bottom: 1px solid black;
-}
-
-.termbox span, .termbox a{
-    box-sizing:border-box;
-    -webkit-box-sizing:border-box;
-}
-
-.input1of1 {float:right;}
-.input2of2 {float:right;}
-    /* TODO: gradients don't transition.  need to do some opacity trick that leaves
-    the text visible but fades the background.
-    background: -webkit-gradient(linear, 100% 0%, 0% 100%, from(#505050), to(#808080));
-    */
-/* TODO: do this with arithmetic or nested-opacity, not hardconding the depths*/
-
-.operator.arity2 {
-    background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#808080), to(#505050));
-}
-.operator.arity1 {
-    background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#b0b0b0), to(#808080));
-}
-
-
-.termbox .variable .txt {
-    opacity:0;
-}
-
-.termbox a {
-    color: black;
-}
 body {
     margin:0px;
     width:100%;
 }
-
-
 @shooterHeight: 14em;
 #rewind, #forward {
     font-size:200%;
@@ -122,59 +41,19 @@ body, html {
     position:absolute;
     z-index: 2;
 }
-.animClone {
-    z-index: 3;
-}
 #shooterTape {
     text-align:center;
     background: -webkit-gradient(linear, 100% 0%, 0% 100%, from(#70dbdb), to(#000000));
     display:inline-block;
 }
-#well .termbox {
-    width:85%;
-    height:100%;
-}
-#well .termbox svg {
-    max-height:85%;
-}
-
-#shooter .termbox {
-    background-color:white;
-    margin:.1em;
-    padding:.5em;
-    border:2px solid black;
-    border-radius:1em;
-    width: 10em;
-}
-#shooter .termbox svg {
-    max-height: 10em;
-}
 #shooterTabs .tab {
     width:3.5em;
     height:3.5em;
 }
-
 #shooterTabs .tab.groundable {
     background: rosybrown;
 }
 
-/*
-.term {
-    -webkit-transition: all 1s ease;
-}
-*/
-.termbox .termbox {
-    /* we stick one inside another for 1-hyp inferences, i.e. ax-gen*/
-    position:absolute;
-    left:0;
-}
-
-.freemap {
-    border:1px solid black;
-}
-.freemap span {
-    font-size:20%;
-}
 #toolbox {
     width:100%;
 }
@@ -199,15 +78,71 @@ span.turnstile  {
     cursor: pointer;
 }
 
-/* SVG nodes */
-@nodeSize: 20px;  /* XXX sync with treeMaker.js */
-@radius: @nodeSize * (3/8);
-.linkGroup {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 3px;
+
+#well .termbox {
+    width:85%;
+    height:100%;
+}
+#well .termbox>div {
+    max-height:85%;
 }
 
+#shooter .termbox {
+    background-color:white;
+    margin:.1em;
+    padding:.5em;
+    border:2px solid black;
+    border-radius:1em;
+    width: 10em;
+}
+#shooter .termbox>div {
+    max-height: 10em;
+}
+
+.termbox .termbox {
+    /* we stick one inside another for 1-hyp inferences, i.e. ax-gen*/
+    position:absolute;
+    left:0;
+}
+
+.freemap {
+    border:1px solid black;
+}
+.freemap span {
+    font-size:20%;
+}
+
+/* termbox nodes */
+@nodeSize: 20px;  /* XXX sync with treeMaker.js */
+@radius: @nodeSize * (3/8);
+.termbox {
+    display:inline-block;
+}
+.termbox span {
+    border: 1px solid red;
+}
+.termbox div {
+ background: rgba(0,1,0,0.1);
+}
+.termbox div, .termbox span {
+    display:inline-block;
+    vertical-align:top;
+    padding:0px;
+    margin:0px;
+	text-align:center;
+    box-sizing:border-box;
+    -webkit-box-sizing:border-box;
+    position: absolute;
+}
+.termbox > div, .termbox > div > div {
+    position:relative;
+}
+
+.termbox span {
+    width: @radius * 2;
+    height: @radius * 2;
+    border-radius: @radius * 2;
+}
 .nodeGroup circle {
   fill: white;
   stroke: black;
