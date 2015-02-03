@@ -55,11 +55,17 @@
                     height: 1
                 };
                 if (i !== undefined) {
-                    n.path.push(i);
+                    n.path.push(i + 1);
                 }
                 parent.div.appendChild(n.div);
                 root.spanMap[n.path] = n.div;
-                n.div.className = "depth" + (n.path.length - 1) +
+                if (opts.onclick) {
+                    n.div.addEventListener("click", function(ev) {
+                        opts.onclick(ev, n.path);
+                    });
+                }
+                    
+                n.div.className = "depth" + (n.path.length) +
                     " input" + (i+1) + "of" + numArgs +
                     " tool" + tool
                 if (Array.isArray(exp)) {
