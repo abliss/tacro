@@ -4,7 +4,7 @@ body {
     margin:0px;
     width:100%;
 }
-@shooterHeight: 14em;
+@shooterWidth: 20vw;
 #rewind, #forward {
     font-size:200%;
 }
@@ -22,7 +22,7 @@ body, html {
     box-sizing:border-box;
     width:100%;
     height:100%;
-    padding-left:@shooterHeight;
+    padding-left:@shooterWidth;
     /*background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#404040), to(#202020)); */
     text-align:center;
     z-index: 1;
@@ -33,7 +33,7 @@ body, html {
     background:white;
 }
 #shooter {
-    width: @shooterHeight;
+    width: @shooterWidth;
     margin:0px;
     height:100%;
     overflow-y:scroll;
@@ -47,8 +47,8 @@ body, html {
     display:inline-block;
 }
 #shooterTabs .tab {
-    width:3.5em;
-    height:3.5em;
+    width:25%;
+    height:2em;
 }
 #shooterTabs .tab.groundable {
     background: rosybrown;
@@ -70,8 +70,8 @@ span.turnstile  {
     height: 3em;
     background: rosybrown;
     position: absolute;
-    left: 100%;
-    top: 50%;
+    left: 85%; /* TODO: XXX */
+    top: 5%;
     margin-top: -1.5em;
     margin-left: -1.5em;
     display: none;
@@ -89,14 +89,12 @@ span.turnstile  {
 
 #shooter .termbox {
     background-color:white;
-    margin:.1em;
-    padding:.5em;
+    margin:@shooterWidth * .005;
+    padding:@shooterWidth * .005;
     border:2px solid black;
     border-radius:1em;
-    width: 10em;
-}
-#shooter .termbox>div {
-    max-height: 10em;
+    width: @shooterWidth * .8;
+    position:relative;
 }
 
 .termbox .termbox {
@@ -113,7 +111,7 @@ span.turnstile  {
 }
 
 /* termbox nodes */
-@nodeSize: 20px;  /* XXX sync with treeMaker.js */
+@nodeSize: 3vw;  /* XXX sync with treeMaker.js */
 @radius: @nodeSize * (3/8);
 .termbox {
     display:inline-block;
@@ -121,14 +119,14 @@ span.turnstile  {
 .termbox span {
     border: 1px solid red;
 }
-.termbox div {
- background: rgba(0,1,0,0.1);
+.termbox div:hover {
+ background: rgba(0,1,0,0.2);
 }
 .termbox div, .termbox span {
     display:inline-block;
     vertical-align:top;
-    padding:0px;
-    margin:0px;
+    padding:0;
+    margin:0;
 	text-align:center;
     box-sizing:border-box;
     -webkit-box-sizing:border-box;
@@ -138,11 +136,6 @@ span.turnstile  {
     position:relative;
 }
 
-.termbox span {
-    width: @radius * 2;
-    height: @radius * 2;
-    border-radius: @radius * 2;
-}
 .nodeGroup circle {
   fill: white;
   stroke: black;
@@ -158,9 +151,6 @@ span.turnstile  {
     fill: white;
 }
 
-#shooter .treeLeaf {
-    font-size: 0;
-}
 #shooter .treeLeaf.treeText0 circle { fill: #9370db; }
 #shooter .treeLeaf.treeText1 circle { fill: #70db93; }
 #shooter .treeLeaf.treeText2 circle { fill: #f13e44; }
