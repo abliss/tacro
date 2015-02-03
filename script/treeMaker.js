@@ -92,7 +92,7 @@
         })();
 
         
-        links = d3tree.links(d3tree.nodes(graph));
+        d3tree.nodes(graph);
 
         // Walk tree, positioning and sizing container divs. Grows sets
         // node.divRect, and grows parentRect to contain it.
@@ -121,12 +121,11 @@
         var largerDim = (rect.width > rect.height) ? "width" : "height";
         var scale = opts[largerDim] / rect[largerDim];
         nodeGroup.style["font-size"] = 0.5 * nodeSize * scale + UNIT;
-        nodeGroup.style.width = scale * rect.width + UNIT;
-        nodeGroup.style.height = scale * rect.height + UNIT;
-        nodeGroup.style.left=0;
-        nodeGroup.style.top=0;
+        nodeGroup.style.width = linkGroup.style.width = scale * rect.width + UNIT;
+        nodeGroup.style.height = linkGroup.style.height = scale * rect.height + UNIT;
+        nodeGroup.style.left = nodeGroup.style.top = 0;
         var origins = [rect]
-        function positionDivs(node) {
+        function positionDivs(node, index) {
             node.div.style.width = scale * (node.divRect.right - node.divRect.left) + UNIT;
             node.div.style.height = scale * (node.divRect.bottom - node.divRect.top) + UNIT;
             node.div.style["z-index"] = graph.height - node.height; // TODO:imperfect
@@ -144,6 +143,21 @@
                 origins.push(node.divRect);
                 node.children.map(positionDivs);
                 origins.pop();
+            }
+            if (node.parent) {
+                // LINKS
+                var link = document.createElement("div");
+                linkGroup.appendChild(link);
+                link.className = "link";
+                link.style.left = scale * (node.parent.x - rect.left) + UNIT;
+                link.style.top = scale * (node.parent.y - rect.top) + UNIT;
+                link.style.height = scale * (node.y - node.parent.y) + UNIT;
+                // Matrix: should keep 0,0 constant, and move (0,y) to (n.x-p.x,y).
+                var matrix = [1, 0,
+                    (node.x - node.parent.x) / (node.y - node.parent.y), 1,
+                    0, 0];
+                link.style.transform = 'matrix(' + matrix.join(',') + ')';
+                
             }
         }
         positionDivs(graph);
