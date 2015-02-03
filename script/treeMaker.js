@@ -1,7 +1,7 @@
 !function(d3) {
-    var nodeSize = 20 // XXX Sync with stairs.less
+    var nodeSize = 3 // XXX Sync with stairs.less
     ,radius = nodeSize * (3/8) //XXX
-
+    ,UNIT = "vw"
     function makeSpan(txt) {
         if (txt === undefined) throw new Error("undef");
         var s = document.createElement("span");
@@ -37,6 +37,9 @@
         root.spanMap = {};
 
         d3tree.nodeSize([nodeSize, nodeSize]);
+        d3tree.separation(function(a,b) {
+            return a.parent == b.parent ? 1 : 1.5;
+        });
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
         var graph = (function makeGraph() {
@@ -48,7 +51,8 @@
                 var n = {
                     exp: exp,
                     path: parent.path.slice(),
-                    div: document.createElement("div")
+                    div: document.createElement("div"),
+                    height: 1
                 };
                 if (i !== undefined) {
                     n.path.push(i);
@@ -67,11 +71,13 @@
                     numArgs = exp.length - 1;
                     ancestors.push(n);
                     n.children = exp.slice(1).map(recurse);
+                    n.children.map(function(c) {
+                        n.height = Math.max(n.height, c.height + 1);
+                    });
                     ancestors.pop();
                 } else {
                     n.span = makeSpan(symbols[exp]);
                     n.div.appendChild(n.span);
-
                     n.div.className += " treeLeaf treeText" + exp;
                 }
                 return n;
@@ -84,13 +90,13 @@
 
         // Walk tree, positioning and sizing container divs. Grows sets
         // node.divRect, and grows parentRect to contain it.
-        function layoutDivs(parentRect, node) {
+        function measureDivs(parentRect, node) {
             var myRect = {top: node.y - nodeSize / 2,
                           left: node.x - nodeSize / 2,
                           right:node.x + nodeSize / 2,
                           bottom:node.y + nodeSize / 2};
             if (node.children) {
-                myRect = node.children.reduce(layoutDivs, myRect);
+                myRect = node.children.reduce(measureDivs, myRect);
                 node.divRect = myRect;
             } else {
                 node.divRect = myRect;
@@ -102,20 +108,32 @@
             return parentRect;
         }
         var rect = {left:Infinity, right:-Infinity, bottom:-Infinity, top: Infinity};
-        layoutDivs(rect, graph, 0);
-        nodeGroup.style.width = (rect.right - rect.left) + "px";
-        nodeGroup.style.height = (rect.bottom - rect.top) + "px";
+        measureDivs(rect, graph, 0);
+        rect.width = (rect.right - rect.left);
+        rect.height = (rect.bottom - rect.top);
+        // make fit within bounds. TODO: this is not exactly right
+        var largerDim = (rect.width > rect.height) ? "width" : "height";
+        var scale = opts[largerDim] / rect[largerDim];
+        nodeGroup.style["font-size"] = 0.5 * nodeSize * scale + UNIT;
+        nodeGroup.style.width = scale * rect.width + UNIT;
+        nodeGroup.style.height = scale * rect.height + UNIT;
         nodeGroup.style.left=0;
         nodeGroup.style.top=0;
         var origins = [rect]
         function positionDivs(node) {
-            node.div.style.width = (node.divRect.right - node.divRect.left) + "px";
-            node.div.style.height = (node.divRect.bottom - node.divRect.top) + "px";
+            node.div.style.width = scale * (node.divRect.right - node.divRect.left) + UNIT;
+            node.div.style.height = scale * (node.divRect.bottom - node.divRect.top) + UNIT;
+            node.div.style["z-index"] = graph.height - node.height; // TODO:imperfect
             var origin = origins[origins.length-1];
-            node.div.style.left = (node.divRect.left - origin.left) + "px";
-            node.div.style.top = (node.divRect.top - origin.top) + "px";
-            node.span.style.left = (node.x - radius - node.divRect.left) + "px";
-            node.span.style.top = (node.y - radius - node.divRect.top) + "px";
+            node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
+            node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
+            node.span.style.left = scale * (node.x - radius - node.divRect.left) + UNIT;
+            node.span.style.top = scale * (node.y - radius - node.divRect.top) + UNIT;
+            node.span.style.width =
+                node.span.style.height =
+                node.span.style['border-radius'] =
+                scale * radius * 2 + UNIT;
+
             if (node.children) {
                 origins.push(node.divRect);
                 node.children.map(positionDivs);
