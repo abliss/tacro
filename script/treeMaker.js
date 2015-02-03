@@ -43,9 +43,7 @@
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
         var graph = (function makeGraph() {
-            var ancestors = [{div: nodeGroup, path:[]}];
-            var numArgs = null;
-            var tool = null;
+            var ancestors = [{div: nodeGroup, path:[], tool: null, numArgs: null}];
             function recurse(exp, i) {
                 var parent = ancestors[ancestors.length-1];
                 var n = {
@@ -66,15 +64,15 @@
                 }
                     
                 n.div.className = "depth" + (n.path.length) +
-                    " input" + (i+1) + "of" + numArgs +
-                    " tool" + tool
+                    " input" + (i+1) + "of" + parent.numArgs +
+                    " tool" + parent.tool
                 if (Array.isArray(exp)) {
                     var termName = fact.Skin.TermNames[exp[0]];
-                    tool = cssEscape(termName);
+                    n.tool = cssEscape(termName);
                     n.span = makeSpan(termName);
                     n.div.appendChild(n.span);
                     n.div.className += " treeKids" + (exp.length - 1);
-                    numArgs = exp.length - 1;
+                    n.numArgs = exp.length - 1;
                     ancestors.push(n);
                     n.children = exp.slice(1).map(recurse);
                     n.children.map(function(c) {
