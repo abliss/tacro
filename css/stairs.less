@@ -31,6 +31,7 @@ body, html {
 #shooterTabs {
     display:inline-block;
     background:white;
+    width:100%;
 }
 #shooter {
     width: @shooterWidth;
@@ -48,7 +49,7 @@ body, html {
 }
 #shooterTabs .tab {
     width:25%;
-    height:2em;
+    height:4em;
 }
 #shooterTabs .tab.groundable {
     background: rosybrown;
@@ -61,8 +62,10 @@ body, html {
     float:right;
 }
 
-span.turnstile  {
+.termbox span.turnstile  {
     border: 2px solid black;
+    margin-right: -2px;
+    margin-top:-2px;
     border-radius: 1em;
     padding: 1em;
     box-sizing: border-box;
@@ -70,10 +73,8 @@ span.turnstile  {
     height: 3em;
     background: rosybrown;
     position: absolute;
-    left: 85%; /* TODO: XXX */
-    top: 5%;
-    margin-top: -1.5em;
-    margin-left: -1.5em;
+    right: 0;
+    top: 0;
     display: none;
     cursor: pointer;
 }
@@ -142,36 +143,34 @@ span.turnstile  {
   stroke-width: .1%;
 }
 
-#well .selected circle {
-    stroke: blue;
-    stroke-width: @radius/10;
+#well .selected  {
+    border: 1px solid blue;
 }
 
-.treeLeaf text {
-    fill: white;
+.treeLeaf {
+    color: white;
 }
-
-#shooter .treeLeaf.treeText0 circle { fill: #9370db; }
-#shooter .treeLeaf.treeText1 circle { fill: #70db93; }
-#shooter .treeLeaf.treeText2 circle { fill: #f13e44; }
-#shooter .treeLeaf.treeText3 circle { fill: #cc4a14; }
-#shooter .treeLeaf.treeText4 circle { fill: #99583d; }
-#shooter .treeLeaf.treeText5 circle { fill: #3d983d; }
-#shooter .treeLeaf.treeText6 circle { fill: #3d9898; }
-#shooter .treeLeaf.treeText7 circle { fill: #3d3d98; }
+#shooter .treeLeaf.treeText0 span { background-color: #9370db; }
+#shooter .treeLeaf.treeText1 span { background-color: #70db93; }
+#shooter .treeLeaf.treeText2 span { background-color: #f13e44; }
+#shooter .treeLeaf.treeText3 span { background-color: #cc4a14; }
+#shooter .treeLeaf.treeText4 span { background-color: #99583d; }
+#shooter .treeLeaf.treeText5 span { background-color: #3d983d; }
+#shooter .treeLeaf.treeText6 span { background-color: #3d9898; }
+#shooter .treeLeaf.treeText7 span { background-color: #3d3d98; }
 
 #well .nodeGroup {
     font-size: @radius / 0.707
 }
 /* http://www.colourlovers.com/palette/34448/2_Kool_for_Skool */
-#well .treeLeaf.treeText0 circle { fill: #020304; }
-#well .treeLeaf.treeText1 circle { fill: #541f14; }
-#well .treeLeaf.treeText2 circle { fill: #938172; }
-#well .treeLeaf.treeText3 circle { fill: #cc9e61; }
-#well .treeLeaf.treeText4 circle { fill: #626266; }
+#well .treeLeaf.treeText0 span { background-color: #020304; }
+#well .treeLeaf.treeText1 span { background-color: #541f14; }
+#well .treeLeaf.treeText2 span { background-color: #938172; }
+#well .treeLeaf.treeText3 span { background-color: #cc9e61; }
+#well .treeLeaf.treeText4 span { background-color: #626266; }
 /* http://www.colourlovers.com/palette/86324/Clint */
-#well .treeLeaf.treeText5 circle { fill: #fff4bc; }
-#well .treeLeaf.treeText6 circle { fill: #c4704b; }
-#well .treeLeaf.treeText7 circle { fill: #702426; }
-#well .treeLeaf.treeText8 circle { fill: #4c2923; }
-#well .treeLeaf.treeText9 circle { fill: #bb9c88; }
+#well .treeLeaf.treeText5 span { background-color: #fff4bc; }
+#well .treeLeaf.treeText6 span { background-color: #c4704b; }
+#well .treeLeaf.treeText7 span { background-color: #702426; }
+#well .treeLeaf.treeText8 span { background-color: #4c2923; }
+#well .treeLeaf.treeText9 span { background-color: #bb9c88; }

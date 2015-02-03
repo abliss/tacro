@@ -21,7 +21,7 @@ var landMap = {};
 var landDepMap = {}; // XXX
 var currentPane;
 var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
-var workTreeWidth = 60; // XXXX in VW. sync with stairs.less
+var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 
 Error.stackTraceLimit = Infinity;
 function fbEscape(str) {
@@ -128,8 +128,8 @@ function registerNewTool(toolOp) {
     var styleSheet = styleEl.sheet;
     for (var arg = 1; arg <= 2; arg++) {
         var rule = ".tool" + cssEscape(toolOp) + "_" + arg +
-            " .shooter .depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
-            " circle { stroke: blue; stroke-width: 1; cursor:pointer;}";
+            " .shooter div.depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
+            " { border: 1px solid blue; cursor:pointer;}";
         console.log("Added Rule: " + rule);
         styleSheet.insertRule(rule, 0);
     }
@@ -356,7 +356,7 @@ function redraw() {
     try {
         var box = makeThmBox(state.work,
                              state.work.Core[Fact.CORE_HYPS][0],
-                             workOnclick, workTreeWidth, 100);
+                             workOnclick, workTreeWidth, workTreeWidth);
         well.removeChild(well.firstChild);
         well.appendChild(box);
         workBox = box;
