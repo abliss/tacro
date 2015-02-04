@@ -96,7 +96,8 @@ function makeThmBox(fact, exp, onclick, maxWidth, maxHeight, editable) {
         onclick: onclick,
         width: maxWidth,
         height: maxHeight,
-        editable:editable
+        editable:editable,
+        getSpecifyOptions: function() { return state.specifyOptions; }
     });
     termBox.appendChild(tree);
     termBox.spanMap = tree.spanMap;
@@ -158,6 +159,7 @@ function addToShooter(factData, land) {
     }
     if (!land) land = currentLand();
     var fact = Engine.canonicalize(new Fact(factData));
+    fact.Skin.TermNames.forEach(knowTerm);
     var factFp = storage.fpSave("fact", fact);
     var newTool = Engine.onAddFact(fact);
     if (newTool) {
@@ -290,9 +292,19 @@ function startWork(fact) {
     return Engine.canonicalize(work);
 }
 
+function knowTerm(term) {
+    if (!state.knownTerms.hasOwnProperty(term)) {
+        state.specifyOptions.Terms.push(term);
+        state.knownTerms[term] = state.specifyOptions.Terms.length - 1;
+    }
+}
 function setWork(work) {
     state.work = work;
     state.workHash = Engine.fingerprint(work);
+    // TODO: might we need an extra var here?
+    // TODO: HACK: using ints intead of varnames
+    state.specifyOptions.Vars = work.Skin.VarNames.map(
+        function(x,i){return i;});
     save();
 }
 
@@ -331,8 +343,8 @@ function nextGoal() {
         }
     }
     var goal = land.goals.shift();
-    state.work = startWork(goal);
-    save();
+    goal.Skin.TermNames.forEach(knowTerm);
+    setWork(startWork(goal));
     return;
 }
 
@@ -381,7 +393,7 @@ function redraw() {
 
 function loadState(flat) {
     state = flat;
-    state.work = new Fact(state.work);
+    setWork(new Fact(state.work));
     setWorkPath(state.workPath);
     message("");
 }
@@ -658,6 +670,11 @@ if (logFp) {
     state = {
         lands: [],
         url:"",
+        specifyOptions: {
+            Vars:[],
+            Terms:[]
+        },
+        knownTerms: {}            
     };
     storage.remoteGet("checked/lands", function(lands) {
         storage.local.setItem("my-checked-lands", JSON.stringify(lands));
