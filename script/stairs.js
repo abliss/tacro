@@ -87,7 +87,7 @@ function newVarNamer() {
 }
 
 
-function makeThmBox(fact, exp, onclick, maxWidth, maxHeight) {
+function makeThmBox(fact, exp, onclick, maxWidth, maxHeight, editable) {
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var tree = TreeMaker({
@@ -95,7 +95,8 @@ function makeThmBox(fact, exp, onclick, maxWidth, maxHeight) {
         exp: exp,
         onclick: onclick,
         width: maxWidth,
-        height: maxHeight
+        height: maxHeight,
+        editable:editable
     });
     termBox.appendChild(tree);
     termBox.spanMap = tree.spanMap;
@@ -190,7 +191,7 @@ function addToShooter(factData, land) {
                       });
             ev.stopPropagation();
         };
-        box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclick, shooterTreeWidth, shooterTreeWidth); //XXX sync with stairs.less
+        box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclick, shooterTreeWidth, shooterTreeWidth, true); //XXX sync with stairs.less
         box.className += " shooter";
         landMap[land.name].pane.appendChild(box);
         var turnstile = document.createElement("span");
@@ -237,8 +238,9 @@ function addToShooter(factData, land) {
     case 1:
         // Adding generify to the shooter
         var box;
-        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0], null, shooterTreeWidth, shooterTreeWidth);
-        var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], shooterTreeWidth, shooterTreeWidth);
+        // TODO: this needs to be fixed
+        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0], null, shooterTreeWidth, shooterTreeWidth, true);
+        var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], shooterTreeWidth, shooterTreeWidth, true);
         landMap[land.name].pane.appendChild(hyp0box);
         hyp0box.appendChild(stmtbox);
         hyp0box.onclick = function(ev) {
@@ -356,7 +358,7 @@ function redraw() {
     try {
         var box = makeThmBox(state.work,
                              state.work.Core[Fact.CORE_HYPS][0],
-                             workOnclick, workTreeWidth, workTreeWidth);
+                             workOnclick, workTreeWidth, workTreeWidth, false);
         well.removeChild(well.firstChild);
         well.appendChild(box);
         workBox = box;

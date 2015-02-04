@@ -2,10 +2,50 @@
     var nodeSize = 3 // XXX Sync with stairs.less
     ,radius = nodeSize * (3/8) //XXX
     ,UNIT = "vw"
-    function makeSpan(txt) {
-        if (txt === undefined) throw new Error("undef");
+    ,letters = []
+    ,numbers = []
+
+    for (var i = 0; i < 20; i++) {
+        letters.push("&#" + (i + 0x24D0) + ";");
+        numbers.push("&#" + (i + 0x2460) + ";");
+    }
+    function makeTerm(txt) {
         var s = document.createElement("span");
         s.innerHTML = txt;
+        return s;
+    }
+    function makeVar(txt, editable) {
+        if (txt === undefined) throw new Error("undef");
+        var s = document.createElement("select");
+        if (!editable) s.disabled = "disabled";
+        var o = document.createElement("option");
+        o.innerHTML = (editable ? numbers : letters)[txt];
+        o.className = 'placeholder';
+        o.selected = 'selected';
+        o.disabled = 'disabled';
+        s.appendChild(o);
+        var og = document.createElement("optGroup");
+        s.appendChild(og);
+        og.label = "Vars";
+        og.className = "vars";
+        for (var i = 0; i < 8; i++) {
+            var o = document.createElement("option");
+            o.className = 'var' + i;
+            o.innerHTML = letters[i];
+            og.appendChild(o);
+        }
+        var og = document.createElement("optGroup");
+        s.appendChild(og);
+        og.label = "Term";
+        og.className = "term";
+
+        for (var i = 0; i < 8; i++) {
+            var o = document.createElement("option");
+            o.className = 'term' + i;
+            o.innerHTML = i;
+            og.appendChild(o);
+        }
+
         return s;
     }
     
@@ -26,8 +66,7 @@
         ,links = null
         ,root = document.createElement("div")
         ,linkGroup = document.createElement("div")
-        ,nodeGroup = document.createElement("div")
-        ,symbols = ['!','@','#','$','%','&','*','?'];
+        ,nodeGroup = document.createElement("div");
 
         root.setAttribute("class", "root");
         root.appendChild(linkGroup);
@@ -69,7 +108,7 @@
                 if (Array.isArray(exp)) {
                     var termName = fact.Skin.TermNames[exp[0]];
                     n.tool = cssEscape(termName);
-                    n.span = makeSpan(termName);
+                    n.span = makeTerm(termName);
                     n.div.appendChild(n.span);
                     n.div.className += " treeKids" + (exp.length - 1);
                     n.numArgs = exp.length - 1;
@@ -80,7 +119,7 @@
                     });
                     ancestors.pop();
                 } else {
-                    n.span = makeSpan(symbols[exp]);
+                    n.span = makeVar(exp, opts.editable);
                     n.div.appendChild(n.span);
                     n.div.className += " treeLeaf treeText" + exp;
                 }
@@ -130,17 +169,19 @@
             var origin = origins[origins.length-1];
             node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
             node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
-            node.span.style.left = scale * (node.x - radius - node.divRect.left) + UNIT;
-            node.span.style.top = scale * (node.y - radius - node.divRect.top) + UNIT;
-            node.span.style.width =
-                node.span.style.height =
-                node.span.style['border-radius'] =
-                scale * radius * 2 + UNIT;
-
-            if (node.children) {
-                origins.push(node.divRect);
-                node.children.map(positionDivs);
-                origins.pop();
+            if (Array.isArray(node.exp)) {
+                // term nodes sized and positioned here.
+                // var nodes (leaves) positiend and sized through CSS.
+                node.span.style.left = scale * (node.x - radius - node.divRect.left) + UNIT;
+                node.span.style.top = scale * (node.y - radius - node.divRect.top) + UNIT;
+                node.span.style.width =
+                    node.span.style.height =
+                    scale * radius * 2 + UNIT;
+                if (node.children) {
+                    origins.push(node.divRect);
+                    node.children.map(positionDivs);
+                    origins.pop();
+                }
             }
             if (node.parent) {
                 // LINKS
@@ -162,7 +203,9 @@
         return root;
     };
     
-
+    tm.addTerm = function(termName) {
+    };
+    
     if (typeof define === "function" && define.amd) define(tm); else if (typeof module === "object" && module.exports) module.exports = tm;
     this.tm = tm;
 }(d3);
