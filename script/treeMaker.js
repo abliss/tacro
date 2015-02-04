@@ -2,13 +2,6 @@
     var nodeSize = 3 // XXX Sync with stairs.less
     ,radius = nodeSize * (3/8) //XXX
     ,UNIT = "vw"
-    ,letters = []
-    ,numbers = []
-
-    for (var i = 0; i < 20; i++) {
-        letters.push("&#" + (i + 0x24D0) + ";");
-        numbers.push("&#" + (i + 0x2460) + ";");
-    }
     function makeTerm(txt) {
         var s = document.createElement("span");
         s.innerHTML = txt;
@@ -19,7 +12,7 @@
         var s = document.createElement("select");
         if (!opts.editable) s.disabled = "disabled";
         var ph = s.appendChild(document.createElement("option"));
-        ph.innerHTML = (opts.editable ? numbers : letters)[txt];
+        ph.innerHTML = txt;
         ph.className = 'placeholder';
         ph.selected = 'selected';
         ph.disabled = 'disabled';
@@ -37,8 +30,7 @@
                         var opt = og.appendChild(
                             document.createElement("option"));
                         opt.value = i;
-                         // TODO: HACK: ignoring var names for now.
-                        opt.innerHTML = (typeof o == 'number') ? letters[o] : o;
+                        opt.innerHTML = o;
                     });
                 }
             });
@@ -120,7 +112,7 @@
                     });
                     ancestors.pop();
                 } else {
-                    n.span = makeVar(exp, n.path, opts);
+                    n.span = makeVar(fact.Skin.VarNames[exp], n.path, opts);
                     n.div.appendChild(n.span);
                     n.div.className += " treeLeaf treeText" + exp;
                 }
