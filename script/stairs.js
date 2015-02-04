@@ -159,6 +159,10 @@ function addToShooter(factData, land) {
     }
     if (!land) land = currentLand();
     var fact = Engine.canonicalize(new Fact(factData));
+    fact.Skin.VarNames = fact.Skin.VarNames.map(function(x,i) {
+        return "&#" + (i + 0x2460) + ";";
+    });
+
     fact.Skin.TermNames.forEach(knowTerm);
     var factFp = storage.fpSave("fact", fact);
     var newTool = Engine.onAddFact(fact);
@@ -289,7 +293,11 @@ function startWork(fact) {
         work.setCmd("thm");
     }
     work.setProof(["Hyps.0"]);
-    return Engine.canonicalize(work);
+    work = Engine.canonicalize(work);
+    work.Skin.VarNames = work.Skin.VarNames.map(function(x,i) {
+        return "&#" + (i + 0x24D0) + ";";
+    });
+    return work;
 }
 
 function knowTerm(term) {
@@ -302,9 +310,7 @@ function setWork(work) {
     state.work = work;
     state.workHash = Engine.fingerprint(work);
     // TODO: might we need an extra var here?
-    // TODO: HACK: using ints intead of varnames
-    state.specifyOptions.Vars = work.Skin.VarNames.map(
-        function(x,i){return i;});
+    state.specifyOptions.Vars = work.Skin.VarNames;
     save();
 }
 
