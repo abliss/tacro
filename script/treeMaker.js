@@ -10,31 +10,33 @@
     function makeVar(txt, path, opts) {
         if (txt === undefined) throw new Error("undef");
         var s = document.createElement("select");
-        if (!opts.editable) s.disabled = "disabled";
         var ph = s.appendChild(document.createElement("option"));
         ph.innerHTML = txt;
         ph.className = 'placeholder';
         ph.selected = 'selected';
         ph.disabled = 'disabled';
-        if (opts.editable) {
-            s.addEventListener("click", function(ev) {
-                var options = opts.getSpecifyOptions();
-                while (s.lastChild && s.lastChild != ph) {
-                    s.removeChild(s.lastChild);
-                }
-                for (var k in options) if (options.hasOwnProperty(k)) {
-                    var og = s.appendChild(document.createElement("optGroup"));
-                    og.label = k;
-                    og.className = k;
-                    options[k].forEach(function(o, i) {
-                        var opt = og.appendChild(
-                            document.createElement("option"));
-                        opt.value = i;
-                        opt.innerHTML = o;
-                    });
-                }
-            });
+        if (!opts.editable) {
+            s.disabled = "disabled";
+            return s;
         }
+
+        s.addEventListener("focus", function(ev) {
+            var options = opts.getSpecifyOptions();
+            while (s.lastChild && s.lastChild != ph) {
+                s.removeChild(s.lastChild);
+            }
+            for (var k in options) if (options.hasOwnProperty(k)) {
+                var og = s.appendChild(document.createElement("optGroup"));
+                og.label = k;
+                og.className = k;
+                options[k].forEach(function(o, i) {
+                    var opt = og.appendChild(
+                        document.createElement("option"));
+                    opt.value = i;
+                    opt.innerHTML = o;
+                });
+            }
+        });
         s.addEventListener("change", function(ev) {
             console.log("XXXX Change:" + s.value);
         });
