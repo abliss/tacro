@@ -2,6 +2,10 @@
     var nodeSize = 3 // XXX Sync with stairs.less
     ,radius = nodeSize * (3/8) //XXX
     ,UNIT = "vw"
+    ,optGroupLabels = {
+        'Vars' : 'Train',
+        'Terms' : 'Promote'
+    }
     function makeTerm(txt) {
         var s = document.createElement("span");
         s.innerHTML = txt;
@@ -27,12 +31,13 @@
             }
             for (var k in options) if (options.hasOwnProperty(k)) {
                 var og = s.appendChild(document.createElement("optGroup"));
-                og.label = k;
+                og.label = optGroupLabels.hasOwnProperty(k) ?
+                    optGroupLabels[k] : k;
                 og.className = k;
                 options[k].forEach(function(o, i) {
                     var opt = og.appendChild(
                         document.createElement("option"));
-                    opt.value = i;
+                    opt.value = JSON.stringify([k, i]);
                     opt.innerHTML = o;
                 });
             }
