@@ -62,23 +62,6 @@ body, html {
     float:right;
 }
 
-.termbox span.turnstile  {
-    border: 2px solid black;
-    margin-right: -2px;
-    margin-top:-2px;
-    border-radius: 1em;
-    padding: 1em;
-    box-sizing: border-box;
-    width: 3em;
-    height: 3em;
-    background: rosybrown;
-    position: absolute;
-    right: 0;
-    top: 0;
-    display: none;
-    cursor: pointer;
-}
-
 
 #well .termbox {
     width:85%;
@@ -162,6 +145,41 @@ body, html {
 }
 
 
+.termbox .turnstile, .termbox .apply1, .termbox .apply2 {
+    border: 2px solid black;
+    margin-right: -2px;
+    margin-top:-2px;
+    border-radius: 1em;
+    box-sizing: border-box;
+    position: absolute;
+    cursor: pointer;
+    display: none;
+}
+
+.termbox .turnstile {
+    right: 0;
+    top: 0;
+    width: 3em;
+    height: 3em;
+    padding: 1em;
+    background: rosybrown;
+}
+
+.apply1, .apply2 {
+    background: bisque;
+    top: 0;
+    color:black;
+    cursor: pointer;
+    width: 1.5em;
+    height: 1.5em;
+}
+.apply2 {
+    left: 80%;
+}
+.apply1 {
+    right:80%;
+}
+
 #well .selected  {
     border: 1px solid blue;
 }
@@ -200,3 +218,4 @@ body, html {
 #well .treeLeaf.treeText7 select { background-color: #702426; }
 #well .treeLeaf.treeText8 select { background-color: #4c2923; }
 #well .treeLeaf.treeText9 select { background-color: #bb9c88; }
+

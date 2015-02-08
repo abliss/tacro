@@ -130,8 +130,9 @@ function registerNewTool(toolOp) {
     var styleSheet = styleEl.sheet;
     for (var arg = 1; arg <= 2; arg++) {
         var rule = ".tool" + cssEscape(toolOp) + "_" + arg +
-            " .shooter div.depth1.input" + arg + "of2.tool" + cssEscape(toolOp) +
-            " { border: 1px solid blue; cursor:pointer;}";
+            " .shooter .tool" + cssEscape(toolOp) +
+            " .apply" + arg + " { display:inline-block;}";
+
         console.log("Added Rule: " + rule);
         styleSheet.insertRule(rule, 0);
     }
@@ -197,7 +198,7 @@ function addToShooter(factData, land) {
                       });
             ev.stopPropagation();
         };
-        box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], factOnclick, shooterTreeWidth, shooterTreeWidth, true); //XXX sync with stairs.less
+        box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], null, shooterTreeWidth, shooterTreeWidth, true); //XXX sync with stairs.less
         box.className += " shooter";
         landMap[land.name].pane.appendChild(box);
         var turnstile = document.createElement("span");
@@ -233,6 +234,16 @@ function addToShooter(factData, land) {
         };
     
         box.appendChild(turnstile);
+        // TODO: assumes all tools are binary
+        [1,2].forEach(function(n) {
+            var apply = box.spanMap[[n]].appendChild(
+                document.createElement("span"));
+            apply.className = "apply" + n;
+            apply.innerHTML = "&Rarr;";
+            apply.onclick = function(ev) {
+                factOnclick(ev, [n]);
+            };
+        });
         factToShooterBox[fact.Skin.Name] = {
             fact: fact,
             box: box,
