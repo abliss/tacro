@@ -108,20 +108,19 @@ body, html {
 }
 
 /* Scaling up with width and back down with transform has the effect (at least in chrome and safari) of shrinking the select-triangle.*/
-@selectScale: 4;
 .termbox select {
     display:inline-block;
     border: 0;
-    font-size: 100% * @selectScale;
+    font-size: 100%;
     top:100% * (@nodeSize - (@radius *2)) / (2* @nodeSize);
     left:100% * (@nodeSize - (@radius *2)) / (2* @nodeSize);
     position:absolute;
-    width: 100% * (@radius * 2) / @nodeSize * @selectScale;
-    height: 100% * (@radius * 2) / @nodeSize * @selectScale;
-    transform:scale(1 / @selectScale);
-    transform-origin: 0 0;
-    padding-left:0.2em;
+    width: 100% * (@radius * 2) / @nodeSize;
+    height: 100% * (@radius * 2) / @nodeSize;
+    padding:0.1em;
     color:white;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 }
 .termbox .placeholder {
     display:none;
