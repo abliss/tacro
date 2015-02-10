@@ -100,15 +100,25 @@ body, html {
 .termbox {
     display:inline-block;
 }
-.termbox span, .termbox select {
+.termbox span, .termbox .select {
     border-radius:100%;
 }
 .termbox span {
     border: 1px solid gray;
 }
 
+.termbox .undo {
+    width: 1.5em;
+    height: 1.5em;
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius:1em 0 0 0;
+    display: none;
+}
+
 /* Scaling up with width and back down with transform has the effect (at least in chrome and safari) of shrinking the select-triangle.*/
-.termbox select {
+.termbox .select {
     display:inline-block;
     border: 0;
     font-size: 100%;
@@ -117,7 +127,6 @@ body, html {
     position:absolute;
     width: 100% * (@radius * 2) / @nodeSize;
     height: 100% * (@radius * 2) / @nodeSize;
-    padding:0.1em;
     color:white;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -196,25 +205,25 @@ body, html {
 .termbox .nodeGroup span {
     background-color: white;
 }
-#shooter .treeLeaf.treeText0 select { background-color: #9370db; }
-#shooter .treeLeaf.treeText1 select { background-color: #70db93; }
-#shooter .treeLeaf.treeText2 select { background-color: #f13e44; }
-#shooter .treeLeaf.treeText3 select { background-color: #cc4a14; }
-#shooter .treeLeaf.treeText4 select { background-color: #99583d; }
-#shooter .treeLeaf.treeText5 select { background-color: #3d983d; }
-#shooter .treeLeaf.treeText6 select { background-color: #3d9898; }
-#shooter .treeLeaf.treeText7 select { background-color: #3d3d98; }
+#shooter .treeLeaf.treeText0 .select { background-color: #9370db; }
+#shooter .treeLeaf.treeText1 .select { background-color: #70db93; }
+#shooter .treeLeaf.treeText2 .select { background-color: #f13e44; }
+#shooter .treeLeaf.treeText3 .select { background-color: #cc4a14; }
+#shooter .treeLeaf.treeText4 .select { background-color: #99583d; }
+#shooter .treeLeaf.treeText5 .select { background-color: #3d983d; }
+#shooter .treeLeaf.treeText6 .select { background-color: #3d9898; }
+#shooter .treeLeaf.treeText7 .select { background-color: #3d3d98; }
 
 /* http://www.colourlovers.com/palette/34448/2_Kool_for_Skool */
-#well .treeLeaf.treeText0 select { background-color: #020304; }
-#well .treeLeaf.treeText1 select { background-color: #541f14; }
-#well .treeLeaf.treeText2 select { background-color: #938172; }
-#well .treeLeaf.treeText3 select { background-color: #cc9e61; }
-#well .treeLeaf.treeText4 select { background-color: #626266; }
+#well .treeLeaf.treeText0 .select { background-color: #020304; }
+#well .treeLeaf.treeText1 .select { background-color: #541f14; }
+#well .treeLeaf.treeText2 .select { background-color: #938172; }
+#well .treeLeaf.treeText3 .select { background-color: #cc9e61; }
+#well .treeLeaf.treeText4 .select { background-color: #626266; }
 /* http://www.colourlovers.com/palette/86324/Clint */
-#well .treeLeaf.treeText5 select { background-color: #ddd4bc; }
-#well .treeLeaf.treeText6 select { background-color: #c4704b; }
-#well .treeLeaf.treeText7 select { background-color: #702426; }
-#well .treeLeaf.treeText8 select { background-color: #4c2923; }
-#well .treeLeaf.treeText9 select { background-color: #bb9c88; }
+#well .treeLeaf.treeText5 .select { background-color: #ddd4bc; }
+#well .treeLeaf.treeText6 .select { background-color: #c4704b; }
+#well .treeLeaf.treeText7 .select { background-color: #702426; }
+#well .treeLeaf.treeText8 .select { background-color: #4c2923; }
+#well .treeLeaf.treeText9 .select { background-color: #bb9c88; }
 

@@ -14,6 +14,7 @@
     function makeVar(txt, path, opts) {
         if (txt === undefined) throw new Error("undef");
         var s = document.createElement("select");
+        s.className = "select";
         var ph = s.appendChild(document.createElement("option"));
         ph.innerHTML = txt;
         ph.className = 'placeholder';
@@ -43,7 +44,10 @@
             }
         });
         s.addEventListener("change", function(ev) {
-            console.log("XXXX Change:" + s.value);
+            var value = JSON.parse(s.value);
+            if (value !== null) {
+                opts.onChange(path, value[0], value[1]);
+            }
         });
 
         return s;
@@ -156,7 +160,7 @@
         rect.height = (rect.bottom - rect.top);
         // make fit within bounds. TODO: this is not exactly right
         var largerDim = (rect.width > rect.height) ? "width" : "height";
-        var scale = opts[largerDim] / rect[largerDim];
+        var scale = opts.size / rect[largerDim];
         nodeGroup.style["font-size"] = 0.5 * nodeSize * scale + UNIT;
         nodeGroup.style.width = linkGroup.style.width = scale * rect.width + UNIT;
         nodeGroup.style.height = linkGroup.style.height = scale * rect.height + UNIT;

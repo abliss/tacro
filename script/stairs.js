@@ -86,23 +86,25 @@ function newVarNamer() {
     };
 }
 
-
-function makeThmBox(fact, exp, onclick, maxWidth, maxHeight, editable) {
-    var termBox = document.createElement("span");
-    termBox.className += " termbox";
-    var tree = TreeMaker({
+/* {
         fact: fact,
         exp: exp,
         onclick: onclick,
         width: maxWidth,
         height: maxHeight,
         editable:editable,
-        getSpecifyOptions: function() { return state.specifyOptions; }
-    });
+    }
+*/
+function makeThmBox(opts) {
+    opts.getSpecifyOptions = function() { return state.specifyOptions; }
+    var termBox = document.createElement("span");
+    termBox.className += " termbox";
+    var tree = TreeMaker(opts);
     termBox.appendChild(tree);
     termBox.spanMap = tree.spanMap;
     termBox.tree = tree;
     /*
+      // TODO: XXX: freevars
     var nullCb = function(){};
     fact.Core[Fact.CORE_FREE].forEach(function(fm) {
         var fmSpan = document.createElement("span");
@@ -154,130 +156,122 @@ function setWorkPath(wp) {
     document.body.className = className;
 }
 
-function addToShooter(factData, land) {
-    if (!factData) {
-        throw new Error("Bad fact: "+ factData);
-    }
-    if (!land) land = currentLand();
+// A Facet is a Fact which can be / has been specified by some amount.
+function Facet(factData) {
     var fact = Engine.canonicalize(new Fact(factData));
     fact.Skin.VarNames = fact.Skin.VarNames.map(function(x,i) {
         return "&#" + (i + 0x2460) + ";";
     });
 
-    fact.Skin.TermNames.forEach(knowTerm);
-    var factFp = storage.fpSave("fact", fact);
-    var newTool = Engine.onAddFact(fact);
+    this.fact = fact;
+}
+
+function addToShooter(factData, land) {
+    if (!factData) {
+        throw new Error("Bad fact: "+ factData);
+    }
+    if (!land) land = currentLand();
+    factData.Skin.TermNames.forEach(knowTerm);
+    var facet = new Facet(factData);
+    var fact = facet.fact;
+
+    var factFp = storage.fpSave("fact", facet.fact);
+    var newTool = Engine.onAddFact(facet.fact);
     if (newTool) {
         registerNewTool(newTool);
     }
-    switch (fact.Core[Fact.CORE_HYPS].length) {
-    case 0:
-        var box;
-        var factOnclick = function(ev, path) {
-            if (path.length != 1) {
-                return;
-            }
-            var factPath = path.slice();
-            console.log("ApplyFact " + fact.Skin.Name);
-            doAnimate(fact, box, factPath,
-                      state.work, workBox, state.workPath, function() {
-                          try {
-                              var newWork = Engine.applyFact(
-                                  state.work, state.workPath,
-                                  fact, factPath);
-                              message("");
-                              state.url = "";
-                              setWorkPath();
-                              setWork(newWork);
-                              redraw();
-                          } catch (e) {
-                              console.log("Error in applyFact: " + e);
-                              console.log(e.stack);
-                              message(e);
-                          }
-                      });
-            ev.stopPropagation();
-        };
-        box = makeThmBox(fact, fact.Core[Fact.CORE_STMT], null, shooterTreeWidth, shooterTreeWidth, true); //XXX sync with stairs.less
-        box.className += " shooter";
-        landMap[land.name].pane.appendChild(box);
-        var turnstile = document.createElement("span");
-        turnstile.className = "turnstile";
-        turnstile.innerText = "\u22a2";
-        turnstile.onclick = function(ev) {
-            try {
-                state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
-                var thm = Engine.ground(state.work, fact);
-                var newFactFp = addToShooter(thm);
-                currentLand().thms.push(newFactFp.local);
-                if (storage.user) {
-                    // TODO: numbers goals backwards and doesn't carry over
-                    // anonymously-won points when logging in.
-                    storage.remote.child("users").
-                        child(storage.user.uid).
-                        child("points").
-                        child(fbEscape(currentLand().name)).
-                        child(currentLand().goals.length).
-                        set(newFactFp.remote);
-                }
-
-                message("");
-                setWorkPath();
-                nextGoal();
-                redraw();
-            } catch (e) {
-                console.log("Error in ground: " + e);
-                console.log(e.stack);
-                message(e);
-            }
-            ev.stopPropagation()
-        };
-    
-        box.appendChild(turnstile);
-        // TODO: assumes all tools are binary
-        [1,2].forEach(function(n) {
-            var apply = box.spanMap[[n]].appendChild(
-                document.createElement("span"));
-            apply.className = "apply" + n;
-            apply.innerHTML = "&Rarr;";
-            apply.onclick = function(ev) {
-                factOnclick(ev, [n]);
-            };
-        });
-        factToShooterBox[fact.Skin.Name] = {
-            fact: fact,
-            box: box,
-            land: land.name,
-            turnstile: turnstile
-        };
-        box.id = "shooter-" + fact.Skin.Name;
+    switch (factData.Core[Fact.CORE_HYPS].length) {
+        case 0:
         break;
-    case 1:
-        // Adding generify to the shooter
-        var box;
-        // TODO: this needs to be fixed
-        var hyp0box = makeThmBox(fact, fact.Core[Fact.CORE_HYPS][0], null, shooterTreeWidth, shooterTreeWidth, true);
-        var stmtbox = makeThmBox(fact, fact.Core[Fact.CORE_STMT], shooterTreeWidth, shooterTreeWidth, true);
-        landMap[land.name].pane.appendChild(hyp0box);
-        hyp0box.appendChild(stmtbox);
-        hyp0box.onclick = function(ev) {
-            try {
-                setWork(Engine.applyInference(state.work, fact));
-                message("");
-                setWorkPath();
-                state.url = "";
-            } catch (e) {
-                console.log("Error in applyInference: " + e);
-                console.log(e.stack);
-                message(e);
-            }
-            redraw();
-            ev.stopPropagation()
-        };
-        break;
-    default:
+        case 1:
+        throw new Error("TODO: XXX: Handle ax-gen");
+        default:
         console.log("Skipping inference: " + JSON.stringify(fact.Core));
-    } // TODO: handle axioms with hyps
+        return factFp;
+    }
+    var box = makeThmBox({
+        fact:fact, 
+        exp:fact.Core[Fact.CORE_STMT],
+        size:shooterTreeWidth,
+        editable:true});
+    box.className += " shooter";
+    landMap[land.name].pane.appendChild(box);
+
+    function groundOut() {
+        try {
+            state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
+            var thm = Engine.ground(state.work, fact);
+            var newFactFp = addToShooter(thm);
+            currentLand().thms.push(newFactFp.local);
+            if (storage.user) {
+                // TODO: numbers goals backwards and doesn't carry over
+                // anonymously-won points when logging in.
+                storage.remote.child("users").
+                    child(storage.user.uid).
+                    child("points").
+                    child(fbEscape(currentLand().name)).
+                    child(currentLand().goals.length).
+                    set(newFactFp.remote);
+            }
+
+            message("");
+            setWorkPath();
+            nextGoal();
+            redraw();
+        } catch (e) {
+            console.log("Error in ground: " + e);
+            console.log(e.stack);
+            message(e);
+        }
+    }
+    
+    function applyChild(argNum) {
+        console.log("ApplyFact " + fact.Skin.Name + " arg " + argNum);
+        try {
+            var newWork = Engine.applyFact(state.work, state.workPath,
+                                           fact, [argNum]);
+            message("");
+            state.url = "";
+            setWorkPath();
+            setWork(newWork);
+            redraw();
+        } catch (e) {
+            console.log("Error in applyFact: " + e);
+            console.log(e.stack);
+            message(e);
+        }
+    }
+
+    // Turnstile (ground-out button)
+    var turnstile = box.appendChild(document.createElement("span"));
+    turnstile.className = "turnstile";
+    turnstile.innerText = "\u22a2";
+    turnstile.onclick = groundOut;
+    
+    
+    // Undo button
+    var undo = box.appendChild(document.createElement("button"));
+    undo.className = "undo";
+    undo.innerHTML = "&laquo;";
+
+    // Apply buttons (left and right)
+    // TODO: assumes all tools are (at most) binary
+    [1,2].forEach(function(argNum) {
+        if (!box.spanMap[[argNum]]) return;
+        var apply = box.spanMap[[argNum]].appendChild(
+            document.createElement("span"));
+        apply.className = "apply" + argNum;
+        apply.innerHTML = "&Rarr;";
+        apply.onclick = applyChild.bind(null, argNum);
+    });
+    factToShooterBox[fact.Skin.Name] = {
+        fact: fact,
+        box: box,
+        land: land.name,
+        turnstile: turnstile
+    };
+    box.id = "shooter-" + fact.Skin.Name;
+
     return factFp;
 }
 
@@ -385,9 +379,12 @@ function redraw() {
     deferredUntilRedraw.splice(0, deferredUntilRedraw.length);
     var well = document.getElementById("well");
     try {
-        var box = makeThmBox(state.work,
-                             state.work.Core[Fact.CORE_HYPS][0],
-                             workOnclick, workTreeWidth, workTreeWidth, false);
+        var box = makeThmBox({
+            fact:state.work,
+            exp:state.work.Core[Fact.CORE_HYPS][0],
+            onclick:workOnclick,
+            size:workTreeWidth, 
+            editable:false});
         well.removeChild(well.firstChild);
         well.appendChild(box);
         workBox = box;
@@ -563,61 +560,7 @@ function getPageCoords(node) {
     return [x,y];
 }
 
-// Forwards to reallyDoAnimate, but sets a timeout to make sure onDone always gets
-// called.
-function doAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
-    var complete = false;
-    var timeout;
-    var callback = function() {
-        if (!complete) {
-            complete = true;
-            onDone();
-            if (timeout) {
-                window.clearTimeout(timeout);
-            }
-        }
-    }
-    try {
-        var steps = reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, callback);
-        timeout = window.setTimeout(function() {
-            if (!complete) {
-                console.log("Timeout in reallyDoAnimate! ");
-                onDone();
-            }
-        }, (steps + 1) * Move.defaults.duration);
-    } catch (e) {
-        console.log("Error in reallyDoAnimate: " + e);
-        console.log(e.stack);
-        onDone();
-    }
-}
 
-function reallyDoAnimate(fact, factBox, factPath, work, workBox, workPath, onDone) {
-    onDone();
-}
-
-//XXX
-
-/*
-window.setTimeout(function() {
-
-    setWorkPath([]);
-    redrawSelection();
-    var sbox = factToShooterBox["neHAKB"];
-    state.work = startWork(
-        {Core:[[],[0,[0,[0,0,1],2],[0,1,2]],[]],
-         Skin:{TermNames:["&rarr;"]},
-         FreeMaps:[[]]});
-    state.workPath = [];
-    redraw();
-    doAnimate(sbox.fact, sbox.box, [2],
-              state.work, workBox, state.workPath,
-              function(){message("XXX done");});
-}, 400);
-
-
-/*
-*/
 function loadLands(lands) { // TODO: this has become totally gefucked
     var numLands = 0;
     for (var n in lands) if (lands.hasOwnProperty(n)) {
