@@ -164,6 +164,12 @@ function Facet(factData) {
     });
 
     this.fact = fact;
+    // Find the var at the given path. Replace all instances of it with the
+    // named term or variable. Iff name is a term, its arity must be
+    // specified. The new term will get that many new children variables.
+    this.specify = function(varNum, name, arity, freeMap) {
+        
+    }
 }
 
 function addToShooter(factData, land) {
@@ -171,8 +177,8 @@ function addToShooter(factData, land) {
         throw new Error("Bad fact: "+ factData);
     }
     if (!land) land = currentLand();
-    factData.Skin.TermNames.forEach(knowTerm);
     var facet = new Facet(factData);
+    knowTerms(facet.fact);
     var fact = facet.fact;
 
     var factFp = storage.fpSave("fact", facet.fact);
@@ -305,11 +311,34 @@ function startWork(fact) {
     return work;
 }
 
-function knowTerm(term) {
-    if (!state.knownTerms.hasOwnProperty(term)) {
-        state.specifyOptions.Terms.push(term);
-        state.knownTerms[term] = state.specifyOptions.Terms.length - 1;
+function knowTerms(fact) {
+    var newTerms = {};
+    var numNewTerms = 0;
+    fact.Skin.TermNames.forEach(function(termName, termNum) {
+        if (!state.knownTerms.hasOwnProperty(termName) &&
+            !newTerms.hasOwnProperty(termName)) {
+            newTerms[termName] =  true;
+            numNewTerms++;
+            state.specifyOptions.Terms.push(termName);
+            state.knownTerms[termName] = {freeMap:fact.FreeMaps[termNum]};
+        }
+    });
+    function scan(exp) {
+        if ((numNewTerms > 0) &&
+            Array.isArray(exp) &&
+            newTerms.hasOwnProperty(exp[0])) {
+            var termNum = exp[0];
+            var termName = fact.Skin.TermNames[termNum];
+            state.knownTerms[termName].arity = exp.length - 1;
+            delete newTerms[termNum];
+            numNewTerms--;
+            exp.slice(1).map(scan);
+        }
     }
+    scan(fact.Core[Fact.CORE_STMT]);
+    // TODO: it is possible that a new term could be introduced only in a
+    // hypothesis or dependency. But this should never happen in tacro.
+    
 }
 function setWork(work) {
     state.work = work;
@@ -354,7 +383,7 @@ function nextGoal() {
         }
     }
     var goal = land.goals.shift();
-    goal.Skin.TermNames.forEach(knowTerm);
+    knowTerms(goal);
     setWork(startWork(goal));
     return;
 }

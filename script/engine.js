@@ -632,25 +632,42 @@ var Fact = require('./fact.js'); //XXX
     function specifyDummy(work, dummyPath, newTerm, arity, freeMap) {
         // TODO: duplicated code
         var nonDummy = {};
-        var dummyMap = {};
         eachVarOnce([work.Core[Fact.CORE_STMT]], function(v) {
             nonDummy[v] = true;
         });
         var workExp = zpath(work.Core[Fact.CORE_HYPS][0], dummyPath);
-        if (workExp == undefined) {
+        if ((workExp == undefined) || Array.isArray(workExp)) {
             throw new Error("Bad work path:\n" + dummyPath + "\n" +
                             JSON.stringify(work));
         }
         if (nonDummy[workExp]) {
             throw new Error("Var " + workExp + " is no dummy!");
         }
-        // TODO: PICKUP: add freemap
-        var newExp = [work.nameTerm(newTerm, freeMap)];
-        for (var i = 0; i < arity; i++) {
-            newExp.push(work.nameVar(newDummy()));
+        return specify(work, workExp, newTerm, arity, freeMap);
+    }
+    // Replace all instances of a variable in the given fact with a new exp.
+    // newTermOrVarNum can be an existing variable number. Or it can be a term
+    // name, in which case its arity and freeMap must be specified; it will get
+    // all-new children.  (Note: using this on a Work with a non-dummy variable
+    // is not sound! use specifyDummy instead to check for this.)  TODO: should
+    // not allow specifying binding var
+    function specify(fact, oldVarNum, newTermOrVarNum, arity, freeMap) {
+        var newExp;
+        if (arity === undefined) {
+            if (typeof newTermOrVarNum !== 'number') {
+                throw new Error("Expected var num or term with arity/freemap: "
+                                + newTermOrVarNum);
+                }
+            newExp = newTermOrVarNum;
+        } else {
+            newExp = [fact.nameTerm(newTermOrVarNum, freeMap)];
+            for (var i = 0; i < arity; i++) {
+                newExp.push(fact.nameVar(newDummy()));
+            }
         }
-        dummyMap[workExp] = newExp;
-        return undummy(work, dummyMap);
+        var dummyMap = {};
+        dummyMap[oldVarNum] = newExp;
+        return undummy(fact, dummyMap);
     }
 
     // Asserts that the work's only hypothesis is an instance of the given
@@ -984,5 +1001,6 @@ var Fact = require('./fact.js'); //XXX
     module.exports.getUsableTools = getUsableTools;
     module.exports.getMandHyps = getMandHyps;
     module.exports.globalSub = globalSub;
+    module.exports.specify = specify;
     module.exports.DEBUG = function() {DEBUG = true;};
 })(module);
