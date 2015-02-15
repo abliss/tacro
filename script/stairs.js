@@ -201,8 +201,11 @@ function addToShooter(factData, land) {
         size:shooterTreeWidth,
         editable:true});
     box.className += " shooter";
-    landMap[land.name].pane.appendChild(box);
-
+    var pane = landMap[land.name].pane;
+    pane.insertBefore(box, pane.firstChild);
+    box.style["max-height"] = "0vh";
+    // TODO: animate to proper max-height
+    window.requestAnimationFrame(function(){box.style["max-height"]="100vh";});
     function groundOut() {
         try {
             state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
