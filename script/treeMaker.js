@@ -26,6 +26,7 @@
         }
 
         s.addEventListener("focus", function(ev) {
+            var oldSelected = s.value;
             var options = opts.getSpecifyOptions();
             while (s.lastChild && s.lastChild != ph) {
                 s.removeChild(s.lastChild);
@@ -39,6 +40,9 @@
                     var opt = og.appendChild(
                         document.createElement("option"));
                     opt.value = JSON.stringify([k, i]);
+                    if (opt.value == oldSelected) {
+                        opt.selected = "selected";
+                    }
                     opt.innerHTML = o;
                 });
             }
