@@ -11,9 +11,38 @@
         s.innerHTML = txt;
         return s;
     }
-    function makeVar(txt, path, opts) {
+
+    function populateSelect(specifyOptionsProvider, select) {
+        var specifyOptions = specifyOptionsProvider();
+        var oldValue = select.value;
+        while (select.lastChild != select.firstChild) {
+            select.removeChild(select.lastChild);
+        }
+        for (var k in specifyOptions) if (specifyOptions.hasOwnProperty(k)) {
+            var og = select.appendChild(document.createElement("optGroup"));
+            og.label = optGroupLabels.hasOwnProperty(k) ?
+                optGroupLabels[k] : k;
+            og.className = k;
+            specifyOptions[k].forEach(function(o, i) {
+                var opt = og.appendChild(
+                    document.createElement("option"));
+                opt.value = JSON.stringify([k, i]);
+                if (opt.value == oldValue) {
+                    opt.selected = "selected";
+                }
+                opt.innerHTML = o;
+            });
+        }
+    }
+    
+    // TODO: ugly: varMap managed here but created elsewhere
+    function makeVar(varMap, txt, path, opts) {
         if (txt === undefined) throw new Error("undef");
+        if (!varMap.hasOwnProperty(txt)) {
+            varMap[txt] = [];
+        }
         var s = document.createElement("select");
+        varMap[txt].push(s);
         s.className = "select";
         var ph = s.appendChild(document.createElement("option"));
         ph.innerHTML = txt;
@@ -24,33 +53,17 @@
             s.disabled = "disabled";
             return s;
         }
-
-        s.addEventListener("focus", function(ev) {
-            var oldSelected = s.value;
-            var options = opts.getSpecifyOptions();
-            while (s.lastChild && s.lastChild != ph) {
-                s.removeChild(s.lastChild);
-            }
-            for (var k in options) if (options.hasOwnProperty(k)) {
-                var og = s.appendChild(document.createElement("optGroup"));
-                og.label = optGroupLabels.hasOwnProperty(k) ?
-                    optGroupLabels[k] : k;
-                og.className = k;
-                options[k].forEach(function(o, i) {
-                    var opt = og.appendChild(
-                        document.createElement("option"));
-                    opt.value = JSON.stringify([k, i]);
-                    if (opt.value == oldSelected) {
-                        opt.selected = "selected";
-                    }
-                    opt.innerHTML = o;
-                });
-            }
-        });
+        
+        var populator = populateSelect.bind(null, opts.getSpecifyOptions);
+        s.addEventListener("focus", populator.bind(null, s));
         s.addEventListener("change", function(ev) {
             var value = JSON.parse(s.value);
             if (value !== null) {
-                opts.onChange(path, value[0], value[1]);
+                varMap[txt].forEach(function(select) {
+                    select.value = s.value;
+                    populator(select);
+                });
+                //XXX opts.onChange(path, value[0], value[1]);
             }
         });
 
@@ -74,7 +87,8 @@
         ,links = null
         ,root = document.createElement("div")
         ,linkGroup = document.createElement("div")
-        ,nodeGroup = document.createElement("div");
+        ,nodeGroup = document.createElement("div")
+        ,varMap = {}
 
         root.setAttribute("class", "root");
         root.appendChild(linkGroup);
@@ -127,7 +141,8 @@
                     });
                     ancestors.pop();
                 } else {
-                    n.span = makeVar(fact.Skin.VarNames[exp], n.path, opts);
+                    n.span = makeVar(varMap, fact.Skin.VarNames[exp], n.path,
+                                     opts);
                     n.div.appendChild(n.span);
                     n.div.className += " treeLeaf treeText" + exp;
                 }
