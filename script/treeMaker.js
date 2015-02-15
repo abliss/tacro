@@ -60,8 +60,10 @@
             var value = JSON.parse(s.value);
             if (value !== null) {
                 varMap[txt].forEach(function(select) {
-                    select.value = s.value;
-                    populator(select);
+                    if (select !== s) {
+                        populator(select);
+                        select.value = s.value;
+                    }
                 });
                 //XXX opts.onChange(path, value[0], value[1]);
             }

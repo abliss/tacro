@@ -30,6 +30,10 @@
          FreeMaps:[[]]},
     ],
     goals:[
+        // idlem1
+        {Core:[[],[0,0,[0,0,0]],[]],
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
         // id
         {Core:[[],[0,0,0],[]],
          Skin:{TermNames:["&rarr;"]},
