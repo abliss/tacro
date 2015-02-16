@@ -1,11 +1,17 @@
 !function(d3) {
-    var nodeSize = 3 // XXX Sync with stairs.less
-    ,radius = nodeSize * (3/8) //XXX
+    var NODE_SIZE = 3 // XXX Sync with stairs.less
+    ,RADIUS = NODE_SIZE * (3/8) //XXX
     ,UNIT = "vw"
     ,optGroupLabels = {
         'Vars' : 'Train',
         'Terms' : 'Promote'
     }
+
+    // Container for a mutable, d3-compatible graph-structure with mapped
+    // HTML DOM nodes.
+    function Graph() {
+    }
+    
     function makeTerm(txt) {
         var s = document.createElement("span");
         s.innerHTML = txt;
@@ -122,13 +128,13 @@
     
     // Walk tree, positioning and sizing container divs. Grows sets
     // node.divRect, and grows parentRect to contain it.
-    function measureDivs(nodeSize, parentRect, node) {
-        var myRect = {top: node.y - nodeSize / 2,
-                      left: node.x - nodeSize / 2,
-                      right:node.x + nodeSize / 2,
-                      bottom:node.y + nodeSize / 2};
+    function measureDivs(parentRect, node) {
+        var myRect = {top: node.y - NODE_SIZE / 2,
+                      left: node.x - NODE_SIZE / 2,
+                      right:node.x + NODE_SIZE / 2,
+                      bottom:node.y + NODE_SIZE / 2};
         if (node.children) {
-            myRect = node.children.reduce(measureDivs.bind(null, nodeSize), myRect);
+            myRect = node.children.reduce(measureDivs, myRect);
             node.divRect = myRect;
         } else {
             node.divRect = myRect;
@@ -150,11 +156,11 @@
         if (Array.isArray(node.exp)) {
             // term nodes sized and positioned here.
             // var nodes (leaves) positiend and sized through CSS.
-            node.span.style.left = scale * (node.x - radius - node.divRect.left) + UNIT;
-            node.span.style.top = scale * (node.y - radius - node.divRect.top) + UNIT;
+            node.span.style.left = scale * (node.x - RADIUS - node.divRect.left) + UNIT;
+            node.span.style.top = scale * (node.y - RADIUS - node.divRect.top) + UNIT;
             node.span.style.width =
                 node.span.style.height =
-                scale * radius * 2 + UNIT;
+                scale * RADIUS * 2 + UNIT;
             if (node.children) {
                 origins.push(node.divRect);
                 node.children.map(positionDivs.bind(null, origins, scale));
@@ -175,10 +181,12 @@
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
-     * @param fact the Fact object for looking up operator names, etc.
-     * @param exp the expression to draw
-     * @param nodeSize dimensions of one node. Exclusive of treeSize
-     * @param treeSize dimenions of whole tree. Exclusive of nodeSize
+     * @param opts.fact the Fact object for looking up operator names, etc.
+     * @param opts.exp the expression to draw
+     * @param opts.onclick
+     * @param opts.size
+     * @param opts.editable
+     * @param opts.getSpecifyOptions
      * @return a DOM element containing the tree
      */
     var tm = function(opts) {
@@ -186,7 +194,6 @@
         ,exp = opts.exp
         ,d3tree = d3.layout.tree()
         ,nodes = null
-        ,links = null
         ,root = document.createElement("div")
         ,linkGroup = document.createElement("div")
         ,nodeGroup = document.createElement("div")
@@ -200,7 +207,7 @@
         nodeGroup.setAttribute("class", "nodeGroup");
         root.spanMap = {};
 
-        d3tree.nodeSize([nodeSize, nodeSize]);
+        d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
         d3tree.separation(function(a,b) {
             return a.parent == b.parent ? 1 : 1.5;
         });
@@ -211,22 +218,19 @@
         d3tree.nodes(graph);
 
         var rect = {left:Infinity, right:-Infinity, bottom:-Infinity, top: Infinity};
-        measureDivs(nodeSize, rect, graph);
+        measureDivs(rect, graph);
         rect.width = (rect.right - rect.left);
         rect.height = (rect.bottom - rect.top);
         // make fit within bounds. TODO: this is not exactly right
         var largerDim = (rect.width > rect.height) ? "width" : "height";
         var scale = opts.size / rect[largerDim];
-        nodeGroup.style["font-size"] = 0.5 * nodeSize * scale + UNIT;
+        nodeGroup.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
         nodeGroup.style.width = linkGroup.style.width = scale * rect.width + UNIT;
         nodeGroup.style.height = linkGroup.style.height = scale * rect.height + UNIT;
         nodeGroup.style.left = nodeGroup.style.top = 0;
         var origins = [rect];
         positionDivs(origins, scale, graph);
         return root;
-    };
-    
-    tm.addTerm = function(termName) {
     };
     
     if (typeof define === "function" && define.amd) define(tm); else if (typeof module === "object" && module.exports) module.exports = tm;
