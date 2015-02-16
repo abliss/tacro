@@ -72,6 +72,54 @@
         return s;
     }
     
+    function makeGraph(exp, groupDiv, spanMap, opts) {
+        var ancestors = [{div: groupDiv, path:[], tool: null, numArgs: null}];
+        function recurse(exp, i) {
+            var parent = ancestors[ancestors.length-1];
+            var n = {
+                exp: exp,
+                path: parent.path.slice(),
+                div: document.createElement("div"),
+                height: 1
+            };
+            if (i !== undefined) {
+                n.path.push(i + 1);
+            }
+            parent.div.appendChild(n.div);
+            spanMap[n.path] = n.div;
+            if (opts.onclick) {
+                n.div.addEventListener("click", function(ev) {
+                    opts.onclick(ev, n.path);
+                });
+            }
+            
+            n.div.className = "depth" + (n.path.length) +
+                " input" + (i+1) + "of" + parent.numArgs +
+                " tool" + parent.tool
+            if (Array.isArray(exp)) {
+                var termName = opts.fact.Skin.TermNames[exp[0]];
+                n.tool = cssEscape(termName);
+                n.span = makeTerm(termName);
+                n.div.appendChild(n.span);
+                n.div.className += " treeKids" + (exp.length - 1);
+                n.numArgs = exp.length - 1;
+                ancestors.push(n);
+                n.children = exp.slice(1).map(recurse);
+                n.children.map(function(c) {
+                    n.height = Math.max(n.height, c.height + 1);
+                });
+                ancestors.pop();
+            } else {
+                n.span = makeVar(opts.varMap, opts.fact.Skin.VarNames[exp], n.path,
+                                 opts);
+                n.div.appendChild(n.span);
+                n.div.className += " treeLeaf treeText" + exp;
+            }
+            return n;
+        }
+        return recurse(exp);
+    }
+    
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -90,7 +138,8 @@
         ,root = document.createElement("div")
         ,linkGroup = document.createElement("div")
         ,nodeGroup = document.createElement("div")
-        ,varMap = {}
+
+        opts.varMap = {} // varName -> [select node]
 
         root.setAttribute("class", "root");
         root.appendChild(linkGroup);
@@ -105,54 +154,7 @@
         });
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
-        var graph = (function makeGraph() {
-            var ancestors = [{div: nodeGroup, path:[], tool: null, numArgs: null}];
-            function recurse(exp, i) {
-                var parent = ancestors[ancestors.length-1];
-                var n = {
-                    exp: exp,
-                    path: parent.path.slice(),
-                    div: document.createElement("div"),
-                    height: 1
-                };
-                if (i !== undefined) {
-                    n.path.push(i + 1);
-                }
-                parent.div.appendChild(n.div);
-                root.spanMap[n.path] = n.div;
-                if (opts.onclick) {
-                    n.div.addEventListener("click", function(ev) {
-                        opts.onclick(ev, n.path);
-                    });
-                }
-                    
-                n.div.className = "depth" + (n.path.length) +
-                    " input" + (i+1) + "of" + parent.numArgs +
-                    " tool" + parent.tool
-                if (Array.isArray(exp)) {
-                    var termName = fact.Skin.TermNames[exp[0]];
-                    n.tool = cssEscape(termName);
-                    n.span = makeTerm(termName);
-                    n.div.appendChild(n.span);
-                    n.div.className += " treeKids" + (exp.length - 1);
-                    n.numArgs = exp.length - 1;
-                    ancestors.push(n);
-                    n.children = exp.slice(1).map(recurse);
-                    n.children.map(function(c) {
-                        n.height = Math.max(n.height, c.height + 1);
-                    });
-                    ancestors.pop();
-                } else {
-                    n.span = makeVar(varMap, fact.Skin.VarNames[exp], n.path,
-                                     opts);
-                    n.div.appendChild(n.span);
-                    n.div.className += " treeLeaf treeText" + exp;
-                }
-                return n;
-            }
-            return recurse(exp);
-        })();
-
+        var graph = makeGraph(exp, nodeGroup, root.spanMap, opts);
         
         d3tree.nodes(graph);
 
