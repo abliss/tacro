@@ -129,6 +129,10 @@
     // Walk tree, positioning and sizing container divs. Grows sets
     // node.divRect, and grows parentRect to contain it.
     function measureDivs(parentRect, node) {
+        if (!parentRect) {
+            parentRect = {left:Infinity, right:-Infinity,
+                          bottom:-Infinity, top: Infinity};
+        }
         var myRect = {top: node.y - NODE_SIZE / 2,
                       left: node.x - NODE_SIZE / 2,
                       right:node.x + NODE_SIZE / 2,
@@ -207,18 +211,17 @@
         nodeGroup.setAttribute("class", "nodeGroup");
         root.spanMap = {};
 
-        d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
-        d3tree.separation(function(a,b) {
-            return a.parent == b.parent ? 1 : 1.5;
-        });
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
         var graph = makeGraph(exp, nodeGroup, linkGroup, root.spanMap, opts);
         
+        d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
+        d3tree.separation(function(a,b) {
+            return a.parent == b.parent ? 1 : 1.5;
+        });
         d3tree.nodes(graph);
 
-        var rect = {left:Infinity, right:-Infinity, bottom:-Infinity, top: Infinity};
-        measureDivs(rect, graph);
+        var rect = measureDivs(null, graph);
         rect.width = (rect.right - rect.left);
         rect.height = (rect.bottom - rect.top);
         // make fit within bounds. TODO: this is not exactly right
