@@ -195,6 +195,9 @@ body, html {
     border: 1px solid blue;
 }
 
+.termbox .termSpan {
+    z-index: 100;
+}
 .treeLeaf {
     color: white;
 }
@@ -203,7 +206,8 @@ body, html {
 }
 .termbox .link {
     border-left: 1px solid black;
-    transform-origin: 0 0;
+    transform-origin: 100% 100%;
+    z-index: -1;
 }
 .termbox .nodeGroup span {
     background-color: white;

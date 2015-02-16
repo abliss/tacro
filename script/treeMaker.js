@@ -15,6 +15,7 @@
     function makeTerm(txt) {
         var s = document.createElement("span");
         s.innerHTML = txt;
+        s.className = "termSpan";
         return s;
     }
 
@@ -78,7 +79,7 @@
         return s;
     }
     
-    function makeGraph(exp, groupDiv, linkGroup, spanMap, opts) {
+    function makeGraph(exp, groupDiv, spanMap, opts) {
         var ancestors = [{div: groupDiv, path:[], tool: null, numArgs: null}];
         function recurse(exp, i) {
             var parent = ancestors[ancestors.length-1];
@@ -90,7 +91,7 @@
             };
             if (i !== undefined) {
                 n.path.push(i + 1);
-                n.link = linkGroup.appendChild(document.createElement("div"));
+                n.link = n.div.appendChild(document.createElement("div"));
                 n.link.className = "link";
             }
             parent.div.appendChild(n.div);
@@ -120,6 +121,7 @@
                 n.div.appendChild(n.span);
                 n.div.className += " treeLeaf treeText" + exp;
             }
+
             parent.height = Math.max(parent.height, n.height + 1);
             return n;
         }
@@ -150,11 +152,11 @@
         return parentRect;
     }
 
-    function positionDivs(origins, scale, node, index) {
+    function positionDivs(origin, scale, node, index) {
         node.div.style.width = scale * (node.divRect.right - node.divRect.left) + UNIT;
         node.div.style.height = scale * (node.divRect.bottom - node.divRect.top) + UNIT;
-        node.div.style["z-index"] = 100 - node.height; // TODO:imperfect
-        var origin = origins[origins.length-1];
+        // TODO:imperfect. Sync 100 with css.
+        node.div.style["z-index"] = 100 - node.height;
         node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
         node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
         if (Array.isArray(node.exp)) {
@@ -166,16 +168,16 @@
                 node.span.style.height =
                 scale * RADIUS * 2 + UNIT;
             if (node.children) {
-                origins.push(node.divRect);
-                node.children.map(positionDivs.bind(null, origins, scale));
-                origins.pop();
+                node.children.map(positionDivs.bind(null, node.divRect, scale));
             }
         }
         if (node.link) {
-            node.link.style.left = scale * (node.parent.x - origins[0].left) + UNIT;
-            node.link.style.top = scale * (node.parent.y - origins[0].top) + UNIT;
+            node.link.style.right = scale * (node.divRect.right - node.x) + UNIT;
+            //scale * (node.parent.divRect.left - origin.left) + UNIT;
+            node.link.style.bottom = scale * (node.divRect.bottom - node.y) + UNIT;
             node.link.style.height = scale * (node.y - node.parent.y) + UNIT;
-            // Matrix: should keep 0,0 constant, and move (0,y) to (n.x-p.x,y).
+            // Matrix: should keep 0,0 constant, and move (0,y) to (n.left-p.left,y).
+            // Requires transform-origin 100% 100%.
             var matrix = [1, 0,
                           (node.x - node.parent.x) / (node.y - node.parent.y), 1,
                           0, 0];
@@ -213,7 +215,7 @@
 
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
-        var graph = makeGraph(exp, nodeGroup, linkGroup, root.spanMap, opts);
+        var graph = makeGraph(exp, nodeGroup, root.spanMap, opts);
         
         d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
         d3tree.separation(function(a,b) {
@@ -231,8 +233,7 @@
         nodeGroup.style.width = linkGroup.style.width = scale * rect.width + UNIT;
         nodeGroup.style.height = linkGroup.style.height = scale * rect.height + UNIT;
         nodeGroup.style.left = nodeGroup.style.top = 0;
-        var origins = [rect];
-        positionDivs(origins, scale, graph);
+        positionDivs(rect, scale, graph);
         return root;
     };
     
