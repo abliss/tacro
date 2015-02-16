@@ -105,9 +105,6 @@
                 n.numArgs = exp.length - 1;
                 ancestors.push(n);
                 n.children = exp.slice(1).map(recurse);
-                n.children.map(function(c) {
-                    n.height = Math.max(n.height, c.height + 1);
-                });
                 ancestors.pop();
             } else {
                 n.span = makeVar(opts.varMap, opts.fact.Skin.VarNames[exp], n.path,
@@ -115,6 +112,7 @@
                 n.div.appendChild(n.span);
                 n.div.className += " treeLeaf treeText" + exp;
             }
+            parent.height = Math.max(parent.height, n.height + 1);
             return n;
         }
         return recurse(exp);
