@@ -72,7 +72,7 @@
         return s;
     }
     
-    function makeGraph(exp, groupDiv, spanMap, opts) {
+    function makeGraph(exp, groupDiv, linkGroup, spanMap, opts) {
         var ancestors = [{div: groupDiv, path:[], tool: null, numArgs: null}];
         function recurse(exp, i) {
             var parent = ancestors[ancestors.length-1];
@@ -84,6 +84,8 @@
             };
             if (i !== undefined) {
                 n.path.push(i + 1);
+                n.link = linkGroup.appendChild(document.createElement("div"));
+                n.link.className = "link";
             }
             parent.div.appendChild(n.div);
             spanMap[n.path] = n.div;
@@ -138,6 +140,38 @@
         return parentRect;
     }
 
+    function positionDivs(origins, scale, node, index) {
+        node.div.style.width = scale * (node.divRect.right - node.divRect.left) + UNIT;
+        node.div.style.height = scale * (node.divRect.bottom - node.divRect.top) + UNIT;
+        node.div.style["z-index"] = 100 - node.height; // TODO:imperfect
+        var origin = origins[origins.length-1];
+        node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
+        node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
+        if (Array.isArray(node.exp)) {
+            // term nodes sized and positioned here.
+            // var nodes (leaves) positiend and sized through CSS.
+            node.span.style.left = scale * (node.x - radius - node.divRect.left) + UNIT;
+            node.span.style.top = scale * (node.y - radius - node.divRect.top) + UNIT;
+            node.span.style.width =
+                node.span.style.height =
+                scale * radius * 2 + UNIT;
+            if (node.children) {
+                origins.push(node.divRect);
+                node.children.map(positionDivs.bind(null, origins, scale));
+                origins.pop();
+            }
+        }
+        if (node.link) {
+            node.link.style.left = scale * (node.parent.x - origins[0].left) + UNIT;
+            node.link.style.top = scale * (node.parent.y - origins[0].top) + UNIT;
+            node.link.style.height = scale * (node.y - node.parent.y) + UNIT;
+            // Matrix: should keep 0,0 constant, and move (0,y) to (n.x-p.x,y).
+            var matrix = [1, 0,
+                          (node.x - node.parent.x) / (node.y - node.parent.y), 1,
+                          0, 0];
+            node.link.style.transform = 'matrix(' + matrix.join(',') + ')';
+        }
+    }
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -172,7 +206,7 @@
         });
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
-        var graph = makeGraph(exp, nodeGroup, root.spanMap, opts);
+        var graph = makeGraph(exp, nodeGroup, linkGroup, root.spanMap, opts);
         
         d3tree.nodes(graph);
 
@@ -187,45 +221,8 @@
         nodeGroup.style.width = linkGroup.style.width = scale * rect.width + UNIT;
         nodeGroup.style.height = linkGroup.style.height = scale * rect.height + UNIT;
         nodeGroup.style.left = nodeGroup.style.top = 0;
-        var origins = [rect]
-        function positionDivs(node, index) {
-            node.div.style.width = scale * (node.divRect.right - node.divRect.left) + UNIT;
-            node.div.style.height = scale * (node.divRect.bottom - node.divRect.top) + UNIT;
-            node.div.style["z-index"] = graph.height - node.height; // TODO:imperfect
-            var origin = origins[origins.length-1];
-            node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
-            node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
-            if (Array.isArray(node.exp)) {
-                // term nodes sized and positioned here.
-                // var nodes (leaves) positiend and sized through CSS.
-                node.span.style.left = scale * (node.x - radius - node.divRect.left) + UNIT;
-                node.span.style.top = scale * (node.y - radius - node.divRect.top) + UNIT;
-                node.span.style.width =
-                    node.span.style.height =
-                    scale * radius * 2 + UNIT;
-                if (node.children) {
-                    origins.push(node.divRect);
-                    node.children.map(positionDivs);
-                    origins.pop();
-                }
-            }
-            if (node.parent) {
-                // LINKS
-                var link = document.createElement("div");
-                linkGroup.appendChild(link);
-                link.className = "link";
-                link.style.left = scale * (node.parent.x - rect.left) + UNIT;
-                link.style.top = scale * (node.parent.y - rect.top) + UNIT;
-                link.style.height = scale * (node.y - node.parent.y) + UNIT;
-                // Matrix: should keep 0,0 constant, and move (0,y) to (n.x-p.x,y).
-                var matrix = [1, 0,
-                    (node.x - node.parent.x) / (node.y - node.parent.y), 1,
-                    0, 0];
-                link.style.transform = 'matrix(' + matrix.join(',') + ')';
-                
-            }
-        }
-        positionDivs(graph);
+        var origins = [rect];
+        positionDivs(origins, scale, graph);
         return root;
     };
     
