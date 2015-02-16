@@ -252,14 +252,14 @@ function addToShooter(factData, land) {
     }
 
     // Turnstile (ground-out button)
-    var turnstile = box.appendChild(document.createElement("span"));
+    var turnstile = box.spanMap[[]].appendChild(document.createElement("span"));
     turnstile.className = "turnstile";
     turnstile.innerText = "\u22a2";
     turnstile.onclick = groundOut;
     
     
     // Undo button
-    var undo = box.appendChild(document.createElement("button"));
+    var undo = box.spanMap[[]].appendChild(document.createElement("button"));
     undo.className = "undo";
     undo.innerHTML = "&laquo;";
 
@@ -421,6 +421,7 @@ function redraw() {
         well.appendChild(box);
         workBox = box;
         redrawSelection();
+        /*
         Engine.forEachGroundableFact(state.work, function(w, f) {
             message("Groundable: " + f.Skin.Name);
             message("Ground out!");
@@ -432,6 +433,7 @@ function redraw() {
                 landMap[box.land].tab.className = "tab";
             });
         });
+        */
     } catch (e) {
         message(e);
     }

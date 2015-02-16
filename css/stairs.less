@@ -163,29 +163,26 @@ body, html {
     border: 2px solid black;
     margin-right: -2px;
     margin-top:-2px;
-    border-radius: 1em;
     box-sizing: border-box;
     position: absolute;
     cursor: pointer;
-    display: none;
+    width: 1.5em;
+    border-radius: 1em;
+    height: 1.5em;
+    color:black;
 }
 
-.termbox .turnstile {
+@turnStileSize: 4vw;
+.termbox .nodeGroup .turnstile {
     right: 0;
     top: 0;
-    width: 3em;
-    height: 3em;
-    padding: 1em;
-    background: rosybrown;
+    background-color: rosybrown;
 }
 
-.apply1, .apply2 {
+.termbox .nodeGroup .apply1, .termbox .nodeGroup .apply2 {
     background: bisque;
+    display: none;
     top: 0;
-    color:black;
-    cursor: pointer;
-    width: 1.5em;
-    height: 1.5em;
 }
 .apply2 {
     left: 80%;
