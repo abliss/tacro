@@ -120,6 +120,26 @@
         return recurse(exp);
     }
     
+    // Walk tree, positioning and sizing container divs. Grows sets
+    // node.divRect, and grows parentRect to contain it.
+    function measureDivs(nodeSize, parentRect, node) {
+        var myRect = {top: node.y - nodeSize / 2,
+                      left: node.x - nodeSize / 2,
+                      right:node.x + nodeSize / 2,
+                      bottom:node.y + nodeSize / 2};
+        if (node.children) {
+            myRect = node.children.reduce(measureDivs.bind(null, nodeSize), myRect);
+            node.divRect = myRect;
+        } else {
+            node.divRect = myRect;
+        }
+        parentRect.top = Math.min(parentRect.top, myRect.top);
+        parentRect.left = Math.min(parentRect.left, myRect.left);
+        parentRect.right = Math.max(parentRect.right, myRect.right);
+        parentRect.bottom = Math.max(parentRect.bottom, myRect.bottom);
+        return parentRect;
+    }
+
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -158,27 +178,8 @@
         
         d3tree.nodes(graph);
 
-        // Walk tree, positioning and sizing container divs. Grows sets
-        // node.divRect, and grows parentRect to contain it.
-        function measureDivs(parentRect, node) {
-            var myRect = {top: node.y - nodeSize / 2,
-                          left: node.x - nodeSize / 2,
-                          right:node.x + nodeSize / 2,
-                          bottom:node.y + nodeSize / 2};
-            if (node.children) {
-                myRect = node.children.reduce(measureDivs, myRect);
-                node.divRect = myRect;
-            } else {
-                node.divRect = myRect;
-            }
-            parentRect.top = Math.min(parentRect.top, myRect.top);
-            parentRect.left = Math.min(parentRect.left, myRect.left);
-            parentRect.right = Math.max(parentRect.right, myRect.right);
-            parentRect.bottom = Math.max(parentRect.bottom, myRect.bottom);
-            return parentRect;
-        }
         var rect = {left:Infinity, right:-Infinity, bottom:-Infinity, top: Infinity};
-        measureDivs(rect, graph, 0);
+        measureDivs(nodeSize, rect, graph);
         rect.width = (rect.right - rect.left);
         rect.height = (rect.bottom - rect.top);
         // make fit within bounds. TODO: this is not exactly right
