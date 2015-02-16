@@ -201,15 +201,12 @@
         ,d3tree = d3.layout.tree()
         ,nodes = null
         ,root = document.createElement("div")
-        ,linkGroup = document.createElement("div")
         ,nodeGroup = document.createElement("div")
 
         opts.varMap = {} // varName -> [select node]
 
         root.setAttribute("class", "root");
-        root.appendChild(linkGroup);
         root.appendChild(nodeGroup);
-        linkGroup.setAttribute("class", "linkGroup");
         nodeGroup.setAttribute("class", "nodeGroup");
         root.spanMap = {};
 
@@ -230,8 +227,8 @@
         var largerDim = (rect.width > rect.height) ? "width" : "height";
         var scale = opts.size / rect[largerDim];
         nodeGroup.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
-        nodeGroup.style.width = linkGroup.style.width = scale * rect.width + UNIT;
-        nodeGroup.style.height = linkGroup.style.height = scale * rect.height + UNIT;
+        nodeGroup.style.width = scale * rect.width + UNIT;
+        nodeGroup.style.height = scale * rect.height + UNIT;
         nodeGroup.style.left = nodeGroup.style.top = 0;
         positionDivs(rect, scale, graph);
         return root;
