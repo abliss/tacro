@@ -132,7 +132,7 @@ function registerNewTool(toolOp) {
     var styleSheet = styleEl.sheet;
     for (var arg = 1; arg <= 2; arg++) {
         var rule = ".tool" + cssEscape(toolOp) + "_" + arg +
-            " .shooter .tool" + cssEscape(toolOp) +
+            " .shooter .term.name" + cssEscape(toolOp) +
             " .apply" + arg + " { display:inline-block;}";
 
         console.log("Added Rule: " + rule);

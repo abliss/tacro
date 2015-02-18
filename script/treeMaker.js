@@ -7,10 +7,6 @@
         'Terms' : 'Promote'
     }
 
-    // Container for a mutable, d3-compatible graph-structure with mapped
-    // HTML DOM nodes.
-    function Graph() {
-    }
     
     function makeTerm(txt) {
         var s = document.createElement("span");
@@ -43,87 +39,47 @@
     }
     
     // TODO: ugly: varMap managed here but created elsewhere
-    function makeVar(varMap, txt, path, opts) {
+    function makeVar(txt, path) {
         if (txt === undefined) throw new Error("undef");
-        if (!varMap.hasOwnProperty(txt)) {
-            varMap[txt] = [];
-        }
         var s = document.createElement("select");
-        varMap[txt].push(s);
         s.className = "select";
         var ph = s.appendChild(document.createElement("option"));
         ph.innerHTML = txt;
         ph.className = 'placeholder';
         ph.selected = 'selected';
         ph.disabled = 'disabled';
-        if (!opts.editable) {
-            s.disabled = "disabled";
-            return s;
-        }
-        
-        var populator = populateSelect.bind(null, opts.getSpecifyOptions);
-        s.addEventListener("focus", populator.bind(null, s));
-        s.addEventListener("change", function(ev) {
-            var value = JSON.parse(s.value);
-            if (value !== null) {
-                varMap[txt].forEach(function(select) {
-                    if (select !== s) {
-                        populator(select);
-                        select.value = s.value;
-                    }
-                });
-                //XXX opts.onChange(path, value[0], value[1]);
-            }
-        });
-
         return s;
     }
     
-    function makeGraph(exp, groupDiv, spanMap, opts) {
-        var ancestors = [{div: groupDiv, path:[], tool: null, numArgs: null}];
-        function recurse(exp, i) {
-            var parent = ancestors[ancestors.length-1];
-            var n = {
-                exp: exp,
-                path: parent.path.slice(),
-                div: document.createElement("div"),
-                height: 1
-            };
-            if (i !== undefined) {
-                n.path.push(i + 1);
-                n.link = n.div.appendChild(document.createElement("div"));
-                n.link.className = "link";
-            }
-            parent.div.appendChild(n.div);
-            spanMap[n.path] = n.div;
-            if (opts.onclick) {
-                n.div.addEventListener("click", function(ev) {
-                    opts.onclick(ev, n.path);
-                });
-            }
-            
-            n.div.className = " tool" + parent.tool
-            if (Array.isArray(exp)) {
-                var termName = opts.fact.Skin.TermNames[exp[0]];
-                n.tool = cssEscape(termName);
-                n.span = makeTerm(termName);
-                n.div.appendChild(n.span);
-                n.div.className += " treeKids" + (exp.length - 1);
-                n.numArgs = exp.length - 1;
-                ancestors.push(n);
-                n.children = exp.slice(1).map(recurse);
-                ancestors.pop();
-            } else {
-                n.span = makeVar(opts.varMap, opts.fact.Skin.VarNames[exp], n.path,
-                                 opts);
-                n.div.appendChild(n.span);
-                n.div.className += " treeLeaf treeText" + exp;
-            }
-
-            parent.height = Math.max(parent.height, n.height + 1);
-            return n;
+    // Container for a mutable, d3-compatible graph-structure with mapped
+    // HTML DOM nodes.
+    function Node(parent, exp, argNumFromZero) {
+        this.exp = exp;
+        this.div = document.createElement("div");
+        this.children = [];
+        this.height = 0;
+        this.div.className = Array.isArray(exp) ? "term" : "var";
+        if (!parent) {
+            this.path = [];
+            return this;
         }
-        return recurse(exp);
+        this.path = parent.path.slice();
+        this.path.push(argNumFromZero + 1);
+        this.link = this.div.appendChild(document.createElement("div"));
+        this.link.className = "link";
+        parent.div.appendChild(this.div);
+        parent.children.push(this);
+    }
+
+    function makeGraph(parent, exp, i) {
+        var n = new Node(parent, exp, i);
+        if (Array.isArray(exp)) {
+            exp.slice(1).reduce(makeGraph, n);
+        }
+        if (parent) {
+            parent.height = Math.max(parent.height, n.height + 1);
+        }
+        return parent || n;
     }
     
     // Walk tree, positioning and sizing container divs. Grows sets
@@ -182,6 +138,7 @@
             node.link.style.transform = 'matrix(' + matrix.join(',') + ')';
         }
     }
+
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -203,18 +160,61 @@
         opts.varMap = {} // varName -> [select node]
 
         root.setAttribute("class", "root");
-        root.spanMap = {};
 
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
-        var graph = makeGraph(exp, root, root.spanMap, opts);
-        
+        var graph = makeGraph(null, exp);
+        root.appendChild(graph.div);
+
         d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
         d3tree.separation(function(a,b) {
             return a.parent == b.parent ? 1 : 1.5;
         });
-        d3tree.nodes(graph);
+        var nodes = d3tree.nodes(graph);
+        
+        root.spanMap = {};
+        var varMap = {};
+        nodes.forEach(function(node) {
+            root.spanMap[node.path] = node.div;
+            if (opts.onclick) { // TODO: XXX
+                node.div.addEventListener("click", function(ev) {
+                    opts.onclick(ev, node.path);
+                });
+            }
+            if (Array.isArray(node.exp)) {
+                var text = opts.fact.Skin.TermNames[node.exp[0]];
+                node.div.className += " name" + cssEscape(text);
+                node.span = node.div.appendChild(makeTerm(text));
+            } else {
+                var varNum = node.exp;
+                var text = opts.fact.Skin.VarNames[varNum];
+                node.div.className += " name" + varNum;
+                node.span = node.div.appendChild(makeVar(text, node.path));
 
+                if (!opts.editable) {
+                    node.span.disabled = "disabled";
+                }       
+                if (!varMap.hasOwnProperty(varNum)) {
+                    varMap[varNum] = [];
+                }
+                varMap[varNum].push(node.span);
+                var populator = populateSelect.bind(null, opts.getSpecifyOptions);
+                node.span.addEventListener("focus", populator.bind(null, node.span));
+                node.span.addEventListener("change", function(ev) {
+                    //var value = JSON.parse(select.value);
+                    //XXX opts.onChange(path, value[0], value[1]);
+                    if (node.span.value !== "null") {
+                        varMap[varNum].forEach(function(select2) {
+                            if (select2 !== node.span) {
+                                populator(select2);
+                                select2.value = node.span.value;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        
         var rect = measureDivs(null, graph);
         rect.width = (rect.right - rect.left);
         rect.height = (rect.bottom - rect.top);
