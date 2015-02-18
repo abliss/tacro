@@ -38,15 +38,23 @@
         }
     }
     
-    function makeVar(txt, path) {
+    function makeVar(txt, getSpecifyOptions) {
         if (txt === undefined) throw new Error("undef");
-        var s = document.createElement("select");
-        s.className = "select";
-        var ph = s.appendChild(document.createElement("option"));
-        ph.innerHTML = txt;
-        ph.className = 'placeholder';
-        ph.selected = 'selected';
-        ph.disabled = 'disabled';
+        var s;
+        if (getSpecifyOptions) {
+            s = document.createElement("select");
+
+            var ph = s.appendChild(document.createElement("option"));
+            ph.innerHTML = txt;
+            ph.className = 'placeholder';
+            ph.selected = 'selected';
+            ph.disabled = 'disabled';
+            s.addEventListener("focus", populateSelect.bind(null, getSpecifyOptions, s));
+        } else {
+            s = document.createElement("span");
+            s.innerHTML = txt;
+        }
+        s.className = "select";            
         return s;
     }
     
@@ -141,11 +149,6 @@
     Node.prototype.decorate = function(spanMap, varMap, onclick, fact,
                                        getSpecifyOptions) {
         spanMap[this.path] = this.div;
-        if (onclick) { // TODO: XXX
-            this.div.addEventListener("click", function(ev) {
-                onclick(ev, this.path);
-            });
-        }
         if (Array.isArray(this.exp)) {
             var text = fact.Skin.TermNames[this.exp[0]];
             this.div.className += " name" + cssEscape(text);
@@ -154,17 +157,13 @@
             var varNum = this.exp;
             var text = fact.Skin.VarNames[varNum];
             this.div.className += " name" + varNum;
-            this.span = this.div.appendChild(makeVar(text, this.path));
-            var select = this.span;
-            if (!getSpecifyOptions) {
-                select.disabled = "disabled";
-            } else {
+            this.span = this.div.appendChild(makeVar(text, getSpecifyOptions));
+            if (getSpecifyOptions) {
+                var select = this.span;
                 if (!varMap.hasOwnProperty(varNum)) {
                     varMap[varNum] = [];
                 }
                 varMap[varNum].push(select);
-                var populator = populateSelect.bind(null, getSpecifyOptions);
-                select.addEventListener("focus", populator.bind(null, select));
                 select.addEventListener("change", function(ev) {
                     //var value = JSON.parse(select.value);
                     //XXX opts.onChange(path, value[0], value[1]);
@@ -179,6 +178,16 @@
                 });
             }
         }
+        var path = this.path;
+        if (onclick) {
+            this.div.addEventListener("click", function(ev) {
+                onclick(ev, path);
+            });
+            this.span.addEventListener("click", function(ev) {
+                onclick(ev, path);
+            });
+        }
+
     };
 
     /**
