@@ -138,6 +138,49 @@
         }
     }
 
+    Node.prototype.decorate = function(spanMap, varMap, onclick, fact,
+                                       getSpecifyOptions) {
+        spanMap[this.path] = this.div;
+        if (onclick) { // TODO: XXX
+            this.div.addEventListener("click", function(ev) {
+                onclick(ev, this.path);
+            });
+        }
+        if (Array.isArray(this.exp)) {
+            var text = fact.Skin.TermNames[this.exp[0]];
+            this.div.className += " name" + cssEscape(text);
+            this.span = this.div.appendChild(makeTerm(text));
+        } else {
+            var varNum = this.exp;
+            var text = fact.Skin.VarNames[varNum];
+            this.div.className += " name" + varNum;
+            this.span = this.div.appendChild(makeVar(text, this.path));
+            var select = this.span;
+            if (!getSpecifyOptions) {
+                select.disabled = "disabled";
+            } else {
+                if (!varMap.hasOwnProperty(varNum)) {
+                    varMap[varNum] = [];
+                }
+                varMap[varNum].push(select);
+                var populator = populateSelect.bind(null, getSpecifyOptions);
+                select.addEventListener("focus", populator.bind(null, select));
+                select.addEventListener("change", function(ev) {
+                    //var value = JSON.parse(select.value);
+                    //XXX opts.onChange(path, value[0], value[1]);
+                    if (select.value !== "null") {
+                        varMap[varNum].forEach(function(select2) {
+                            if (select2 !== select) {
+                                populator(select2);
+                                select2.value = select.value;
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    };
+
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -174,44 +217,8 @@
         root.spanMap = {};
         var varMap = {};
         nodes.forEach(function(node) {
-            root.spanMap[node.path] = node.div;
-            if (opts.onclick) { // TODO: XXX
-                node.div.addEventListener("click", function(ev) {
-                    opts.onclick(ev, node.path);
-                });
-            }
-            if (Array.isArray(node.exp)) {
-                var text = opts.fact.Skin.TermNames[node.exp[0]];
-                node.div.className += " name" + cssEscape(text);
-                node.span = node.div.appendChild(makeTerm(text));
-            } else {
-                var varNum = node.exp;
-                var text = opts.fact.Skin.VarNames[varNum];
-                node.div.className += " name" + varNum;
-                node.span = node.div.appendChild(makeVar(text, node.path));
-
-                if (!opts.editable) {
-                    node.span.disabled = "disabled";
-                }       
-                if (!varMap.hasOwnProperty(varNum)) {
-                    varMap[varNum] = [];
-                }
-                varMap[varNum].push(node.span);
-                var populator = populateSelect.bind(null, opts.getSpecifyOptions);
-                node.span.addEventListener("focus", populator.bind(null, node.span));
-                node.span.addEventListener("change", function(ev) {
-                    //var value = JSON.parse(select.value);
-                    //XXX opts.onChange(path, value[0], value[1]);
-                    if (node.span.value !== "null") {
-                        varMap[varNum].forEach(function(select2) {
-                            if (select2 !== node.span) {
-                                populator(select2);
-                                select2.value = node.span.value;
-                            }
-                        });
-                    }
-                });
-            }
+            node.decorate(root.spanMap, varMap, opts.onclick, opts.fact, 
+                          opts.editable ? opts.getSpecifyOptions : null);
         });
         
         var rect = measureDivs(null, graph);
