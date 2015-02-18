@@ -102,9 +102,7 @@
                 });
             }
             
-            n.div.className = "depth" + (n.path.length) +
-                " input" + (i+1) + "of" + parent.numArgs +
-                " tool" + parent.tool
+            n.div.className = " tool" + parent.tool
             if (Array.isArray(exp)) {
                 var termName = opts.fact.Skin.TermNames[exp[0]];
                 n.tool = cssEscape(termName);
