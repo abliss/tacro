@@ -201,18 +201,15 @@
         ,d3tree = d3.layout.tree()
         ,nodes = null
         ,root = document.createElement("div")
-        ,nodeGroup = document.createElement("div")
 
         opts.varMap = {} // varName -> [select node]
 
         root.setAttribute("class", "root");
-        root.appendChild(nodeGroup);
-        nodeGroup.setAttribute("class", "nodeGroup");
         root.spanMap = {};
 
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
-        var graph = makeGraph(exp, nodeGroup, root.spanMap, opts);
+        var graph = makeGraph(exp, root, root.spanMap, opts);
         
         d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
         d3tree.separation(function(a,b) {
@@ -226,10 +223,10 @@
         // make fit within bounds. TODO: this is not exactly right
         var largerDim = (rect.width > rect.height) ? "width" : "height";
         var scale = opts.size / rect[largerDim];
-        nodeGroup.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
-        nodeGroup.style.width = scale * rect.width + UNIT;
-        nodeGroup.style.height = scale * rect.height + UNIT;
-        nodeGroup.style.left = nodeGroup.style.top = 0;
+        root.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
+        root.style.width = scale * rect.width + UNIT;
+        root.style.height = scale * rect.height + UNIT;
+        root.style.left = root.style.top = 0;
         positionDivs(rect, scale, graph);
         return root;
     };
