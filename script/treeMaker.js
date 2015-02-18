@@ -38,7 +38,6 @@
         }
     }
     
-    // TODO: ugly: varMap managed here but created elsewhere
     function makeVar(txt, path) {
         if (txt === undefined) throw new Error("undef");
         var s = document.createElement("select");
@@ -222,9 +221,6 @@
         var largerDim = (rect.width > rect.height) ? "width" : "height";
         var scale = opts.size / rect[largerDim];
         root.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
-        root.style.width = scale * rect.width + UNIT;
-        root.style.height = scale * rect.height + UNIT;
-        root.style.left = root.style.top = 0;
         positionDivs(rect, scale, graph);
         return root;
     };
