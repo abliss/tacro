@@ -96,7 +96,9 @@ function newVarNamer() {
     }
 */
 function makeThmBox(opts) {
-    opts.getSpecifyOptions = function() { return state.specifyOptions; }
+    if (opts.editable) {
+        opts.getSpecifyOptions = function() { return state.specifyOptions; }
+    }
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var tree = TreeMaker(opts);
@@ -285,7 +287,7 @@ function addToShooter(factData, land) {
 }
 
 
-function workOnclick(ev, path) {
+function workOnclick(path, ev) {
     var goalPath = path.slice();
     if (goalPath[goalPath.length-1] == 0) {
         goalPath.pop();
@@ -320,10 +322,14 @@ function knowTerms(fact) {
     fact.Skin.TermNames.forEach(function(termName, termNum) {
         if (!state.knownTerms.hasOwnProperty(termName) &&
             !newTerms.hasOwnProperty(termName)) {
-            newTerms[termName] =  true;
+            newTerms[termNum] =  true;
             numNewTerms++;
-            state.specifyOptions.Terms.push(termName);
-            state.knownTerms[termName] = {freeMap:fact.FreeMaps[termNum]};
+            var termObj = {text:termName,
+                           freeMap:fact.FreeMaps[termNum],
+                           arity:0 // updated in scan() below
+                          };
+            state.knownTerms[termName] = termObj;
+            state.specifyOptions.Terms.push(termObj);
         }
     });
     function scan(exp) {
@@ -338,11 +344,12 @@ function knowTerms(fact) {
             exp.slice(1).map(scan);
         }
     }
-    scan(fact.Core[Fact.CORE_STMT]);
     // TODO: it is possible that a new term could be introduced only in a
-    // hypothesis or dependency. But this should never happen in tacro.
-    
+    // dependency. But this should never happen in tacro.
+    scan(fact.Core[Fact.CORE_STMT]);
+    fact.Core[Fact.CORE_HYPS].forEach(scan);
 }
+
 function setWork(work) {
     state.work = work;
     state.workHash = Engine.fingerprint(work);

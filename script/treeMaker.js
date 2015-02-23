@@ -8,56 +8,6 @@
     }
 
     
-    function makeTerm(txt) {
-        var s = document.createElement("span");
-        s.innerHTML = txt;
-        s.className = "termSpan";
-        return s;
-    }
-
-    function populateSelect(specifyOptionsProvider, select) {
-        var specifyOptions = specifyOptionsProvider();
-        var oldValue = select.value;
-        while (select.lastChild != select.firstChild) {
-            select.removeChild(select.lastChild);
-        }
-        for (var k in specifyOptions) if (specifyOptions.hasOwnProperty(k)) {
-            var og = select.appendChild(document.createElement("optGroup"));
-            og.label = optGroupLabels.hasOwnProperty(k) ?
-                optGroupLabels[k] : k;
-            og.className = k;
-            specifyOptions[k].forEach(function(o, i) {
-                var opt = og.appendChild(
-                    document.createElement("option"));
-                opt.value = JSON.stringify([k, i]);
-                if (opt.value == oldValue) {
-                    opt.selected = "selected";
-                }
-                opt.innerHTML = o;
-            });
-        }
-    }
-    
-    function makeVar(txt, getSpecifyOptions) {
-        if (txt === undefined) throw new Error("undef");
-        var s;
-        if (getSpecifyOptions) {
-            s = document.createElement("select");
-
-            var ph = s.appendChild(document.createElement("option"));
-            ph.innerHTML = txt;
-            ph.className = 'placeholder';
-            ph.selected = 'selected';
-            ph.disabled = 'disabled';
-            s.addEventListener("focus", populateSelect.bind(null, getSpecifyOptions, s));
-        } else {
-            s = document.createElement("span");
-            s.innerHTML = txt;
-        }
-        s.className = "select";            
-        return s;
-    }
-    
     // Container for a mutable, d3-compatible graph-structure with mapped
     // HTML DOM nodes.
     function Node(parent, exp, argNumFromZero) {
@@ -68,8 +18,12 @@
         this.div.className = Array.isArray(exp) ? "term" : "var";
         if (!parent) {
             this.path = [];
+            this.root = this;
+            this.root.varMap = {};  // varNum -> [node]
+            this.root.spanMap = {}; // zpath -> node
             return this;
         }
+        this.root = parent.root;
         this.path = parent.path.slice();
         this.path.push(argNumFromZero + 1);
         this.link = this.div.appendChild(document.createElement("div"));
@@ -78,6 +32,113 @@
         parent.children.push(this);
     }
 
+    Node.prototype.makeTerm = function(txt) {
+        var s = document.createElement("span");
+        s.innerHTML = txt;
+        s.className = "termSpan";
+        return s;
+    }
+   
+    Node.prototype.makeVar = function(txt) {
+        if (txt === undefined) throw new Error("undef");
+        var s;
+        if (this.root.getSpecifyOptions) {
+            s = document.createElement("select");
+            var ph = s.appendChild(document.createElement("option"));
+            ph.innerHTML = txt;
+            ph.className = 'placeholder';
+            ph.selected = 'selected';
+            ph.disabled = 'disabled';
+        } else {
+            s = document.createElement("span");
+            s.innerHTML = txt;
+        }
+        s.className = "select";            
+        return s;
+    }
+
+    Node.prototype.decorate = function() {
+        var root = this.root;
+        root.spanMap[this.path] = this.div;
+        if (Array.isArray(this.exp)) {
+            var text = root.fact.Skin.TermNames[this.exp[0]];
+            this.div.className += " name" + cssEscape(text);
+            this.span = this.div.appendChild(this.makeTerm(text));
+        } else {
+            var varNum = this.exp;
+            var text = root.fact.Skin.VarNames[varNum];
+            this.div.className += " name" + varNum;
+            this.span = this.div.appendChild(this.makeVar(text, root.getSpecifyOptions));
+            if (root.getSpecifyOptions) {
+                // Editable: wire up select element
+                if (!root.varMap.hasOwnProperty(varNum)) {
+                    root.varMap[varNum] = [];
+                }
+                root.varMap[varNum].push(this);
+                this.span.addEventListener("focus", this.populateSelect.bind(this));
+                this.span.addEventListener("change", this.onchange.bind(this));
+            }
+        }
+        if (root.onclick) {
+            this.div.addEventListener("click", root.onclick.bind(this, this.path));
+            this.span.addEventListener("click", root.onclick.bind(this, this.path));
+        }
+
+    };
+
+    Node.prototype.populateSelect = function() {
+        var specifyOptions = this.root.getSpecifyOptions();
+        var select = this.span;
+        var oldValue = select.value;
+        var optionValues = this.optionValues = [];
+        while (select.lastChild != select.firstChild) {
+            select.removeChild(select.lastChild);
+        }
+        for (var k in specifyOptions) if (specifyOptions.hasOwnProperty(k)) {
+            var og = select.appendChild(document.createElement("optGroup"));
+            og.label = optGroupLabels.hasOwnProperty(k) ?
+                optGroupLabels[k] : k;
+            og.className = k;
+            specifyOptions[k].forEach(function(val) {
+                var opt = og.appendChild(
+                    document.createElement("option"));
+                var optIndex = optionValues.push({
+                    group: k,
+                    value: val,
+                });
+                opt.value = optIndex - 1;
+                if (opt.value == oldValue) {
+                    opt.selected = "selected";
+                }
+                // Var values are simple strings; Term values have a text property.
+                opt.innerHTML = val.text ? val.text : val;
+            });
+        }
+    };
+
+    Node.prototype.onchange = function(ev) {
+        var that = this;
+        var specifyOption = this.optionValues[this.span.value];
+        this.root.varMap[this.exp].forEach(function(other) {
+            if (other !== that) {
+                other.populateSelect();
+                other.span.value = that.span.value;
+            }
+            other.setSpecifyOption(specifyOption);
+        });
+    };
+
+    Node.prototype.setSpecifyOption = function(specifyOption) {
+        // TODO: PICKUP: actually manage children.
+        if (specifyOption.group == 'Vars') {
+            // specifyOption is simply a var.
+        } else {
+            // specifyOption now contains arity and freeMap for the term.
+        }
+
+    };
+
+    // ==== Reduce methods ====
     function makeGraph(parent, exp, i) {
         var n = new Node(parent, exp, i);
         if (Array.isArray(exp)) {
@@ -146,50 +207,6 @@
         }
     }
 
-    Node.prototype.decorate = function(spanMap, varMap, onclick, fact,
-                                       getSpecifyOptions) {
-        spanMap[this.path] = this.div;
-        if (Array.isArray(this.exp)) {
-            var text = fact.Skin.TermNames[this.exp[0]];
-            this.div.className += " name" + cssEscape(text);
-            this.span = this.div.appendChild(makeTerm(text));
-        } else {
-            var varNum = this.exp;
-            var text = fact.Skin.VarNames[varNum];
-            this.div.className += " name" + varNum;
-            this.span = this.div.appendChild(makeVar(text, getSpecifyOptions));
-            if (getSpecifyOptions) {
-                var select = this.span;
-                if (!varMap.hasOwnProperty(varNum)) {
-                    varMap[varNum] = [];
-                }
-                varMap[varNum].push(select);
-                select.addEventListener("change", function(ev) {
-                    //var value = JSON.parse(select.value);
-                    //XXX opts.onChange(path, value[0], value[1]);
-                    if (select.value !== "null") {
-                        varMap[varNum].forEach(function(select2) {
-                            if (select2 !== select) {
-                                populator(select2);
-                                select2.value = select.value;
-                            }
-                        });
-                    }
-                });
-            }
-        }
-        var path = this.path;
-        if (onclick) {
-            this.div.addEventListener("click", function(ev) {
-                onclick(ev, path);
-            });
-            this.span.addEventListener("click", function(ev) {
-                onclick(ev, path);
-            });
-        }
-
-    };
-
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -197,48 +214,44 @@
      * @param opts.exp the expression to draw
      * @param opts.onclick
      * @param opts.size
-     * @param opts.editable
      * @param opts.getSpecifyOptions
      * @return a DOM element containing the tree
      */
     var tm = function(opts) {
-        var fact = opts.fact
-        ,exp = opts.exp
-        ,d3tree = d3.layout.tree()
-        ,nodes = null
-        ,root = document.createElement("div")
+        var d3tree = d3.layout.tree()
+        ,rootDiv = document.createElement("div")
+        , nodes, graph, rect, largerDim, scale;
 
-        opts.varMap = {} // varName -> [select node]
-
-        root.setAttribute("class", "root");
+        rootDiv.setAttribute("class", "root");
 
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
-        var graph = makeGraph(null, exp);
-        root.appendChild(graph.div);
-
+        graph = makeGraph(null, opts.exp);
+        rootDiv.appendChild(graph.div);
+        rootDiv.spanMap = graph.root.spanMap;
+        graph.root.onclick = opts.onclick;
+        graph.root.fact = opts.fact;
+        graph.root.getSpecifyOptions = opts.getSpecifyOptions;
+        
         d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
         d3tree.separation(function(a,b) {
             return a.parent == b.parent ? 1 : 1.5;
         });
-        var nodes = d3tree.nodes(graph);
+        nodes = d3tree.nodes(graph);
         
-        root.spanMap = {};
-        var varMap = {};
         nodes.forEach(function(node) {
-            node.decorate(root.spanMap, varMap, opts.onclick, opts.fact, 
-                          opts.editable ? opts.getSpecifyOptions : null);
+            node.decorate();
         });
         
-        var rect = measureDivs(null, graph);
+        rect = measureDivs(null, graph);
         rect.width = (rect.right - rect.left);
         rect.height = (rect.bottom - rect.top);
         // make fit within bounds. TODO: this is not exactly right
-        var largerDim = (rect.width > rect.height) ? "width" : "height";
-        var scale = opts.size / rect[largerDim];
-        root.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
+        largerDim = (rect.width > rect.height) ? "width" : "height";
+        scale = opts.size / rect[largerDim];
+        rootDiv.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
         positionDivs(rect, scale, graph);
-        return root;
+        return rootDiv;
     };
     
     if (typeof define === "function" && define.amd) define(tm); else if (typeof module === "object" && module.exports) module.exports = tm;
