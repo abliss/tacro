@@ -133,38 +133,45 @@
             promise = Promise.resolve();
         }
         var specifyOption = this.optionValues[this.span.value];
-        
+
+        var newChildren = [];
+        if (specifyOption.group == 'Terms') {
+            for (var i = 0; i < specifyOption.value.arity; i++) {
+                // TODO: reuse old vars?
+                this.root.maxVar++;
+                newChildren.push(this.root.maxVar);
+                this.root.fact.nameVar("&#" + (0x2460 + this.root.maxVar) + ";"); // XXX
+            }
+        }
+
         this.root.varMap[this.exp].forEach(function(other) {
             if (other !== that) {
                 other.populateSelect();
                 other.span.value = that.span.value;
             }
-            other.setSpecifyOption(specifyOption);
+            other.setSpecifyOption(specifyOption, newChildren);
         });
-    };
-
-    Node.prototype.redrawP = function() {
-        
+        promise.then(this.redrawP.bind(this));
     };
     
-    Node.prototype.setSpecifyOption = function(specifyOption) {
+    // Trigger a redraw right now; fulfill the promise when all anims are done.
+    Node.prototype.redrawP = function() {
+        this.layout();
+        return Promise.resolve(); // XXX TODO
+    };
+    
+    Node.prototype.setSpecifyOption = function(specifyOption, newChildren) {
+        var that = this;
+        if (this.children) {
+            this.children.forEach(function(node) {
+                that.div.removeChild(node.div);
+            });
+            delete this.children;
+        }
         // TODO: PICKUP: actually manage children.
-        if (specifyOption.group == 'Vars') {
-            // specifyOption is simply a var.
-            var that = this;
-            if (this.children) {
-                this.children.forEach(function(node) {
-                    node.x = that.x;
-                    node.y = that.y;
-                    node.root.onAnimationEnd(function() {
-                        that.div.removeChild(node.div);
-                    });
-                });
-                delete this.children;
-            }
-        } else {
-            // specifyOption now contains arity and freeMap for the term.
-            
+        if (newChildren) {
+            this.children = [];
+            newChildren.reduce(makeGraph, this);
         }
 
     };
@@ -174,6 +181,8 @@
         var n = new Node(parent, exp, i);
         if (Array.isArray(exp)) {
             exp.slice(1).reduce(makeGraph, n);
+        } else {
+            n.root.maxVar = Math.max(n.root.maxVar, exp);
         }
         n.decorate();
         if (parent instanceof Node) {
@@ -215,9 +224,8 @@
         node.div.style["z-index"] = 100 - node.height;
         node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
         node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
-        if (Array.isArray(node.exp)) {
+        if (node.children) {
             // term nodes sized and positioned here.
-            // var nodes (leaves) positiend and sized through CSS.
             node.span.style.left = scale * (node.x - RADIUS - node.divRect.left) + UNIT;
             node.span.style.top = scale * (node.y - RADIUS - node.divRect.top) + UNIT;
             node.span.style.width =
@@ -226,7 +234,12 @@
             if (node.children) {
                 node.children.map(positionDivs.bind(null, node.divRect, scale));
             }
+        } else {
+            // var nodes (leaves) positiend and sized through CSS.
+            var ns = node.span;
+            ns.style.left = ns.style.top = ns.style.width = ns.style.height = '';
         }
+        
         if (node.link) {
             node.link.style.right = scale * (node.divRect.right - node.x) + UNIT;
             //scale * (node.parent.divRect.left - origin.left) + UNIT;
@@ -278,7 +291,8 @@
             onclick: opts.onclick,
             fact: opts.fact,
             getSpecifyOptions: opts.getSpecifyOptions,
-            size: opts.size
+            size: opts.size,
+            maxVar: -1,
         };
         var graph = makeGraph(root, opts.exp);
         rootDiv.appendChild(graph.div);
