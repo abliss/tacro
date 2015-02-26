@@ -5,8 +5,12 @@
     ,optGroupLabels = {
         'Vars' : 'Train',
         'Terms' : 'Promote'
-    }
+    },  d3tree = d3.layout.tree();
 
+    d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
+    d3tree.separation(function(a,b) {
+        return a.parent == b.parent ? 1 : 1.5;
+    });
     
     // Container for a mutable, d3-compatible graph-structure with mapped
     // HTML DOM nodes.
@@ -16,11 +20,10 @@
         this.children = [];
         this.height = 0;
         this.div.className = Array.isArray(exp) ? "term" : "var";
-        if (!parent) {
+        if (!(parent instanceof Node)) {
             this.path = [];
-            this.root = this;
-            this.root.varMap = {};  // varNum -> [node]
-            this.root.spanMap = {}; // zpath -> node
+            this.root = parent;
+            parent.node = this;
             return this;
         }
         this.root = parent.root;
@@ -57,6 +60,7 @@
         return s;
     }
 
+    // Must be called after the root has been set up.
     Node.prototype.decorate = function() {
         var root = this.root;
         root.spanMap[this.path] = this.div;
@@ -118,7 +122,18 @@
 
     Node.prototype.onchange = function(ev) {
         var that = this;
+        var promise;
+        if (this.children !== undefined && this.children.length > 0) {
+            this.root.varMap[this.exp].forEach(function(node) {
+                node.x = node.parent.x;
+                node.y = node.parent.y;
+            });
+            promise = this.redrawP();
+        } else {
+            promise = Promise.resolve();
+        }
         var specifyOption = this.optionValues[this.span.value];
+        
         this.root.varMap[this.exp].forEach(function(other) {
             if (other !== that) {
                 other.populateSelect();
@@ -128,12 +143,28 @@
         });
     };
 
+    Node.prototype.redrawP = function() {
+        
+    };
+    
     Node.prototype.setSpecifyOption = function(specifyOption) {
         // TODO: PICKUP: actually manage children.
         if (specifyOption.group == 'Vars') {
             // specifyOption is simply a var.
+            var that = this;
+            if (this.children) {
+                this.children.forEach(function(node) {
+                    node.x = that.x;
+                    node.y = that.y;
+                    node.root.onAnimationEnd(function() {
+                        that.div.removeChild(node.div);
+                    });
+                });
+                delete this.children;
+            }
         } else {
             // specifyOption now contains arity and freeMap for the term.
+            
         }
 
     };
@@ -144,10 +175,13 @@
         if (Array.isArray(exp)) {
             exp.slice(1).reduce(makeGraph, n);
         }
-        if (parent) {
+        n.decorate();
+        if (parent instanceof Node) {
             parent.height = Math.max(parent.height, n.height + 1);
+            return parent;
+        } else {
+            return n;
         }
-        return parent || n;
     }
     
     // Walk tree, positioning and sizing container divs. Grows sets
@@ -207,6 +241,20 @@
         }
     }
 
+    // TODO: this should really be attached to the Root object, not the graph node?
+    Node.prototype.layout = function() {
+        var nodes = d3tree.nodes(this.root.node);
+        var rect = measureDivs(null, this.root.node);
+        rect.width = (rect.right - rect.left);
+        rect.height = (rect.bottom - rect.top);
+        // make fit within bounds. TODO: this is not exactly right
+        largerDim = (rect.width > rect.height) ? "width" : "height";
+        scale = this.root.size / rect[largerDim];
+        this.root.div.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
+        positionDivs(rect, scale, this.root.node);
+        return rect;
+    };
+    
     /**
      * Make a tree, i.e. a two-dimensional hierarchical display of an expression. 
      *
@@ -218,39 +266,24 @@
      * @return a DOM element containing the tree
      */
     var tm = function(opts) {
-        var d3tree = d3.layout.tree()
-        ,rootDiv = document.createElement("div")
-        , nodes, graph, rect, largerDim, scale;
-
+        var rootDiv = document.createElement("div")
         rootDiv.setAttribute("class", "root");
 
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.
-        graph = makeGraph(null, opts.exp);
+        var root = {
+            div: rootDiv,
+            spanMap: {},
+            varMap: {},
+            onclick: opts.onclick,
+            fact: opts.fact,
+            getSpecifyOptions: opts.getSpecifyOptions,
+            size: opts.size
+        };
+        var graph = makeGraph(root, opts.exp);
         rootDiv.appendChild(graph.div);
-        rootDiv.spanMap = graph.root.spanMap;
-        graph.root.onclick = opts.onclick;
-        graph.root.fact = opts.fact;
-        graph.root.getSpecifyOptions = opts.getSpecifyOptions;
-        
-        d3tree.nodeSize([NODE_SIZE, NODE_SIZE]);
-        d3tree.separation(function(a,b) {
-            return a.parent == b.parent ? 1 : 1.5;
-        });
-        nodes = d3tree.nodes(graph);
-        
-        nodes.forEach(function(node) {
-            node.decorate();
-        });
-        
-        rect = measureDivs(null, graph);
-        rect.width = (rect.right - rect.left);
-        rect.height = (rect.bottom - rect.top);
-        // make fit within bounds. TODO: this is not exactly right
-        largerDim = (rect.width > rect.height) ? "width" : "height";
-        scale = opts.size / rect[largerDim];
-        rootDiv.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
-        positionDivs(rect, scale, graph);
+        graph.layout();
+        rootDiv.spanMap = root.spanMap;
         return rootDiv;
     };
     
