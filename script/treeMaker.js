@@ -26,6 +26,7 @@
             parent.node = this;
             return this.decorate();;
         }
+        this.parent = parent;
         this.root = parent.root;
         this.path = parent.path.slice();
         this.path.push(argNumFromZero + 1);
@@ -124,13 +125,26 @@
     Node.prototype.onchange = function(ev) {
         var that = this;
         var promise;
+        var allMatchingNodes = this.root.varMap[this.exp];
         if (this.children !== undefined && this.children.length > 0) {
-            this.root.varMap[this.exp].forEach(function(node) {
-                node.x = node.parent.x;
-                node.y = node.parent.y;
+            // Animate children up into the parent.
+            allMatchingNodes.forEach(function(node) {
+                node.children.forEach(function(child) {
+                    // Set graph coords
+                    child.x = child.parent.x;
+                    child.y = child.parent.y;
+                });
             });
-            promise = this.redrawP();
+            this.redraw(); // Makes divs for children respect graph coords
+            allMatchingNodes.forEach(function(node) {
+                node.deadChildren = node.children;
+                delete node.children;  // prevents next layout() from leaving space
+            });
+            promise = this.layoutAndRedrawP();
+            // promise now represents that the children have been sucked up into
+            // their parents, and the tree has shrunk around the empty space.
         } else {
+            // No children, so promise represents "right now"
             promise = Promise.resolve();
         }
         var specifyOption = this.optionValues[this.span.value];
@@ -145,19 +159,23 @@
             }
         }
 
-        this.root.varMap[this.exp].forEach(function(other) {
+        allMatchingNodes.forEach(function(other) {
             if (other !== that) {
                 other.populateSelect();
                 other.span.value = that.span.value;
             }
-            other.setSpecifyOption(specifyOption, newChildren);
         });
-        promise.then(this.redrawP.bind(this));
+        promise.then(function() {
+            allMatchingNodes.forEach(function(other) {
+                other.setSpecifyOption(specifyOption, newChildren);
+            });
+            that.layoutAndRedrawP();
+        });
     };
     
     // Trigger a redraw right now; fulfill the promise when all anims are done.
     Node.prototype.redrawP = function() {
-        this.layout();
+        this.redraw();
         // TODO: should not wait if nothing changed.
         // TODO: should use animationEnd callback
         return new Promise(function(resolve){
@@ -167,11 +185,11 @@
     
     Node.prototype.setSpecifyOption = function(specifyOption, newChildren) {
         var that = this;
-        if (this.children) {
-            this.children.forEach(function(node) {
+        if (this.deadChildren) {
+            this.deadChildren.forEach(function(node) {
                 that.div.removeChild(node.div);
             });
-            delete this.children;
+            delete this.deadChildren;
         }
         if (newChildren) {
             this.children = [];
@@ -258,8 +276,12 @@
     }
 
     // TODO: this should really be attached to the Root object, not the graph node?
-    Node.prototype.layout = function() {
-        var nodes = d3tree.nodes(this.root.node);
+    Node.prototype.layoutAndRedrawP = function() {
+        d3tree.nodes(this.root.node);
+        return this.redrawP();
+    };
+    
+    Node.prototype.redraw = function() {
         var rect = measureDivs(null, this.root.node);
         rect.width = (rect.right - rect.left);
         rect.height = (rect.bottom - rect.top);
@@ -299,7 +321,7 @@
         };
         var graph = makeGraph(root, opts.exp);
         rootDiv.appendChild(graph.div);
-        graph.layout();
+        graph.layoutAndRedrawP();
         rootDiv.spanMap = root.spanMap;
         return rootDiv;
     };
