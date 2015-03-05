@@ -223,20 +223,20 @@
         node.div.style["z-index"] = 100 - node.height;
         node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
         node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
+        node.span.style.width =
+            node.span.style.height =
+            scale * RADIUS * 2 + UNIT;
         if (node.children) {
             // term nodes sized and positioned here.
             node.span.style.left = scale * (node.x - RADIUS - node.divRect.left) + UNIT;
             node.span.style.top = scale * (node.y - RADIUS - node.divRect.top) + UNIT;
-            node.span.style.width =
-                node.span.style.height =
-                scale * RADIUS * 2 + UNIT;
             if (node.children) {
                 node.children.map(positionDivs.bind(null, node.divRect, scale));
             }
         } else {
             // var nodes (leaves) positiend and sized through CSS.
             var ns = node.span;
-            ns.style.left = ns.style.top = ns.style.width = ns.style.height = '';
+            ns.style.left = ns.style.top = '';
         }
         
         if (node.link) {
