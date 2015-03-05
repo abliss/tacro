@@ -174,6 +174,26 @@ function Facet(factData) {
     }
 }
 
+function workPathHighlighter(subPath, isHover) {
+    if (subPath) {
+        subPath = "," + subPath;
+    }
+    if (isHover) {
+        return function() {
+            if (state.workPath) {
+                var n = workBox.spanMap[state.workPath + subPath];
+                if (n) n.className += " fakeHover";
+            }
+        };
+    } else {
+        return function() {
+            if (state.workPath) {
+                var n = workBox.spanMap[state.workPath + subPath];
+                if (n) n.className = n.className.replace(/ fakeHover/, '');
+            }
+        };
+    }
+}
 function addToShooter(factData, land) {
     if (!factData) {
         throw new Error("Bad fact: "+ factData);
@@ -202,6 +222,13 @@ function addToShooter(factData, land) {
         exp:fact.Core[Fact.CORE_STMT],
         size:shooterTreeWidth,
         editable:true});
+    for (var p in box.spanMap) if (box.spanMap.hasOwnProperty(p)) {
+        if (p.length >= 1)  {
+            var q = p.substring(2);
+            box.spanMap[p].addEventListener("mouseover", workPathHighlighter(q, true));
+            box.spanMap[p].addEventListener("mouseout", workPathHighlighter(q, false));
+        }
+    }
     box.className += " shooter";
     var pane = landMap[land.name].pane;
     pane.insertBefore(box, pane.firstChild);
