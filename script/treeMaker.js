@@ -255,6 +255,7 @@
         node.div.style["z-index"] = 100 - node.height;
         node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
         node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
+        node.span.style['font-size'] =0.5 * NODE_SIZE * scale + UNIT;
         node.span.style.width =
             node.span.style.height =
             scale * RADIUS * 2 + UNIT;
@@ -298,7 +299,10 @@
         // make fit within bounds. TODO: this is not exactly right
         largerDim = (rect.width > rect.height) ? "width" : "height";
         scale = this.root.size / rect[largerDim];
-        this.root.div.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
+        // TODO: it should suffice to set the font-size on this.root.div and let
+        // everything inherit. Unfortunately, this does not play well with CSS
+        // transitions.
+        //this.root.div.style["font-size"] = 0.5 * NODE_SIZE * scale + UNIT;
         positionDivs(rect, scale, this.root.node);
         return rect;
     };
