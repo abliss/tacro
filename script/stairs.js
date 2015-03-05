@@ -326,21 +326,21 @@ function knowTerms(fact) {
             numNewTerms++;
             var termObj = {text:termName,
                            freeMap:fact.FreeMaps[termNum],
-                           arity:0 // updated in scan() below
+                           arity:-1 // updated in scan() below
                           };
             state.knownTerms[termName] = termObj;
             state.specifyOptions.Terms.push(termObj);
         }
     });
     function scan(exp) {
-        if ((numNewTerms > 0) &&
-            Array.isArray(exp) &&
-            newTerms.hasOwnProperty(exp[0])) {
-            var termNum = exp[0];
-            var termName = fact.Skin.TermNames[termNum];
-            state.knownTerms[termName].arity = exp.length - 1;
-            delete newTerms[termNum];
-            numNewTerms--;
+        if (numNewTerms > 0&& Array.isArray(exp)) {
+            if (newTerms.hasOwnProperty(exp[0])) {
+                var termNum = exp[0];
+                var termName = fact.Skin.TermNames[termNum];
+                state.knownTerms[termName].arity = exp.length - 1;
+                delete newTerms[termNum];
+                numNewTerms--;
+            }
             exp.slice(1).map(scan);
         }
     }

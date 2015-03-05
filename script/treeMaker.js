@@ -158,7 +158,11 @@
     // Trigger a redraw right now; fulfill the promise when all anims are done.
     Node.prototype.redrawP = function() {
         this.layout();
-        return Promise.resolve(); // XXX TODO
+        // TODO: should not wait if nothing changed.
+        // TODO: should use animationEnd callback
+        return new Promise(function(resolve){
+            window.setTimeout(resolve, 1050); // XXX sync with css
+        });
     };
     
     Node.prototype.setSpecifyOption = function(specifyOption, newChildren) {
