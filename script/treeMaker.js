@@ -129,11 +129,7 @@
         if (this.children !== undefined && this.children.length > 0) {
             // Animate children up into the parent.
             allMatchingNodes.forEach(function(node) {
-                node.children.forEach(function(child) {
-                    // Set graph coords
-                    child.x = child.parent.x;
-                    child.y = child.parent.y;
-                });
+                node.children.forEach(node.suckIn, node);
             });
             this.redraw(); // Makes divs for children respect graph coords
             allMatchingNodes.forEach(function(node) {
@@ -143,6 +139,17 @@
             promise = this.layoutAndRedrawP();
             // promise now represents that the children have been sucked up into
             // their parents, and the tree has shrunk around the empty space.
+            promise.then(function() {
+                // Now time to reap the dead children.
+                allMatchingNodes.forEach(function(node) {
+                    if (node.deadChildren) {
+                        node.deadChildren.forEach(function(child) {
+                            node.div.removeChild(child.div);
+                        });
+                        delete node.deadChildren;
+                    }
+                });
+            });
         } else {
             // No children, so promise represents "right now"
             promise = Promise.resolve();
@@ -169,7 +176,9 @@
             allMatchingNodes.forEach(function(other) {
                 other.setSpecifyOption(specifyOption, newChildren);
             });
-            that.layoutAndRedrawP();
+            that.redraw(); // Position new child divs at their parents
+            //getComputedStyle(that.root.div); // prepare for animated descend. TODO doesn't work?!
+            window.setTimeout(that.layoutAndRedrawP.bind(that), 10);
         });
     };
     
@@ -183,21 +192,22 @@
         });
     };
     
+    Node.prototype.reapChildren = function() {
+    };
+    
     Node.prototype.setSpecifyOption = function(specifyOption, newChildren) {
-        var that = this;
-        if (this.deadChildren) {
-            this.deadChildren.forEach(function(node) {
-                that.div.removeChild(node.div);
-            });
-            delete this.deadChildren;
-        }
         if (newChildren) {
             this.children = [];
             newChildren.reduce(makeGraph, this);
+            this.children.forEach(this.suckIn, this);
         }
-
     };
 
+    Node.prototype.suckIn = function(otherNode) {
+        otherNode.x = this.x;
+        otherNode.y = this.y;
+    };
+    
     // ==== Reduce methods ====
     function makeGraph(parent, exp, i) {
         var n = new Node(parent, exp, i);
