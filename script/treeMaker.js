@@ -24,7 +24,7 @@
             this.path = [];
             this.root = parent;
             parent.node = this;
-            return this;
+            return this.decorate();;
         }
         this.root = parent.root;
         this.path = parent.path.slice();
@@ -33,6 +33,7 @@
         this.link.className = "link";
         parent.div.appendChild(this.div);
         parent.children.push(this);
+        return this.decorate();
     }
 
     Node.prototype.makeTerm = function(txt) {
@@ -87,7 +88,7 @@
             this.div.addEventListener("click", root.onclick.bind(this, this.path));
             this.span.addEventListener("click", root.onclick.bind(this, this.path));
         }
-
+        return this;
     };
 
     Node.prototype.populateSelect = function() {
@@ -168,7 +169,6 @@
             });
             delete this.children;
         }
-        // TODO: PICKUP: actually manage children.
         if (newChildren) {
             this.children = [];
             newChildren.reduce(makeGraph, this);
@@ -184,7 +184,6 @@
         } else {
             n.root.maxVar = Math.max(n.root.maxVar, exp);
         }
-        n.decorate();
         if (parent instanceof Node) {
             parent.height = Math.max(parent.height, n.height + 1);
             return parent;

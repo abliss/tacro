@@ -193,8 +193,9 @@ body, html {
     border: 1px solid blue;
 }
 
-.termbox .termSpan {
-    z-index: 100;
+/** termSpan is for actual terms; termRole is for terms or term-specified vars. */
+.termbox .termSpan, .termbox .select {
+    z-index: 101;
 }
 .treeLeaf {
     color: white;
