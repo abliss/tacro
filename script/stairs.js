@@ -174,23 +174,22 @@ function Facet(factData) {
     }
 }
 
-function workPathHighlighter(subPath, isHover) {
-    if (subPath) {
-        subPath = "," + subPath;
+function workPathHighlighter(path, isHover) {
+    var suffix = path.substring(2);
+    if (suffix) {
+        suffix = "," + suffix;
     }
     if (isHover) {
         return function() {
-            if (state.workPath) {
-                var n = workBox.spanMap[state.workPath + subPath];
-                if (n) n.className += " fakeHover";
-            }
+            var workPath = state.workPath ? state.workPath + suffix : path;
+            var n = workBox.spanMap[workPath];
+            if (n) n.className += " fakeHover";
         };
     } else {
         return function() {
-            if (state.workPath) {
-                var n = workBox.spanMap[state.workPath + subPath];
-                if (n) n.className = n.className.replace(/ fakeHover/, '');
-            }
+            var workPath = state.workPath ? state.workPath + suffix : path;
+            var n = workBox.spanMap[workPath];
+            if (n) n.className = n.className.replace(/ fakeHover/, '');
         };
     }
 }
@@ -223,11 +222,8 @@ function addToShooter(factData, land) {
         size:shooterTreeWidth,
         editable:true});
     for (var p in box.spanMap) if (box.spanMap.hasOwnProperty(p)) {
-        if (p.length >= 1)  {
-            var q = p.substring(2);
-            box.spanMap[p].addEventListener("mouseover", workPathHighlighter(q, true));
-            box.spanMap[p].addEventListener("mouseout", workPathHighlighter(q, false));
-        }
+        box.spanMap[p].addEventListener("mouseover", workPathHighlighter(p, true));
+        box.spanMap[p].addEventListener("mouseout", workPathHighlighter(p, false));
     }
     box.className += " shooter";
     var pane = landMap[land.name].pane;
