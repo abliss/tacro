@@ -181,13 +181,15 @@ function workPathHighlighter(path, isHover) {
     }
     if (isHover) {
         return function() {
-            var workPath = state.workPath ? state.workPath + suffix : path;
+            var workPath = (state.workPath && state.workPath.length) ?
+                state.workPath + suffix : path;
             var n = workBox.spanMap[workPath];
             if (n) n.className += " fakeHover";
         };
     } else {
         return function() {
-            var workPath = state.workPath ? state.workPath + suffix : path;
+            var workPath = (state.workPath && state.workPath.length) ?
+                state.workPath + suffix : path;
             var n = workBox.spanMap[workPath];
             if (n) n.className = n.className.replace(/ fakeHover/, '');
         };
