@@ -206,6 +206,9 @@
     Node.prototype.suckIn = function(otherNode) {
         otherNode.x = this.x;
         otherNode.y = this.y;
+        if (otherNode.children) {
+            otherNode.children.forEach(this.suckIn, this);
+        }
     };
     
     // ==== Reduce methods ====

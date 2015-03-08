@@ -222,6 +222,7 @@ function addToShooter(factData, land) {
         size:shooterTreeWidth,
         editable:true});
     for (var p in box.spanMap) if (box.spanMap.hasOwnProperty(p)) {
+        // TODO: PICKUP: need to put this in decorate() so it hits new children.
         box.spanMap[p].addEventListener("mouseover", workPathHighlighter(p, true));
         box.spanMap[p].addEventListener("mouseout", workPathHighlighter(p, false));
     }
