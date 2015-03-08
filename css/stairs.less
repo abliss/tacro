@@ -4,7 +4,6 @@ body {
     margin:0px;
     width:100%;
 }
-@shooterWidth: 20vw;
 #rewind, #forward {
     font-size:200%;
 }
@@ -18,15 +17,13 @@ body {
 body, html {
     height:100%;
 }
-#rightPane {
-    box-sizing:border-box;
-    width:100%;
+#workspace {
+    width:60%;
     height:100%;
-    padding-left:@shooterWidth;
-    /*background: -webkit-gradient(linear, 50% 50%, 100% 100%, from(#404040), to(#202020)); */
     text-align:center;
-    z-index: 1;
     overflow:scroll;
+    position:absolute;
+    left:20%;
 }
 #shooterTabs {
     display:inline-block;
@@ -34,13 +31,32 @@ body, html {
     width:100%;
 }
 #shooter {
-    width: @shooterWidth;
+    width: 20%;
     margin:0px;
     height:100%;
     overflow-y:scroll;
     display:inline-block;
     position:absolute;
     z-index: 2;
+}
+#chat {
+    width: 20%;
+    height:100%;
+    overflow:scroll;
+    position:absolute;
+    left:80%;
+}
+#chat #chatPane {
+    box-sizing:border-box;
+    height:100%;
+    padding-bottom:2em;
+}
+#chat #chatInput {
+    position:absolute;
+    bottom:0;
+    height:2em;
+    width:94%;
+    left:3%;
 }
 #shooterTape {
     text-align:center;
@@ -73,15 +89,14 @@ body, html {
 
 #shooter .termbox {
     background-color:white;
-    margin:@shooterWidth * .005;
-    padding:@shooterWidth * .005;
+    margin: .5%;
+    padding:.5%;
     border:2px solid black;
     border-radius:1em;
-    width: @shooterWidth * .8;
+    width: 80%;
     position:relative;
     transition: max-height 1s ease-in-out;
-    overflow-y:hidden;
-    overflow-x:visible;
+    overflow:hidden;
     /** XXX Bizarrely, this seems to make transitions smoother on android chrome by triggering GPU acceleration.***/
     transform:translate3d(0,0,0);
 }
@@ -238,3 +253,13 @@ body, html {
 #well .var.name8 .select { background-color: #4c2923; }
 #well .var.name9 .select { background-color: #bb9c88; }
 
+
+
+.chatMsg {
+    width: 96%;
+    margin: 2%;
+    border: 1px solid black;
+    border-radius: 1em;
+    padding: 1em;
+    box-sizing: border-box;
+}

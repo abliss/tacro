@@ -32,7 +32,7 @@
       <span id="shooterTabs"></span>
       <span id="shooterTape"></span>
     </div>
-    <div id="rightPane">
+    <div id="workspace">
       <span id="toolbox">
 	    <button id="rewind" class="nav" href="#">&laquo;</button>
 	    <button id="forward" class="nav" href="#">&raquo;</button>
@@ -40,6 +40,10 @@
         <button id="login" disabled="true">guest</button>
       </span>
       <div id="well"><span id="placeholder">Loading...</span></div>
+    </div>
+    <div id="chat">
+      <div id="chatPane"></div>
+      <input type="text" id="chatInput"/>
     </div>
     <script src="script/firebase-debug.js"></script>
     <script src="script/OfflineFirebase.js"></script>
@@ -49,6 +53,8 @@
     <script type="text/javascript">modules['./fact.js'] = module.exports;</script>
     <script src="script/storage.js" type="text/javascript"></script>
     <script type="text/javascript">modules['./storage.js'] = module.exports;</script>
+    <script src="script/chat.js" type="text/javascript"></script>
+    <script type="text/javascript">modules['./chat.js'] = module.exports;</script>
 
     <script src="script/engine.js" type="text/javascript"></script>
     <script type="text/javascript">modules['./engine.js'] = module.exports;</script>

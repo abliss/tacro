@@ -181,10 +181,14 @@
         ;
         this.authLogout = function() {
             this.auth.logout();
-        }
+        };
         this.authLogin = function() {
             this.auth.login("google", { rememberMe: true });
-        }
+        };
+        this.escape = function(str) {
+            return encodeURIComponent(str).replace(/\./g,"%2E");
+        };
+
     }
     module.exports = Storage;
 })(module);

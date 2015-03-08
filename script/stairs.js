@@ -4,8 +4,11 @@ var Engine = require('./engine.js');
 var Storage = require('./storage.js');
 var Move = require('./move.js');
 var TreeMaker = require('./treeMaker.js');
+var Chat = require('./chat.js');
 
 var storage = new Storage(Engine.fingerprint);
+var chat = new Chat(storage, Engine.fingerprint, document.getElementById('chatPane'),
+                    document.getElementById('chatInput'));
 var log = {};
 var state;
 var lastStateFp = null;
@@ -24,9 +27,6 @@ var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 
 Error.stackTraceLimit = Infinity;
-function fbEscape(str) {
-    return encodeURIComponent(str).replace(/\./g,"%2E");
-}
 
 var varColors = [
     "#9370db",
@@ -246,7 +246,7 @@ function addToShooter(factData, land) {
                 storage.remote.child("users").
                     child(storage.user.uid).
                     child("points").
-                    child(fbEscape(currentLand().name)).
+                    child(storage.escape(currentLand().name)).
                     child(currentLand().goals.length).
                     set(newFactFp.remote);
             }
@@ -381,6 +381,7 @@ function setWork(work) {
     state.workHash = Engine.fingerprint(work);
     // TODO: might we need an extra var here?
     state.specifyOptions.Vars = work.Skin.VarNames;
+    chat.setWork(work);
     save();
 }
 
@@ -431,7 +432,7 @@ function redrawSelection() {
     if (selectedNode) {
         d3.select(selectedNode).classed("selected", false);
     }
-    if (typeof state.workPath !== 'undefined') {
+    if (typeof state.workPath  !== 'undefined') {
         selectedNode = workBox.spanMap[state.workPath];
         if (!selectedNode) {
             throw new Error("Selected node not found:" + state.workPath);
@@ -651,8 +652,12 @@ function loadLands(lands) { // TODO: this has become totally gefucked
     }
     console.log("Got checked lands: " + numLands);
 }
-// ==== STARTUP ====
 
+function ChatListener(pane) {
+    
+}
+
+// ==== STARTUP ====
 window.addEventListener('popstate', function(ev) {
     console.log("popstate to " + ev.state);
     if (ev.state) {
