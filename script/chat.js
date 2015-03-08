@@ -23,19 +23,24 @@
         }
         
         function receiveMsg(snap) {
-            var box = addMsg(snap.val().msg);
-            box.className += " incoming";
-        }
-
-        function addMsg(msg, className) {
-            var box = document.createElement("div");
+            var box = pane.appendChild(document.createElement("div"));
             box.className = "chatMsg";
-            box.innerText = msg; // TODO: injection
-            pane.appendChild(box);
+            box.innerText = snap.val().msg; // TODO: injection
+
+            var close = box.appendChild(document.createElement("button"));
+            close.innerText = "X";
+            close.className = "close";
+            close.onclick = function(){
+                snap.ref().remove();
+                pane.removeChild(box);
+            };
             return box;
         }
 
         this.setWork = function(workObj) {
+            while (pane.lastChild) {
+                pane.removeChild(pane.lastChild);
+            }
             if (workChannel) {
                 workChannel.off("child_added",receiveMsg);
             }
