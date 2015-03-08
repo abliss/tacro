@@ -2,6 +2,8 @@
     function Chat(storage, fingerprinter, pane, input) {
         var that = this;
         var workChannel = null;
+
+        var boxMap = {};
         input.onkeypress = function(e) {
             e = e || window.event;
             var key = (e.keyCode || e.which);
@@ -22,17 +24,23 @@
             }
         }
         
+        function removeMsg(snap) {
+            var box = boxMap[snap.name()];
+            if (box) {
+                pane.removeChild(box);
+            }
+        }
+        
         function receiveMsg(snap) {
             var box = pane.appendChild(document.createElement("div"));
             box.className = "chatMsg";
             box.innerText = snap.val().msg; // TODO: injection
-
+            boxMap[snap.name()] = box;
             var close = box.appendChild(document.createElement("button"));
             close.innerText = "X";
             close.className = "close";
             close.onclick = function(){
                 snap.ref().remove();
-                pane.removeChild(box);
             };
             return box;
         }
@@ -41,13 +49,16 @@
             while (pane.lastChild) {
                 pane.removeChild(pane.lastChild);
             }
+            boxMap = {};
             if (workChannel) {
                 workChannel.off("child_added",receiveMsg);
+                workChannel.off("child_removed",removeMsg);
             }
             // XXX ??? storage.escape(JSON.stringify(workObj));
             var chanName = storage.escape(fingerprinter(workObj));
             workChannel = storage.remote.child("chat").child(chanName);
             workChannel.on("child_added", receiveMsg);
+            workChannel.on("child_removed",removeMsg);
         };
     }
     
