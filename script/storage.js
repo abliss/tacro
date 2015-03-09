@@ -186,7 +186,7 @@
             this.auth.login("google", { rememberMe: true });
         };
         this.escape = function(str) {
-            return encodeURIComponent(str).replace(/\./g,"%2E");
+            return encodeURIComponent(str).replace(/\./g,"%2E").replace(/%/g,'@');
         };
 
     }
