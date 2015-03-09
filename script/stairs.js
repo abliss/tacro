@@ -270,8 +270,10 @@ function addToShooter(factData, land) {
                 (JSON.stringify(expTermArr[argNum]) ===
                  JSON.stringify(workBox.pathTermArr))) {
                 button.className += " matched";
+                button.removeAttribute('disabled');
             } else {
                 button.className = button.className.replace(/ matched/,'');
+                button.setAttribute('disabled', 'disabled');
             }
 
         }
@@ -336,7 +338,7 @@ function addToShooter(factData, land) {
     }
 
     // Turnstile (ground-out button)
-    box.turnstile = box.spanMap[[]].appendChild(document.createElement("span"));
+    box.turnstile = box.spanMap[[]].appendChild(document.createElement("button"));
     box.turnstile.className = "turnstile";
     box.turnstile.innerText = "\u22a2";
     box.turnstile.onclick = groundOut;
@@ -353,7 +355,8 @@ function addToShooter(factData, land) {
     [1,2].forEach(function(argNum) {
         if (!box.spanMap[[argNum]]) return;
         var apply = box.spanMap[[argNum]].appendChild(
-            document.createElement("span"));
+            document.createElement("button"));
+        apply.disabled = "disabled";
         apply.className = "applyButton apply" + argNum;
         apply.innerHTML = "&Rarr;";
         apply.onclick = applyChild.bind(null, argNum);
