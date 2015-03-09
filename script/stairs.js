@@ -175,24 +175,27 @@ function Facet(factData) {
 }
 
 function workPathHighlighter(path, isHover) {
-    var suffix = path.substring(2);
-    if (suffix) {
-        suffix = "," + suffix;
+    var suffix = path.slice(1);
+    function getWorkPath() {
+        if (state.workPath) {
+            if (path.length == 0) {
+                return null;
+            }
+            if ((state.workPath.length > 0) && suffix) {
+                return "" + state.workPath + "," + suffix;
+            } else {
+                return suffix;
+            }
+        } else {
+            return path;
+        }
     }
+    var n = workBox.spanMap[getWorkPath()];
+    if (!n) return;
     if (isHover) {
-        return function() {
-            var workPath = (state.workPath && state.workPath.length) ?
-                state.workPath + suffix : path;
-            var n = workBox.spanMap[workPath];
-            if (n) n.className += " fakeHover";
-        };
+        n.className += " fakeHover";
     } else {
-        return function() {
-            var workPath = (state.workPath && state.workPath.length) ?
-                state.workPath + suffix : path;
-            var n = workBox.spanMap[workPath];
-            if (n) n.className = n.className.replace(/ fakeHover/, '');
-        };
+        n.className = n.className.replace(/ fakeHover/, '');
     }
 }
 function addToShooter(factData, land) {
@@ -222,12 +225,8 @@ function addToShooter(factData, land) {
         fact:fact, 
         exp:fact.Core[Fact.CORE_STMT],
         size:shooterTreeWidth,
+        onmouseover: workPathHighlighter,
         editable:true});
-    for (var p in box.spanMap) if (box.spanMap.hasOwnProperty(p)) {
-        // TODO: PICKUP: need to put this in decorate() so it hits new children.
-        box.spanMap[p].addEventListener("mouseover", workPathHighlighter(p, true));
-        box.spanMap[p].addEventListener("mouseout", workPathHighlighter(p, false));
-    }
     box.className += " shooter";
     var pane = landMap[land.name].pane;
     pane.insertBefore(box, pane.firstChild);

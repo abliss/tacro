@@ -89,6 +89,10 @@
             this.div.addEventListener("click", root.onclick.bind(this, this.path));
             this.span.addEventListener("click", root.onclick.bind(this, this.path));
         }
+        if (root.onmouseover) {
+            this.div.addEventListener("mouseover", root.onmouseover.bind(this, this.path, true));
+            this.div.addEventListener("mouseout", root.onmouseover.bind(this, this.path, false));
+        }
         return this;
     };
 
@@ -331,6 +335,7 @@
             spanMap: {},
             varMap: {},
             onclick: opts.onclick,
+            onmouseover: opts.onmouseover,
             fact: opts.fact,
             getSpecifyOptions: opts.getSpecifyOptions,
             size: opts.size,
