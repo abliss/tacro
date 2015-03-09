@@ -20,6 +20,7 @@
         this.children = [];
         this.height = 0;
         this.div.className = Array.isArray(exp) ? "term" : "var";
+        this.isPromoted = false;
         if (!(parent instanceof Node)) {
             this.path = [];
             this.root = parent;
@@ -161,8 +162,9 @@
         }
         var specifyOption = this.optionValues[this.span.value];
 
-        var newChildren = [];
+        var newChildren = null;
         if (specifyOption.group == 'Terms') {
+            newChildren = [];
             for (var i = 0; i < specifyOption.value.arity; i++) {
                 // TODO: reuse old vars?
                 this.root.maxVar++;
@@ -180,8 +182,8 @@
         promise.then(function() {
             allMatchingNodes.forEach(function(other) {
                 other.setSpecifyOption(specifyOption, newChildren);
-                that.notifyChanged();
             });
+            that.notifyChanged();
             that.redraw(); // Position new child divs at their parents
             //getComputedStyle(that.root.div); // prepare for animated descend. TODO doesn't work?!
             window.setTimeout(that.layoutAndRedrawP.bind(that), 10);
@@ -198,14 +200,15 @@
         });
     };
     
-    Node.prototype.reapChildren = function() {
-    };
-    
     Node.prototype.setSpecifyOption = function(specifyOption, newChildren) {
         if (newChildren) {
             this.children = [];
             newChildren.reduce(makeGraph, this);
             this.children.forEach(this.suckIn, this);
+            this.isPromoted = true;
+        } else {
+            delete this.children;
+            this.isPromoted = false;
         }
     };
 
@@ -218,9 +221,11 @@
     };
     
     function nodeToTermArr(node) {
-        if (Array.isArray(node.exp)) {
+        if (Array.isArray(node.exp) || node.isPromoted) {
             var args = node.children.map(nodeToTermArr);
-            args.unshift(node.root.fact.Skin.TermNames[node.exp[0]]);
+            args.unshift(node.isPromoted ?
+                         node.optionValues[node.span.value].value.text :
+                         node.root.fact.Skin.TermNames[node.exp[0]]);
             return args;
         } else {
             return Number(node.span.value);

@@ -148,8 +148,11 @@ function setWorkPath(wp) {
     var className = "";
     if (typeof wp == 'undefined') {
         delete state.workPath;
+        delete workBox.pathTermArr;
     } else {
         state.workPath = wp;
+        var pathExp = zpath(state.work.Core[Fact.CORE_HYPS][0], wp);
+        workBox.pathTermArr = expToTermArr.bind(state.work)(pathExp);
         usableTools = Engine.getUsableTools(state.work, state.workPath);
         for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
             var v = usableTools[k];
@@ -226,15 +229,6 @@ function getWorkTermArr() {
     return expToTermArr.bind(state.work)(exp);
 }
 
-function getWorkPathTermArr() { 
-    if (!state.workPath) {
-        return null;
-    }
-    var exp = state.work.Core[Fact.CORE_HYPS][0];
-    exp = zpath(exp, state.workPath);
-    return expToTermArr.bind(state.work)(exp);    
-}
-
 function addToShooter(factData, land) {
     if (!factData) {
         throw new Error("Bad fact: "+ factData);
@@ -267,6 +261,21 @@ function addToShooter(factData, land) {
         } else {
             box.turnstile.className = box.turnstile.className.replace(/ matched/,'');
         }
+        for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
+            var v = usableTools[k];
+            var tool = v[0];
+            var argNum = v[1];
+            var button = box.deployButtons[argNum];
+            if ((expTermArr[0] == v[0]) &&
+                (JSON.stringify(expTermArr[argNum]) ===
+                 JSON.stringify(workBox.pathTermArr))) {
+                button.className += " matched";
+            } else {
+                button.className = button.className.replace(/ matched/,'');
+            }
+
+        }
+
     }
     box = makeThmBox({
         fact:fact, 
@@ -340,13 +349,15 @@ function addToShooter(factData, land) {
 
     // Apply buttons (left and right)
     // TODO: assumes all tools are (at most) binary
+    box.deployButtons = [];
     [1,2].forEach(function(argNum) {
         if (!box.spanMap[[argNum]]) return;
         var apply = box.spanMap[[argNum]].appendChild(
             document.createElement("span"));
-        apply.className = "apply" + argNum;
+        apply.className = "applyButton apply" + argNum;
         apply.innerHTML = "&Rarr;";
         apply.onclick = applyChild.bind(null, argNum);
+        box.deployButtons[argNum] = apply;
     });
     factToShooterBox[fact.Skin.Name] = {
         fact: fact,
