@@ -761,10 +761,15 @@ document.getElementById("forward").onclick = function() {
     return false;
 };
 
-document.getElementById("clearPath").onclick = function() {
+document.getElementById("match_exact").onchange =
+document.getElementById("match_overwhelm").onchange =
+    function(e) {
     // TODO:actually think about this
-    setWorkPath();
-    save();
+    if (e.target.value == 'exact') {
+        setWorkPath();
+    } else {
+        setWorkPath([]);
+    }
     redrawSelection();
 };
 

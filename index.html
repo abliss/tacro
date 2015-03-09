@@ -36,7 +36,14 @@
       <span id="toolbox">
 	    <button id="rewind" class="nav" href="#">&laquo;</button>
 	    <button id="forward" class="nav" href="#">&raquo;</button>
-	    <button id="clearPath" class="nav" href="#">Try for exact match</button>
+        <br/>
+        Match Mode:
+	    <input type="radio" name="matchMode" value="exact" id="match_exact" checked>
+        <label for="match_exact">exact match</label>
+        <input type="radio" name="matchMode" value="overwhelm" id="match_overwhelm">
+        <label for="match_overwhelm">overwhelm</label>
+        
+        </button>
 	    <span id="message"></span>
         <button id="login" disabled="true">guest</button>
       </span>
