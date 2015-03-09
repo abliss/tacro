@@ -153,9 +153,11 @@ body, html {
 .termbox .placeholder {
     display:none;
 }
-.termbox div:hover, .termbox div.fakeHover {
+#shooter .termbox div:hover, .termbox div.fakeHover,  #well.match_overwhelm .termbox div:hover {
     background: rgba(0,1,0,0.2);
 }
+
+
 .termbox div:hover > .link {
     box-shadow: 0px 0px .5em .25em rgba(0,0,255,1);
 }
@@ -216,7 +218,7 @@ body, html {
 }
 
 #well .selected  {
-    border: 1px solid blue;
+    border: 5px solid blue;
 }
 
 /** termSpan is for actual terms; termRole is for terms or term-specified vars. */

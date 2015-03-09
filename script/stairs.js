@@ -26,6 +26,7 @@ var currentPane;
 var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 var usableTools = {};
+var matchMode = 'exact';
 
 Error.stackTraceLimit = Infinity;
 
@@ -390,17 +391,19 @@ function addToShooter(factData, land) {
 
 
 function workOnclick(path, ev) {
-    var goalPath = path.slice();
-    if (goalPath[goalPath.length-1] == 0) {
-        goalPath.pop();
+    if (matchMode != 'exact') {
+        var goalPath = path.slice();
+        if (goalPath[goalPath.length-1] == 0) {
+            goalPath.pop();
+        }
+        setWorkPath(goalPath);
+        // Highlight usable tools.
+        // TODO: move this somewhere else
+        state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
+        save();
+        redrawSelection();
+        ev.stopPropagation();
     }
-    setWorkPath(goalPath);
-    // Highlight usable tools.
-    // TODO: move this somewhere else
-    state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
-    save();
-    redrawSelection();
-    ev.stopPropagation();
 }
 
 function startWork(fact) {
@@ -764,14 +767,16 @@ document.getElementById("forward").onclick = function() {
 document.getElementById("match_exact").onchange =
 document.getElementById("match_overwhelm").onchange =
     function(e) {
-    // TODO:actually think about this
-    if (e.target.value == 'exact') {
-        setWorkPath();
-    } else {
-        setWorkPath([]);
-    }
-    redrawSelection();
-};
+        matchMode = e.target.value;
+        document.getElementById("well").className = "match_" + matchMode;
+        // TODO:actually think about this
+        if (matchMode == 'exact') {
+            setWorkPath();
+        } else {
+            setWorkPath([]);
+        }
+        redrawSelection();
+    };
 
 var logFp = storage.local.getItem(STATE_KEY);
 if (logFp) {
