@@ -33,20 +33,25 @@
       <span id="shooterTape"></span>
     </div>
     <div id="workspace">
-      <span id="toolbox">
+      <div id="toolbox">
 	    <button id="rewind" class="nav" href="#">&laquo;</button>
 	    <button id="forward" class="nav" href="#">&raquo;</button>
-        <br/>
-        Match Mode:
-	    <input type="radio" name="matchMode" value="exact" id="match_exact" checked>
-        <label for="match_exact">exact match</label>
-        <input type="radio" name="matchMode" value="overwhelm" id="match_overwhelm">
-        <label for="match_overwhelm">overwhelm</label>
-        
+        <span id="matchModeGroup">
+          Match Mode:
+          <span class="radioOption">
+	        <input type="radio" name="matchMode" value="exact" id="match_exact" checked
+                   ><label for="match_exact">exact match</label>
+          </span>
+          <span class="radioOption">
+            <input type="radio" name="matchMode" value="overwhelm" id="match_overwhelm"
+                   ><label for="match_overwhelm">overwhelm</label>
+          </span>
+        </span>
+  
         </button>
 	    <span id="message"></span>
         <button id="login" disabled="true">guest</button>
-      </span>
+      </div>
       <div id="well"><span id="placeholder">Loading...</span></div>
       <span id="achieved" style="display:none;">Success!</span>
     </div>
