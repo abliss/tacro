@@ -148,11 +148,11 @@ function setWorkPath(wp) {
     var className = "";
     if (typeof wp == 'undefined') {
         delete state.workPath;
-        delete workBox.pathTermArr;
+        if (workBox) delete workBox.pathTermArr;
     } else {
         state.workPath = wp;
         var pathExp = zpath(state.work.Core[Fact.CORE_HYPS][0], wp);
-        workBox.pathTermArr = expToTermArr.bind(state.work)(pathExp);
+        if (workBox) workBox.pathTermArr = expToTermArr.bind(state.work)(pathExp);
         usableTools = Engine.getUsableTools(state.work, state.workPath);
         for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
             var v = usableTools[k];
