@@ -90,8 +90,9 @@
             this.span.addEventListener("click", root.onclick.bind(this, this.path));
         }
         if (root.onmouseover) {
-            this.div.addEventListener("mouseover", root.onmouseover.bind(this, this.path, true));
-            this.div.addEventListener("mouseout", root.onmouseover.bind(this, this.path, false));
+            var tool = this.root.fact.Skin.TermNames[this.root.node.exp[0]];
+            this.div.addEventListener("mouseover", root.onmouseover.bind(this, tool, this.path, true));
+            this.div.addEventListener("mouseout", root.onmouseover.bind(this, tool, this.path, false));
         }
         return this;
     };

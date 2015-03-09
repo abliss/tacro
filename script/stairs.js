@@ -25,6 +25,7 @@ var landDepMap = {}; // XXX
 var currentPane;
 var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
+var usableTools = {};
 
 Error.stackTraceLimit = Infinity;
 
@@ -149,7 +150,7 @@ function setWorkPath(wp) {
         delete state.workPath;
     } else {
         state.workPath = wp;
-        var usableTools = Engine.getUsableTools(state.work, state.workPath);
+        usableTools = Engine.getUsableTools(state.work, state.workPath);
         for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
             var v = usableTools[k];
             className += " tool" + cssEscape(v[0]) + "_" + v[1];
@@ -174,14 +175,14 @@ function Facet(factData) {
     }
 }
 
-function workPathHighlighter(path, isHover) {
+function workPathHighlighter(tool, path, isHover) {
     var suffix = path.slice(1);
     function getWorkPath() {
         if (state.workPath) {
-            if (path.length == 0) {
+            if ((path.length == 0) || !usableTools[[tool, path[0]]]) {
                 return null;
             }
-            if ((state.workPath.length > 0) && suffix) {
+            if ((state.workPath.length > 0) && (suffix.length > 0)) {
                 return "" + state.workPath + "," + suffix;
             } else {
                 return suffix;
