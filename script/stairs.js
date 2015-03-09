@@ -457,6 +457,7 @@ function knowTerms(fact) {
 
 function setWork(work) {
     state.work = work;
+    setMatchMode('exact');
     state.workHash = Engine.fingerprint(work);
     // TODO: might we need an extra var here?
     state.specifyOptions.Vars = work.Skin.VarNames;
@@ -764,19 +765,22 @@ document.getElementById("forward").onclick = function() {
     return false;
 };
 
+function setMatchMode(mode) {
+    matchMode = mode;
+    document.getElementById("match_" + mode).checked = "checked";
+    document.getElementById("well").className = "match_" + matchMode;
+    // TODO:actually think about this
+    if (matchMode == 'exact') {
+        setWorkPath();
+    } else {
+        setWorkPath([]);
+    }
+    redrawSelection();
+}
+
 document.getElementById("match_exact").onchange =
 document.getElementById("match_overwhelm").onchange =
-    function(e) {
-        matchMode = e.target.value;
-        document.getElementById("well").className = "match_" + matchMode;
-        // TODO:actually think about this
-        if (matchMode == 'exact') {
-            setWorkPath();
-        } else {
-            setWorkPath([]);
-        }
-        redrawSelection();
-    };
+    function(e) { setMatchMode(e.target.value) };
 
 var logFp = storage.local.getItem(STATE_KEY);
 if (logFp) {
