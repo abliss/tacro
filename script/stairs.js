@@ -103,7 +103,7 @@ function makeThmBox(opts) {
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var tree = TreeMaker(opts);
-    termBox.appendChild(tree);
+    termBox.appendChild(tree.div);
     termBox.spanMap = tree.spanMap;
     termBox.tree = tree;
     /*
@@ -158,6 +158,10 @@ function setWorkPath(wp) {
             var v = usableTools[k];
             className += " tool" + cssEscape(v[0]) + "_" + v[1];
         }
+    }
+    // TODO: XXX: will be slow
+    for (var k in factToShooterBox) if (factToShooterBox.hasOwnProperty(k)) {
+        factToShooterBox[k].box.tree.onchange();
     }
     document.body.className = className;
 }
@@ -253,7 +257,10 @@ function addToShooter(factData, land) {
         return factFp;
     }
     var box;
-    function onchange(expTermArr) {
+    function onchange() {
+        // TODO: UGLY!! expects this to be treeMaker's root object
+        var tree = this;
+        var expTermArr = tree.getTermArr();
         var boxString = JSON.stringify(expTermArr);
         var workString = JSON.stringify(getWorkTermArr());
         if (boxString == workString) {
@@ -442,6 +449,10 @@ function setWork(work) {
     // TODO: might we need an extra var here?
     state.specifyOptions.Vars = work.Skin.VarNames;
     chat.setWork(work);
+    // TODO: XXX: will be slow
+    for (var k in factToShooterBox) if (factToShooterBox.hasOwnProperty(k)) {
+        factToShooterBox[k].box.tree.onchange();
+    }
     save();
 }
 

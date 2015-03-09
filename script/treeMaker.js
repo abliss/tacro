@@ -234,7 +234,7 @@
     
     Node.prototype.notifyChanged = function() {
         if (this.root.onchange) {
-            this.root.onchange(nodeToTermArr(this.root.node));
+            this.root.onchange();
         }
     };
     
@@ -365,11 +365,13 @@
             size: opts.size,
             maxVar: -1,
         };
+        root.getTermArr = function() {
+            return nodeToTermArr(root.node)
+        };
         var graph = makeGraph(root, opts.exp);
         rootDiv.appendChild(graph.div);
         graph.layoutAndRedrawP();
-        rootDiv.spanMap = root.spanMap;
-        return rootDiv;
+        return root;
     };
     
     if (typeof define === "function" && define.amd) define(tm); else if (typeof module === "object" && module.exports) module.exports = tm;
