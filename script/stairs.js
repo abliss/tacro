@@ -164,6 +164,8 @@ function setWorkPath(wp) {
         factToShooterBox[k].box.tree.onchange();
     }
     document.body.className = className;
+
+    redrawSelection();
 }
 
 // A Facet is a Fact which can be / has been specified by some amount.
@@ -757,6 +759,13 @@ document.getElementById("forward").onclick = function() {
         document.getElementById("forward").style.visibility="hidden";
     }
     return false;
+};
+
+document.getElementById("clearPath").onclick = function() {
+    // TODO:actually think about this
+    setWorkPath();
+    save();
+    redrawSelection();
 };
 
 var logFp = storage.local.getItem(STATE_KEY);
