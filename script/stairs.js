@@ -316,6 +316,11 @@ function addToShooter(factData, land) {
                     set(newFactFp.remote);
             }
 
+            var span = document.getElementById("achieved");
+            window.setTimeout(function() {span.className = "animated";}, 0);
+            window.setTimeout(function() {span.className = "";}, 1200);
+            /* XXX: sync with css */
+
             message("");
             setWorkPath();
             nextGoal();
