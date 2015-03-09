@@ -357,7 +357,7 @@ function addToShooter(factData, land) {
     // Turnstile (ground-out button)
     box.turnstile = box.spanMap[[]].appendChild(document.createElement("button"));
     box.turnstile.className = "turnstile";
-    box.turnstile.innerText = "\u22a2";
+    box.turnstile.innerText = "=";
     box.turnstile.onclick = groundOut;
     
     
