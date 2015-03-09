@@ -199,6 +199,42 @@ function workPathHighlighter(tool, path, isHover) {
         n.className = n.className.replace(/ fakeHover/, '');
     }
 }
+
+// TODO: XXX expecst this=fact
+function expToTermArr(exp) {
+    if (Array.isArray(exp)) {
+        var args = exp.slice(1).map(expToTermArr.bind(this));
+        args.unshift(this.Skin.TermNames[exp[0]]);
+        return args;
+    } else {
+        return exp;
+    }
+}
+
+// NB: not the same as orcat's xpath definition. Pass 0 to get the term.
+// TODO: XXX
+function zpath(exp, path) {
+    var a = exp, l = path.length, i = 0;
+    for (i = 0; i < l; i++) {
+        a=a[path[i]];
+    }
+    return a;
+}
+
+function getWorkTermArr() {
+    var exp = state.work.Core[Fact.CORE_HYPS][0];
+    return expToTermArr.bind(state.work)(exp);
+}
+
+function getWorkPathTermArr() { 
+    if (!state.workPath) {
+        return null;
+    }
+    var exp = state.work.Core[Fact.CORE_HYPS][0];
+    exp = zpath(exp, state.workPath);
+    return expToTermArr.bind(state.work)(exp);    
+}
+
 function addToShooter(factData, land) {
     if (!factData) {
         throw new Error("Bad fact: "+ factData);
@@ -222,11 +258,22 @@ function addToShooter(factData, land) {
         console.log("Skipping inference: " + JSON.stringify(fact.Core));
         return factFp;
     }
-    var box = makeThmBox({
+    var box;
+    function onchange(expTermArr) {
+        var boxString = JSON.stringify(expTermArr);
+        var workString = JSON.stringify(getWorkTermArr());
+        if (boxString == workString) {
+            box.turnstile.className += " matched";
+        } else {
+            box.turnstile.className = box.turnstile.className.replace(/ matched/,'');
+        }
+    }
+    box = makeThmBox({
         fact:fact, 
         exp:fact.Core[Fact.CORE_STMT],
         size:shooterTreeWidth,
         onmouseover: workPathHighlighter,
+        onchange: onchange,
         editable:true});
     box.className += " shooter";
     var pane = landMap[land.name].pane;
@@ -280,10 +327,10 @@ function addToShooter(factData, land) {
     }
 
     // Turnstile (ground-out button)
-    var turnstile = box.spanMap[[]].appendChild(document.createElement("span"));
-    turnstile.className = "turnstile";
-    turnstile.innerText = "\u22a2";
-    turnstile.onclick = groundOut;
+    box.turnstile = box.spanMap[[]].appendChild(document.createElement("span"));
+    box.turnstile.className = "turnstile";
+    box.turnstile.innerText = "\u22a2";
+    box.turnstile.onclick = groundOut;
     
     
     // Undo button
@@ -305,7 +352,6 @@ function addToShooter(factData, land) {
         fact: fact,
         box: box,
         land: land.name,
-        turnstile: turnstile
     };
     box.id = "shooter-" + fact.Skin.Name;
 

@@ -180,6 +180,7 @@
         promise.then(function() {
             allMatchingNodes.forEach(function(other) {
                 other.setSpecifyOption(specifyOption, newChildren);
+                that.notifyChanged();
             });
             that.redraw(); // Position new child divs at their parents
             //getComputedStyle(that.root.div); // prepare for animated descend. TODO doesn't work?!
@@ -213,6 +214,22 @@
         otherNode.y = this.y;
         if (otherNode.children) {
             otherNode.children.forEach(this.suckIn, this);
+        }
+    };
+    
+    function nodeToTermArr(node) {
+        if (Array.isArray(node.exp)) {
+            var args = node.children.map(nodeToTermArr);
+            args.unshift(node.root.fact.Skin.TermNames[node.exp[0]]);
+            return args;
+        } else {
+            return Number(node.span.value);
+        }
+    };
+    
+    Node.prototype.notifyChanged = function() {
+        if (this.root.onchange) {
+            this.root.onchange(nodeToTermArr(this.root.node));
         }
     };
     
@@ -337,6 +354,7 @@
             varMap: {},
             onclick: opts.onclick,
             onmouseover: opts.onmouseover,
+            onchange: opts.onchange,
             fact: opts.fact,
             getSpecifyOptions: opts.getSpecifyOptions,
             size: opts.size,
