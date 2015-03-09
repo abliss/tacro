@@ -317,8 +317,10 @@ function addToShooter(factData, land) {
             }
 
             var span = document.getElementById("achieved");
-            window.setTimeout(function() {span.className = "animated";}, 0);
-            window.setTimeout(function() {span.className = "";}, 1200);
+            span.style.display = '';
+            window.setTimeout(function() {span.className = "animated";}, 10);
+            window.setTimeout(function() {span.className = "";
+                                          span.style.display = 'none';}, 1200);
             /* XXX: sync with css */
 
             message("");
