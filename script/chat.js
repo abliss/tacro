@@ -55,7 +55,7 @@
                 workChannel.off("child_removed",removeMsg);
             }
             // XXX ??? storage.escape(JSON.stringify(workObj));
-            var chanName = storage.escape(fingerprinter(workObj));
+            var chanName = storage.escape(fingerprinter(workObj.Core[Fact.CORE_HYPS][0]));
             workChannel = storage.remote.child("chat").child(chanName);
             workChannel.on("child_added", receiveMsg);
             workChannel.on("child_removed",removeMsg);
