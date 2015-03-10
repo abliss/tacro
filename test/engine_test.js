@@ -337,7 +337,7 @@ var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
 var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
 
 var thms = {};
-
+/*
 startNextGoal();
 state.work = ground(state.work, ax1);
 thms.id = saveGoal();
@@ -346,7 +346,7 @@ startNextGoal();
 state.work = applyFact(state.work, [], pm243, [2]);
 state.work = ground(state.work, ax1);
 thms.id = saveGoal();
-
+*/
 startNextGoal();
 state.work = applyFact(state.work, [], imim1, [2]);
 state.work = ground(state.work, ax1);

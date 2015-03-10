@@ -2,13 +2,18 @@
     name:"&harr;",
     depends:["&and;"],  
     goals:[
-        {Core:[[],[0,[1,0,0],[1,1,1]],[]],
-         Skin:{TermNames:["&and;","&rarr;"]},
+        // More indirection to keep -> at the root
+        {Core:[[],[0,[0,
+                   [1,[0,0,0],[0,1,1]],
+                      2],2],[]],
+         Skin:{TermNames:["&rarr;","&and;"]},
          FreeMaps:[[],[]]},
 
-        {Core:[[],[0,[1,[2,1,2],[0,[1,1,2],[1,2,1]]],
-                   [1,[0,[1,1,2],[1,2,1]],[2,1,2]]],[]],
-         Skin:{TermNames:["&and;","&rarr;","&harr;"]},
+        {Core:[[],[0,[0,
+                      [1,[0,[2,0,1],[1,[0,0,1],[0,1,0]]],
+                       [0,[1,[0,0,1],[0,1,0]],[2,0,1]]],
+                      2],2],[]],
+         Skin:{TermNames:["&rarr;","&and;","&harr;"]},
          FreeMaps:[[],[],[]],
          Tree:{Cmd:"defthm",Definiendum: 2}},
 
