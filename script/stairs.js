@@ -27,6 +27,7 @@ var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 var usableTools = {};
 var matchMode = 'exact';
+var auto = window.location.search.match(/auto/) ? true : false;
 
 Error.stackTraceLimit = Infinity;
 
@@ -266,7 +267,7 @@ function addToShooter(factData, land) {
         var expTermArr = tree.getTermArr();
         var boxString = JSON.stringify(expTermArr);
         var workString = JSON.stringify(getWorkTermArr());
-        if (boxString == workString) {
+        if (auto || (boxString == workString)) {
             box.turnstile.className += " matched";
         } else {
             box.turnstile.className = box.turnstile.className.replace(/ matched/,'');
@@ -276,9 +277,12 @@ function addToShooter(factData, land) {
             var tool = v[0];
             var argNum = v[1];
             var button = box.deployButtons[argNum];
-            if ((expTermArr[0] == v[0]) &&
-                (JSON.stringify(expTermArr[argNum]) ===
-                 JSON.stringify(workBox.pathTermArr))) {
+            if (!button) continue;
+            if (auto ||
+                ((expTermArr[0] == v[0]) &&
+                 (JSON.stringify(expTermArr[argNum]) ===
+                  JSON.stringify(workBox.pathTermArr)) &&
+                 !boxString.match(/null/))) {
                 button.className += " matched";
                 button.removeAttribute('disabled');
             } else {
@@ -339,6 +343,7 @@ function addToShooter(factData, land) {
     
     function applyChild(argNum) {
         console.log("ApplyFact " + fact.Skin.Name + " arg " + argNum);
+        // TODO: PICKUP: undummy
         try {
             var newWork = Engine.applyFact(state.work, state.workPath,
                                            fact, [argNum]);
@@ -457,7 +462,7 @@ function knowTerms(fact) {
 
 function setWork(work) {
     state.work = work;
-    setMatchMode('exact');
+    if (!auto) setMatchMode('exact');
     state.workHash = Engine.fingerprint(work);
     // TODO: might we need an extra var here?
     state.specifyOptions.Vars = work.Skin.VarNames;
@@ -513,6 +518,7 @@ function onNextRedraw(f) {
     deferredUntilRedraw.push(f);
 }
 function redrawSelection() {
+    if (!workBox) return;
     if (selectedNode) {
         d3.select(selectedNode).classed("selected", false);
     }
