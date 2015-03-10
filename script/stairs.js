@@ -26,8 +26,8 @@ var currentPane;
 var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 var usableTools = {};
-var matchMode = 'exact';
 var auto = window.location.search.match(/auto/) ? true : false;
+var idFact = null;
 
 Error.stackTraceLimit = Infinity;
 
@@ -237,6 +237,42 @@ function getWorkTermArr() {
     return expToTermArr.bind(state.work)(exp);
 }
 
+function groundOut() {
+    var fact = idFact;
+    try {
+        state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
+        var thm = Engine.ground(state.work, fact);
+        var newFactFp = addToShooter(thm);
+        currentLand().thms.push(newFactFp.local);
+        if (storage.user) {
+            // TODO: numbers goals backwards and doesn't carry over
+            // anonymously-won points when logging in.
+            storage.remote.child("users").
+                child(storage.user.uid).
+                child("points").
+                child(storage.escape(currentLand().name)).
+                child(currentLand().goals.length).
+                set(newFactFp.remote);
+        }
+
+        var span = document.getElementById("achieved");
+        span.style.display = '';
+        window.setTimeout(function() {span.className = "animated";}, 10);
+        window.setTimeout(function() {span.className = "";
+                                      span.style.display = 'none';}, 1200);
+        /* XXX: sync with css */
+
+        message("");
+        setWorkPath();
+        nextGoal();
+        redraw();
+    } catch (e) {
+        console.log("Error in ground: " + e);
+        console.log(e.stack);
+        message(e);
+    }
+}
+
 function addToShooter(factData, land) {
     if (!factData) {
         throw new Error("Bad fact: "+ factData);
@@ -260,18 +296,18 @@ function addToShooter(factData, land) {
         console.log("Skipping inference: " + JSON.stringify(fact.Core));
         return factFp;
     }
+    if (!idFact &&
+        (JSON.stringify(fact.Core) === '[[],[0,0,0],[]]')) {
+        idFact = fact;
+        console.log("Skipping id.");
+        return factFp;
+    }
     var box;
     function onchange() {
         // TODO: UGLY!! expects this to be treeMaker's root object
         var tree = this;
         var expTermArr = tree.getTermArr();
         var boxString = JSON.stringify(expTermArr);
-        var workString = JSON.stringify(getWorkTermArr());
-        if (auto || (boxString == workString)) {
-            box.turnstile.className += " matched";
-        } else {
-            box.turnstile.className = box.turnstile.className.replace(/ matched/,'');
-        }
         for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
             var v = usableTools[k];
             var tool = v[0];
@@ -306,40 +342,7 @@ function addToShooter(factData, land) {
     box.style["max-height"] = "0vh";
     // TODO: animate to proper max-height
     window.requestAnimationFrame(function(){box.style["max-height"]="100vh";});
-    function groundOut() {
-        try {
-            state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
-            var thm = Engine.ground(state.work, fact);
-            var newFactFp = addToShooter(thm);
-            currentLand().thms.push(newFactFp.local);
-            if (storage.user) {
-                // TODO: numbers goals backwards and doesn't carry over
-                // anonymously-won points when logging in.
-                storage.remote.child("users").
-                    child(storage.user.uid).
-                    child("points").
-                    child(storage.escape(currentLand().name)).
-                    child(currentLand().goals.length).
-                    set(newFactFp.remote);
-            }
 
-            var span = document.getElementById("achieved");
-            span.style.display = '';
-            window.setTimeout(function() {span.className = "animated";}, 10);
-            window.setTimeout(function() {span.className = "";
-                                          span.style.display = 'none';}, 1200);
-            /* XXX: sync with css */
-
-            message("");
-            setWorkPath();
-            nextGoal();
-            redraw();
-        } catch (e) {
-            console.log("Error in ground: " + e);
-            console.log(e.stack);
-            message(e);
-        }
-    }
     
     function applyChild(argNum) {
         console.log("ApplyFact " + fact.Skin.Name + " arg " + argNum);
@@ -358,13 +361,6 @@ function addToShooter(factData, land) {
             message(e);
         }
     }
-
-    // Turnstile (ground-out button)
-    box.turnstile = box.spanMap[[]].appendChild(document.createElement("button"));
-    box.turnstile.className = "turnstile";
-    box.turnstile.innerText = "=";
-    box.turnstile.onclick = groundOut;
-    
     
     // Undo button
     var undo = box.spanMap[[]].appendChild(document.createElement("button"));
@@ -396,19 +392,17 @@ function addToShooter(factData, land) {
 
 
 function workOnclick(path, ev) {
-    if (matchMode != 'exact') {
-        var goalPath = path.slice();
-        if (goalPath[goalPath.length-1] == 0) {
-            goalPath.pop();
-        }
-        setWorkPath(goalPath);
-        // Highlight usable tools.
-        // TODO: move this somewhere else
-        state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
-        save();
-        redrawSelection();
-        ev.stopPropagation();
+    var goalPath = path.slice();
+    if (goalPath[goalPath.length-1] == 0) {
+        goalPath.pop();
     }
+    setWorkPath(goalPath);
+    // Highlight usable tools.
+    // TODO: move this somewhere else
+    state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
+    save();
+    redrawSelection();
+    ev.stopPropagation();
 }
 
 function startWork(fact) {
@@ -462,7 +456,6 @@ function knowTerms(fact) {
 
 function setWork(work) {
     state.work = work;
-    if (!auto) setMatchMode('exact');
     state.workHash = Engine.fingerprint(work);
     // TODO: might we need an extra var here?
     state.specifyOptions.Vars = work.Skin.VarNames;
@@ -771,22 +764,8 @@ document.getElementById("forward").onclick = function() {
     return false;
 };
 
-function setMatchMode(mode) {
-    matchMode = mode;
-    document.getElementById("match_" + mode).checked = "checked";
-    document.getElementById("well").className = "match_" + matchMode;
-    // TODO:actually think about this
-    if (matchMode == 'exact') {
-        setWorkPath();
-    } else {
-        setWorkPath([]);
-    }
-    redrawSelection();
-}
+document.getElementById("ground").onclick = groundOut;
 
-document.getElementById("match_exact").onchange =
-document.getElementById("match_overwhelm").onchange =
-    function(e) { setMatchMode(e.target.value) };
 
 var logFp = storage.local.getItem(STATE_KEY);
 if (logFp) {
