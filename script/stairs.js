@@ -202,6 +202,7 @@ function workPathHighlighter(tool, path, isHover) {
             return path;
         }
     }
+    if (!workBox) return;
     var n = workBox.spanMap[getWorkPath()];
     if (!n) return;
     if (isHover) {
@@ -304,6 +305,7 @@ function addToShooter(factData, land) {
     }
     var box;
     function onchange() {
+        if (!workBox) return;
         // TODO: UGLY!! expects this to be treeMaker's root object
         var tree = this;
         var expTermArr = tree.getTermArr();
