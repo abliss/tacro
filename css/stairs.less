@@ -6,8 +6,13 @@ body {
 }
 #rewind, #forward, #ground {
     font-size:200%;
+    transition: all 1s cubic-bezier(.91,.8,.54,1.39);
+    box-sizing: border-box;
 }
 
+#ground.enabled {
+    border:.3em solid red;
+}
 #forward {
     /*visibility:hidden;*/
 }

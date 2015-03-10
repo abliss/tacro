@@ -457,6 +457,16 @@ function knowTerms(fact) {
 function setWork(work) {
     state.work = work;
     state.workHash = Engine.fingerprint(work);
+    var ground = document.getElementById('ground');
+    try {
+        Engine.getMandHyps(state.work, [], idFact, []);
+        ground.removeAttribute('disabled');
+        ground.className = "enabled";
+    } catch (e) {
+        ground.setAttribute('disabled','disabled');
+        ground.className = "disabled";
+    }
+
     // TODO: might we need an extra var here?
     state.specifyOptions.Vars = work.Skin.VarNames;
     chat.setWork(work);
