@@ -263,7 +263,7 @@ function groundOut() {
         /* XXX: sync with css */
 
         message("");
-        setWorkPath();
+        setWorkPath([]);
         nextGoal();
         redraw();
     } catch (e) {
@@ -352,7 +352,7 @@ function addToShooter(factData, land) {
                                            fact, [argNum]);
             message("");
             state.url = "";
-            setWorkPath();
+            setWorkPath([]);
             setWork(newWork);
             redraw();
         } catch (e) {
@@ -514,6 +514,7 @@ function nextGoal() {
     var goal = land.goals.shift();
     knowTerms(goal);
     setWork(startWork(goal));
+    setWorkPath([]);
     return;
 }
 
