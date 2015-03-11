@@ -27,7 +27,7 @@ var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 var usableTools = {};
 var auto = window.location.search.match(/auto/) ? true : false;
-var idFact = null;
+var reflexives = {};
 
 Error.stackTraceLimit = Infinity;
 
@@ -102,6 +102,7 @@ function makeThmBox(opts) {
     if (opts.editable) {
         opts.getSpecifyOptions = function() { return state.specifyOptions; }
     }
+    opts.getReflexives = function() {return reflexives; };
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var tree = TreeMaker(opts);
@@ -297,10 +298,10 @@ function addToShooter(factData, land) {
         console.log("Skipping inference: " + JSON.stringify(fact.Core));
         return factFp;
     }
-    if (!idFact &&
-        (JSON.stringify(fact.Core) === '[[],[0,0,0],[]]')) {
-        idFact = fact;
-        console.log("Skipping id.");
+    if ((JSON.stringify(fact.Core) === '[[],[0,0,0],[]]')) {
+        var reflexiveTerm = fact.Skin.TermNames[0];
+        console.log("Reflexive found:" + reflexiveTerm);
+        reflexives[reflexiveTerm] = fact;
         return factFp;
     }
     var box;
@@ -805,7 +806,7 @@ if (logFp) {
             Vars:[],
             Terms:[]
         },
-        knownTerms: {}            
+        knownTerms: {},
     };
     storage.remoteGet("checked/lands", function(lands) {
         storage.local.setItem("my-checked-lands", JSON.stringify(lands));

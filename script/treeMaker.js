@@ -322,8 +322,31 @@
         return this.redrawP();
     };
     
+    // Shift this node, and its divRect, and all its children, horizontally by delta
+    Node.prototype.shift = function(delta) {
+        this.x += delta;
+        this.divRect.left += delta;
+        this.divRect.right += delta;
+        if (this.children) this.children.forEach(function(c) { c.shift(delta); });
+    };
+
     Node.prototype.redraw = function() {
         var rect = measureDivs(null, this.root.node);
+        if (this.root.reflexives[this.root.fact.Skin.TermNames[0]]) {
+            // Enforce the central line: make sure root is centered; and left and
+            // right children stay entirely on their own sides
+            var ch0 = this.root.node.children[0];
+            var delta = -ch0.divRect.right;
+            ch0.shift(delta);
+            rect.left += delta;
+            this.root.node.divRect.left += delta;
+
+            var ch1 = this.root.node.children[1];
+            delta = -ch1.divRect.left;
+            ch1.shift(delta);
+            rect.right += delta;
+            this.root.node.divRect.right += delta;
+        }
         rect.width = (rect.right - rect.left);
         rect.height = (rect.bottom - rect.top);
         // make fit within bounds. TODO: this is not exactly right
@@ -364,6 +387,7 @@
             getSpecifyOptions: opts.getSpecifyOptions,
             size: opts.size,
             maxVar: -1,
+            reflexives: opts.getReflexives()
         };
         root.getTermArr = function() {
             return nodeToTermArr(root.node)
