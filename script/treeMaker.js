@@ -24,9 +24,11 @@
         if (!(parent instanceof Node)) {
             this.path = [];
             this.root = parent;
+            this.depth = 0;
             parent.node = this;
             return this.decorate();;
         }
+        this.depth = parent.depth + 1;
         this.parent = parent;
         this.root = parent.root;
         this.path = parent.path.slice();
@@ -67,6 +69,8 @@
     Node.prototype.decorate = function() {
         var root = this.root;
         root.spanMap[this.path] = this.div;
+        this.div.className += ' depth' + this.depth;
+        this.div.className += ' arg' + this.path[this.path.length-1];
         if (Array.isArray(this.exp)) {
             var text = root.fact.Skin.TermNames[this.exp[0]];
             this.div.className += " name" + cssEscape(text);
