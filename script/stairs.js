@@ -315,11 +315,11 @@ function addToShooter(factData, land) {
             var v = usableTools[k];
             var tool = v[0];
             var argNum = v[1];
+            if (expTermArr[0] != tool) continue;
             var button = box.deployButtons[argNum];
             if (!button) continue;
             if (auto ||
-                ((expTermArr[0] == v[0]) &&
-                 (JSON.stringify(expTermArr[argNum]) ===
+                ((JSON.stringify(expTermArr[argNum]) ===
                   JSON.stringify(workBox.pathTermArr)) &&
                  !boxString.match(/null/))) {
                 button.className += " matched";
