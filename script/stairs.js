@@ -240,8 +240,8 @@ function getWorkTermArr() {
 }
 
 function groundOut() {
-    var fact = idFact;
     try {
+        var fact = this;
         state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
         var thm = Engine.ground(state.work, fact);
         var newFactFp = addToShooter(thm);
@@ -461,15 +461,21 @@ function setWork(work) {
     state.work = work;
     state.workHash = Engine.fingerprint(work);
     var ground = document.getElementById('ground');
-    try {
-        Engine.getMandHyps(state.work, [], idFact, []);
-        ground.removeAttribute('disabled');
-        ground.className = "enabled";
-    } catch (e) {
-        ground.setAttribute('disabled','disabled');
-        ground.className = "disabled";
+    ground.setAttribute('disabled','disabled');
+    ground.className = "disabled";
+    ground.onclick = null;
+    for (var k in reflexives) if (reflexives.hasOwnProperty(k)) {
+        var idFact = reflexives[k]; 
+        try {
+            // TODO: should not be using exceptions for this
+            Engine.getMandHyps(state.work, [], idFact, []);
+            ground.removeAttribute('disabled');
+            ground.className = "enabled";
+            ground.onclick = groundOut.bind(idFact);
+        } catch (e) {
+            // can't ground this way
+        }
     }
-
     // TODO: might we need an extra var here?
     state.specifyOptions.Vars = work.Skin.VarNames;
     chat.setWork(work);
@@ -777,9 +783,6 @@ document.getElementById("forward").onclick = function() {
     }
     return false;
 };
-
-document.getElementById("ground").onclick = groundOut;
-
 
 var logFp = storage.local.getItem(STATE_KEY);
 if (logFp) {
