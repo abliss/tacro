@@ -336,8 +336,7 @@
 
     Node.prototype.redraw = function() {
         var rect = measureDivs(null, this.root.node);
-        if (this.root.reflexives[this.root.fact.Skin.TermNames[0]] &&
-            this.root.node.children) {
+        if (this.root.node.children && (this.root.node.children.length == 2)) {
             // Enforce the central line: make sure root is centered; and left and
             // right children stay entirely on their own sides
             var ch0 = this.root.node.children[0];
@@ -392,7 +391,6 @@
             getSpecifyOptions: opts.getSpecifyOptions,
             size: opts.size,
             maxVar: -1,
-            reflexives: opts.getReflexives()
         };
         root.getTermArr = function() {
             return nodeToTermArr(root.node)

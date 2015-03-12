@@ -102,7 +102,6 @@ function makeThmBox(opts) {
     if (opts.editable) {
         opts.getSpecifyOptions = function() { return state.specifyOptions; }
     }
-    opts.getReflexives = function() {return reflexives; };
     var termBox = document.createElement("span");
     termBox.className += " termbox";
     var tree = TreeMaker(opts);
@@ -130,19 +129,21 @@ function cssEscape(str) {
     // TODO: collisions
     return encodeURIComponent(str).replace(/%/g,"_");
 }
-function registerNewTool(toolOp) {
+function addCssRule(rule) {
     var styleEl = document.createElement('style');
     // Apparently some version of Safari needs the following line? I dunno.
     styleEl.appendChild(document.createTextNode(''));
     document.head.appendChild(styleEl);
     var styleSheet = styleEl.sheet;
+    styleSheet.insertRule(rule, 0);
+    console.log("Added Rule: " + rule);
+}
+function registerNewTool(toolOp) {
     for (var arg = 1; arg <= 2; arg++) {
         var rule = ".tool" + cssEscape(toolOp) + "_" + arg +
             " .shooter .tool" + cssEscape(toolOp) +
             ".apply" + arg + " { display:inline-block;}";
-
-        console.log("Added Rule: " + rule);
-        styleSheet.insertRule(rule, 0);
+        addCssRule(rule);
     }
     
 }
@@ -301,6 +302,10 @@ function addToShooter(factData, land) {
     if ((JSON.stringify(fact.Core) === '[[],[0,0,0],[]]')) {
         var reflexiveTerm = fact.Skin.TermNames[0];
         console.log("Reflexive found:" + reflexiveTerm);
+        addCssRule('.name'+cssEscape(reflexiveTerm) + " .depth1.arg1 {" +
+                "border-right: 1px solid red;}");
+        addCssRule('.name'+cssEscape(reflexiveTerm) + " .depth1.arg2 {" +
+                "border-left: 1px solid red;}");
         reflexives[reflexiveTerm] = fact;
         return factFp;
     }
