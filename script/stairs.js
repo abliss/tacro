@@ -138,8 +138,8 @@ function registerNewTool(toolOp) {
     var styleSheet = styleEl.sheet;
     for (var arg = 1; arg <= 2; arg++) {
         var rule = ".tool" + cssEscape(toolOp) + "_" + arg +
-            " .shooter .term.name" + cssEscape(toolOp) +
-            " .apply" + arg + " { display:inline-block;}";
+            " .shooter .tool" + cssEscape(toolOp) +
+            ".apply" + arg + " { display:inline-block;}";
 
         console.log("Added Rule: " + rule);
         styleSheet.insertRule(rule, 0);
@@ -375,10 +375,11 @@ function addToShooter(factData, land) {
     box.deployButtons = [];
     [1,2].forEach(function(argNum) {
         if (!box.spanMap[[argNum]]) return;
-        var apply = box.spanMap[[argNum]].appendChild(
+        var apply = box.appendChild(
             document.createElement("button"));
         apply.disabled = "disabled";
-        apply.className = "applyButton apply" + argNum;
+        apply.className = "applyButton apply" + argNum +
+            " tool" + cssEscape(fact.Skin.TermNames[0]);
         apply.innerHTML = "&Rarr;";
         apply.onclick = applyChild.bind(null, argNum);
         box.deployButtons[argNum] = apply;
