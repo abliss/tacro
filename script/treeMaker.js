@@ -336,7 +336,8 @@
 
     Node.prototype.redraw = function() {
         var rect = measureDivs(null, this.root.node);
-        if (this.root.reflexives[this.root.fact.Skin.TermNames[0]]) {
+        if (this.root.reflexives[this.root.fact.Skin.TermNames[0]] &&
+            this.root.node.children) {
             // Enforce the central line: make sure root is centered; and left and
             // right children stay entirely on their own sides
             var ch0 = this.root.node.children[0];
