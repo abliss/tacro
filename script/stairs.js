@@ -409,7 +409,6 @@ function workOnclick(path, ev) {
     // TODO: move this somewhere else
     state.url = "#u=" + (urlNum++) + "/#g=" + goalPath;
     save();
-    redrawSelection();
     ev.stopPropagation();
 }
 
@@ -562,7 +561,7 @@ function redraw() {
         well.removeChild(well.firstChild);
         well.appendChild(box);
         workBox = box;
-        redrawSelection();
+        setWorkPath(state.workPath);
         /*
         Engine.forEachGroundableFact(state.work, function(w, f) {
             message("Groundable: " + f.Skin.Name);
@@ -584,7 +583,6 @@ function redraw() {
 function loadState(flat) {
     state = flat;
     setWork(new Fact(state.work));
-    setWorkPath(state.workPath);
     message("");
 }
 
@@ -593,12 +591,12 @@ function loadLogFp(logFp, cb) {
         storage.fpLoad("state", logObj.now, function(stateObj) {
             log = logObj;
             loadState(stateObj);
-            redraw();
             // TODO: should popstate? double-undo problem.
             history.pushState(logFp, "state",
                               "#s=" + logObj.now + "/" + state.url);
             document.getElementById("forward").style.visibility="visible";
             if (cb) {cb();}
+            redraw();
         });
     });
 }
@@ -797,6 +795,7 @@ if (logFp) {
             land.thms.forEach(function(thmFp) {
                 storage.fpLoad("fact", thmFp, function(thmObj) {
                     addToShooter(thmObj, land);
+                    redraw();
                 });
             });
         });
