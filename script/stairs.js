@@ -374,7 +374,6 @@ function addToShooter(factData, land) {
     // TODO: assumes all tools are (at most) binary
     box.deployButtons = [];
     [1,2].forEach(function(argNum) {
-        if (!box.spanMap[[argNum]]) return;
         var apply = box.appendChild(
             document.createElement("button"));
         apply.disabled = "disabled";
