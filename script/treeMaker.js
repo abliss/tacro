@@ -145,11 +145,8 @@
             this.redraw(); // Makes divs for children respect graph coords
             allMatchingNodes.forEach(function(node) {
                 node.children.forEach(function(child) {
-                    if (child.root.varMap[child.exp].length == 1) {
-                        delete child.root.varMap[child.exp];
-                    } else {
-                        throw new Error("Duplicate dummy children!");
-                    }
+                    // TODO: not sure this is right!
+                    delete child.root.varMap[child.exp];
                 });
                 node.deadChildren = node.children;
                 delete node.children;  // prevents next layout() from leaving space
