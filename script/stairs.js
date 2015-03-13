@@ -356,8 +356,12 @@ function addToShooter(factData, land) {
         console.log("ApplyFact " + fact.Skin.Name + " arg " + argNum);
         // TODO: PICKUP: undummy
         try {
+            var varMap = null;
+            if (!auto) {
+                varMap = box.tree.getVarMap(state.work);
+            }
             var newWork = Engine.applyFact(state.work, state.workPath,
-                                           fact, [argNum]);
+                                           fact, [argNum], varMap);
             message("");
             state.url = "";
             setWorkPath([]);

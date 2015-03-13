@@ -79,7 +79,7 @@
             var varNum = this.exp;
             var text = root.fact.Skin.VarNames[varNum];
             this.div.className += " name" + varNum;
-            this.span = this.div.appendChild(this.makeVar(text, root.getSpecifyOptions));
+            this.span = this.div.appendChild(this.makeVar(text));
             if (root.getSpecifyOptions) {
                 // Editable: wire up select element
                 if (!root.varMap.hasOwnProperty(varNum)) {
@@ -115,12 +115,13 @@
             og.label = optGroupLabels.hasOwnProperty(k) ?
                 optGroupLabels[k] : k;
             og.className = k;
-            specifyOptions[k].forEach(function(val) {
+            specifyOptions[k].forEach(function(val, optNum) {
                 var opt = og.appendChild(
                     document.createElement("option"));
                 var optIndex = optionValues.push({
                     group: k,
                     value: val,
+                    optNum: optNum
                 });
                 opt.value = optIndex - 1;
                 if (opt.value == oldValue) {
@@ -143,6 +144,13 @@
             });
             this.redraw(); // Makes divs for children respect graph coords
             allMatchingNodes.forEach(function(node) {
+                node.children.forEach(function(child) {
+                    if (child.root.varMap[child.exp].length == 1) {
+                        delete child.root.varMap[child.exp];
+                    } else {
+                        throw new Error("Duplicate dummy children!");
+                    }
+                });
                 node.deadChildren = node.children;
                 delete node.children;  // prevents next layout() from leaving space
             });
@@ -394,6 +402,24 @@
         };
         root.getTermArr = function() {
             return nodeToTermArr(root.node)
+        };
+        root.getVarMap = function(work) {
+            var map = {};
+            function getSpecifiedExp(node) {
+                var specifyOption = node.optionValues[node.span.value];
+                if (specifyOption.group == 'Terms') {
+                    var arr = node.children.map(getSpecifiedExp);
+                    var value = specifyOption.value;
+                    arr.unshift(work.nameTerm(value.text, value.freeMap));
+                    return arr;                                              
+                } else {
+                    return specifyOption.optNum;
+                }
+            }
+            for (var v in this.varMap) if (this.varMap.hasOwnProperty(v)) {
+                map[v] = getSpecifiedExp(this.varMap[v][0]);
+            }
+            return map;
         };
         var graph = makeGraph(root, opts.exp);
         rootDiv.appendChild(graph.div);

@@ -252,7 +252,7 @@ var Fact = require('./fact.js'); //XXX
     //
     // @throws an error if the unification is impossible or would violate a Free
     //     constraint.
-    function getMandHyps(work, hypPath, fact, stmtPath) {
+    function getMandHyps(work, hypPath, fact, stmtPath, optVarMap) {
         var debugPath = [];
         var nonDummy = {};
         var dummyMap = {};
@@ -408,7 +408,11 @@ var Fact = require('./fact.js'); //XXX
 
         eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
             if (!varMap.hasOwnProperty(v)) {
-                varMap[v] = work.nameVar(newDummy());
+                if (optVarMap && optVarMap.hasOwnProperty(v)) {
+                    varMap[v] = optVarMap[v];
+                } else {
+                    varMap[v] = work.nameVar(newDummy());
+                }
             }
         });
         return varMap;
@@ -514,7 +518,7 @@ var Fact = require('./fact.js'); //XXX
     // subexpressions will be unified; then the fact (and the required pushup
     // procedures) will be added to the beginning of the work's proof, and the
     // work's hypthesis will be updated.
-    function applyFact(work, workPath, fact, factPath) {
+    function applyFact(work, workPath, fact, factPath, optVarMap) {
         if (!Array.isArray(factPath) ||
             (factPath.length != 1) ||
             ((factPath[0] != 1) && (factPath[0] != 2))) {
@@ -523,7 +527,7 @@ var Fact = require('./fact.js'); //XXX
         if (!Array.isArray(workPath)) {
             throw new Error("Bad workPath " + workPath);
         }
-        var varMap = getMandHyps(work, workPath, fact, factPath);
+        var varMap = getMandHyps(work, workPath, fact, factPath, optVarMap);
         if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
         // If that didn't throw, we can start mutating
         // PushUpScratchPad
