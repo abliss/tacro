@@ -381,7 +381,7 @@
      */
     var tm = function(opts) {
         var rootDiv = document.createElement("div")
-        rootDiv.setAttribute("class", "root");
+        rootDiv.setAttribute("class", "root cmd_" + opts.fact.Tree.Cmd);
 
         // Turning a term into a graph structure for d3. Also constructing
         // nested divs to mirror the graph structure.

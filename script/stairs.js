@@ -330,7 +330,7 @@ function addToShooter(factData, land) {
                 button.className += " matched";
                 button.removeAttribute('disabled');
             } else {
-                button.className = button.className.replace(/ matched/,'');
+                button.className = button.className.replace(/ matched/g,'');
                 button.setAttribute('disabled', 'disabled');
             }
 
@@ -345,6 +345,7 @@ function addToShooter(factData, land) {
         onchange: onchange,
         editable:true});
     box.className += " shooter";
+    box.className += " cmd_" + fact.Tree.Cmd;
     var pane = landMap[land.name].pane;
     pane.insertBefore(box, pane.firstChild);
     box.style["max-height"] = "0vh";
@@ -656,7 +657,7 @@ function cheat(n) {
     while (n > 0) {
         var thm = new Fact(state.work);
         thm.Tree.Proof=[];
-        thm.Tree.Cmd = 'stmt'
+        //thm.Tree.Cmd = 'stmt'
         thm.setHyps([]);
         var factFp = addToShooter(thm).local;
         currentLand().thms.push(factFp);

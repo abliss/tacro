@@ -106,6 +106,7 @@ body, html {
     width: 80%;
     position:relative;
     transition: max-height 1s ease-in-out;
+    overflow:hidden;
     /** XXX Bizarrely, this seems to make transitions smoother on android chrome by triggering GPU acceleration.***/
     transform:translate3d(0,0,0);
 }
@@ -249,6 +250,14 @@ body, html {
 .termbox span {
     background-color: white;
 }
+
+.termbox>.cmd_stmt {
+    background-color: lightgoldenrodyellow;
+}
+.termbox>.cmd_defthm {
+    background-color: palegreen;
+}
+
 #shooter .var.name0 .select { background-color: #9370db; }
 #shooter .var.name1 .select { background-color: #70db93; }
 #shooter .var.name2 .select { background-color: #f13e44; }
