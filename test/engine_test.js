@@ -86,13 +86,15 @@ function getLand(filename) {
 
 function startWork(fact) {
     var work = new Fact(fact);
-    work.setHyps([work.Core[Fact.CORE_STMT]]);
-    work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
-    work.Skin.HypNames = ["Hyps.0"];
+    if (work.Core[Fact.CORE_HYPS].length == 0) {
+        work.setHyps([work.Core[Fact.CORE_STMT]]);
+        work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
+        work.Skin.HypNames = ["Hyps.0"];
+        work.setProof(["Hyps.0"]);
+    }
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
-    work.setProof(["Hyps.0"]);
     return Engine.canonicalize(work);
 }
 
@@ -335,8 +337,9 @@ var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
 var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
 var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
 var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
-
+var id  =   sfbm('[[],[0,0,0],[]];["&rarr;"]');
 var thms = {};
+thms.id = id;
 /*
 startNextGoal();
 state.work = ground(state.work, ax1);
@@ -347,6 +350,17 @@ state.work = applyFact(state.work, [], pm243, [2]);
 state.work = ground(state.work, ax1);
 thms.id = saveGoal();
 */
+
+startNextGoal();
+state.work = applyFact(state.work, [], ax1, [2]);
+state.work = ground(state.work, id);
+thms.tut1 = saveGoal();
+
+startNextGoal();
+state.work = applyFact(state.work, [], ax1, [2]);
+state.work = ground(state.work, id);
+thms.tut2 = saveGoal();
+
 startNextGoal();
 state.work = applyFact(state.work, [], imim1, [2]);
 state.work = ground(state.work, ax1);
@@ -587,11 +601,26 @@ applyArrow([1], thms.idie, 0);
 thms.contradict = save();
 
 
-startWith(thms.id);
-applyArrow([], thms.conjnimp, 0);
-applyArrow([0], thms.nn2, 1);
-applyArrow([], thms.idie, 0);
-thms.dfand = save();
+
+/*
+startNextGoal(); // dfandie-just
+state.work = applyFact(state.work, [], thms.mp, [2]);
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [1], thms.nn2, [1]);
+state.work = applyFact(state.work, [], thms.conjnimp, [2]);
+state.work = ground(state.work, id);
+thms['dfandie-just'] = saveGoal();
+*/
+var landAnd = getLand("../data/land_02_and.js");
+
+startNextGoal(); // dfandie
+state.work = applyFact(state.work, [], thms.mp, [2]);
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [1], thms.nn2, [1]);
+state.work = applyFact(state.work, [], thms.conjnimp, [2]);
+state.work = ground(state.work, id);
+thms.dfandie = saveGoal();
+
 
 // Testing a bug with overspecifying thm
 var reached = false; 
@@ -616,21 +645,21 @@ if (reached) {
     throw new Error("Should not be able to overspecify the work");
 }
 
-var landHarr = getLand("../data/land_02_and.js");
 startNextGoal();
-state.work = ground(state.work, thms.dfand);
-thms.Conjoin = saveGoal();
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [1], thms.dfandie, [1]);
+state.work = applyFact(state.work, [1], thms.nimp1, [1]);
+state.work = ground(state.work, id);
+thms.and1 = saveGoal();
 
-//scheme.setBinding(not, 0, scheme.RIGHT(), thms.con3); // TODO
 
-startWith(thms.Conjoin);
-applyArrow([], thms.nimp1, 0);
-thms.and1 = save();
-
-startWith(thms.Conjoin);
-applyArrow([], thms.nimp2, 0);
-applyArrow([], thms.nn1, 0);
-thms.and2 = save();
+startNextGoal();
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [1], thms.dfandie, [1]);
+state.work = applyFact(state.work, [1], thms.nimp2, [1]);
+state.work = applyFact(state.work, [1], thms.nn1, [1]);
+state.work = ground(state.work, id);
+thms.and2 = saveGoal();
 
 startWith(thms.imim1);
 applyArrow([1], thms.con3, 0);
@@ -708,24 +737,27 @@ thms.prth = save();
 
 var landHarr = getLand("../data/land_03_harr.js");
 
+startNextGoal(); // dfbiie
+state.work = applyFact(state.work, [], thms.mp, [2]);
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [], thms.conj, [2]);
+state.work = ground(state.work, id);
+thms.dfbiie = saveGoal();
 
-startWith(thms.id);
-applyArrow([], thms.conj, 0);
-applyArrow([], thms.idie, 0);
-thms.dfbi = save();
+startNextGoal(); // dfbiie
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [1], thms.dfbiie, [1]);
+state.work = applyFact(state.work, [1], thms.andl, [1]);
+state.work = ground(state.work, id);
+thms.defbi1 = saveGoal();
 
-startNextGoal();
-state.work = ground(state.work, thms.dfbi);
-thms.Equivalate = saveGoal();
+startNextGoal(); // dfbiie
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [1], thms.dfbiie, [1]);
+state.work = applyFact(state.work, [1], thms.andr, [1]);
+state.work = ground(state.work, id);
+thms.defbi2 = saveGoal();
 
-//  scheme.setEquivalence(exports.wff, harr); // TODO
-  startWith(thms.Equivalate);
-  applyArrow([], thms.andl, 0);
-  thms.defbi1 = save();
-
-  startWith(thms.Equivalate);
-  applyArrow([], thms.andr, 0);
-  thms.defbi2 = save();
 
   startWith(thms.defbi1);
   applyArrow([1], thms.andl, 0);
@@ -842,9 +874,13 @@ thms.Equivalate = saveGoal();
   applyArrow([], thms.idie, 0);
   thms.bicom = save();
 
-  startWith(thms.dfbi);
-  applyArrow([], thms.defbi2, 0);
-  thms.biid = save();
+startNextGoal();
+state.work = applyFact(state.work, [], thms.defbi2, [2]);
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [], thms.conj, [2]);
+state.work = ground(state.work, id);
+thms.biid = saveGoal();
+
 
   startWith(thms.nn1);
   applyArrow([], thms.conj, 0);

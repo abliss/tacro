@@ -419,12 +419,14 @@ function workOnclick(path, ev) {
 
 function startWork(fact) {
     var work = new Fact(fact);
-    work.setHyps([work.Core[Fact.CORE_STMT]]);
-    work.Skin.HypNames = ["Hyps.0"];
+    if (work.Core[Fact.CORE_HYPS].length == 0) {
+        work.setHyps([work.Core[Fact.CORE_STMT]]);
+        work.Skin.HypNames = ["Hyps.0"];
+        work.setProof(["Hyps.0"]);
+    }
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
-    work.setProof(["Hyps.0"]);
     work = Engine.canonicalize(work);
     work.Skin.VarNames = work.Skin.VarNames.map(function(x,i) {
         return "&#" + (i + 0x24D0) + ";";

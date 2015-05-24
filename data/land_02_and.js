@@ -3,21 +3,31 @@
     depends:["&not;"],  
     goals:[
         // Future definitions using the biconditional can be automatic, but this
-        // definition *of* the biconditional must be manual. In addition, to
-        // keep id as the "universal first step", we add a layer of indirection
-        // so that the root of the expression is ->.
-        {Core:[[],[0,
+        // definition must be manual. In addition, to keep id as the "universal
+        // first step", we add a layer of indirection so that the root of the
+        // expression is ->.
+        {Core:[[[0,
                    [0,
                     [1,[0,
                       [0,
-                       [2,0,1],[1,[0,0,[1,1]]]],
+                       [1,[0,0,[1,1]]],[1,[0,0,[1,1]]]],
                       [1,[0,   [1,[0,0,[1,1]]],
-                       [2,0,1]]]]],
+                       [1,[0,0,[1,1]]]]]]],
                     2],
-                   2],[]],
+                   2]],
+               [0,
+                [0,
+                 [1,[0,
+                     [0,
+                      [2,0,1],[1,[0,0,[1,1]]]],
+                     [1,[0,   [1,[0,0,[1,1]]],
+                         [2,0,1]]]]],
+                 2],
+                2],[]],
          Skin:{TermNames:["&rarr;","&not;","&and;"]},
          FreeMaps:[[],[],[]],
-         Tree:{Cmd:"defthm",Definiendum: 2}
+         Tree:{Cmd:"defthm",Definiendum: 2,
+               Proof: ["Hyps.0"]}
         },
         {Core:[[],[0,[1,0,1],[2,[0,0,[2,1]]]],[]],
          Skin:{TermNames:["&rarr;","&and;","&not;"]},

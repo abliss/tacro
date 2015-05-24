@@ -13,7 +13,7 @@ var factsRef = checkedRef.child('facts');
 
 var token = Fs.readFileSync("firebase_token.txt", "utf8").replace(/\s*$/,'');
 
-rootRef.auth(token, function(err) {
+rootRef.authWithCustomToken(token, function(err) {
     if (err) {
         console.log("Auth failed: " + err);
     } else {
