@@ -26,7 +26,7 @@
             this.root = parent;
             this.depth = 0;
             parent.node = this;
-            return this.decorate();;
+            return this.decorate();
         }
         this.depth = parent.depth + 1;
         this.parent = parent;
@@ -231,7 +231,8 @@
     
     function nodeToTermArr(node) {
         if (Array.isArray(node.exp) || node.isPromoted) {
-            var args = node.children.map(nodeToTermArr);
+            var args = [];
+            if (node.children) { args = node.children.map(nodeToTermArr); }
             args.unshift(node.isPromoted ?
                          node.optionValues[node.span.value].value.text :
                          node.root.fact.Skin.TermNames[node.exp[0]]);
