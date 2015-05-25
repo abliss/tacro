@@ -330,15 +330,33 @@ Context.prototype.markToFvib = {};
 
 var proofCtx = new Context();
 var ifaceCtx = new Context();
+var thms = {};
+
+getLand("../data/land_00.2_tut.js");
+var id  =   sfbm('[[],[0,0,0],[]];["&rarr;"]');
+var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
+startNextGoal();
+state.work = applyFact(state.work, [], ax1, [2]);
+state.work = ground(state.work, id);
+saveGoal();
+
+getLand("../data/land_00.4_tut.js");
+var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
+startNextGoal();
+state.work = applyFact(state.work, [], imim1, [2]);
+state.work = ground(state.work, ax1);
+thms.himp1 = saveGoal();
+
+
+getLand("../data/land_00.6_tut.js");
+var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
+startNextGoal();
+state.work = applyFact(state.work, [], imim2, [2]);
+state.work = ground(state.work, ax1);
+saveGoal();
 
 var landRarr = getLand("../data/land_00_rarr.js");
-var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
-var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
-var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
 var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
-var axmp =  sfbm('[[0,[0,0,1]],1,[]];["&rarr;"]');
-var id  =   sfbm('[[],[0,0,0],[]];["&rarr;"]');
-var thms = {};
 thms.id = id;
 /*
 startNextGoal();
@@ -351,20 +369,6 @@ state.work = ground(state.work, ax1);
 thms.id = saveGoal();
 */
 
-startNextGoal();
-state.work = applyFact(state.work, [], ax1, [2]);
-state.work = ground(state.work, id);
-thms.tut1 = saveGoal();
-
-startNextGoal();
-state.work = applyFact(state.work, [], ax1, [2]);
-state.work = ground(state.work, id);
-thms.tut2 = saveGoal();
-
-startNextGoal();
-state.work = applyFact(state.work, [], imim1, [2]);
-state.work = ground(state.work, ax1);
-thms.himp1 = saveGoal();
 
 startNextGoal();
 state.work = applyFact(state.work, [2], pm243, [2]);

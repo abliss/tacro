@@ -23,11 +23,14 @@ var deferredUntilRedraw = [];
 var landMap = {};
 var landDepMap = {}; // XXX
 var currentPane;
+var panes = [];
+var termToPane = {};
 var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 var usableTools = {};
 var auto = window.location.search.match(/auto/) ? true : false;
 var reflexives = {};
+var thms = {};
 
 Error.stackTraceLimit = Infinity;
 
@@ -283,9 +286,16 @@ function addToShooter(factData, land) {
     if (!land) land = currentLand();
     var facet = new Facet(factData);
     knowTerms(facet.fact);
+
     var fact = facet.fact;
 
     var factFp = storage.fpSave("fact", facet.fact);
+    if (thms[factFp.local]) {
+        console.log("XXXX Skipping duplicate fact " + factFp.local);
+        return factFp;
+    }
+    thms[factFp.local] = facet.fact;
+
     var newTool = Engine.onAddFact(facet.fact);
     if (newTool) {
         registerNewTool(newTool);
@@ -293,8 +303,31 @@ function addToShooter(factData, land) {
     switch (factData.Core[Fact.CORE_HYPS].length) {
         case 0:
         break;
-        case 1:
-        throw new Error("TODO: XXX: Handle ax-gen");
+        case 1: {
+            var box = makeThmBox({
+                fact:fact,
+                exp:fact.Core[Fact.CORE_STMT],
+                size:shooterTreeWidth,
+                onmouseover: workPathHighlighter,
+                onchange: onchange,
+                editable:true});
+            // TODO: display hyp somehow
+            box.className += " shooter";
+            box.onclick = function() {
+                var varMap = null;
+                if (!auto) {
+                    varMap = box.tree.getVarMap(state.work);
+                }
+                var newWork = Engine.applyInference(state.work, fact, varMap);
+                message("");
+                state.url = "";
+                setWorkPath([]);
+                setWork(newWork);
+                redraw();
+            };
+            var pane = panes[panes.length-1];
+            pane.pane.insertBefore(box, pane.pane.firstChild);
+        }
         default:
         console.log("Skipping inference: " + JSON.stringify(fact.Core));
         return factFp;
@@ -346,8 +379,8 @@ function addToShooter(factData, land) {
         editable:true});
     box.className += " shooter";
     box.className += " cmd_" + fact.Tree.Cmd;
-    var pane = landMap[land.name].pane;
-    pane.insertBefore(box, pane.firstChild);
+    var pane = panes[panes.length-1];
+    pane.pane.insertBefore(box, pane.pane.firstChild);
     box.style["max-height"] = "0vh";
     // TODO: animate to proper max-height
     window.requestAnimationFrame(function(){box.style["max-height"]="100vh";});
@@ -449,14 +482,17 @@ function knowTerms(fact) {
             state.knownTerms[termName] = termObj;
             state.specifyOptions.Terms.push(termObj);
         }
+        if (!termToPane[termName]) {
+            termToPane[termName] = new Pane(termName);
+        }
     });
     function scan(exp) {
         if (numNewTerms > 0&& Array.isArray(exp)) {
-            if (newTerms.hasOwnProperty(exp[0])) {
+            if (newTerms[exp[0]]) {
                 var termNum = exp[0];
                 var termName = fact.Skin.TermNames[termNum];
                 state.knownTerms[termName].arity = exp.length - 1;
-                delete newTerms[termNum];
+                newTerms[termNum] = false;
                 numNewTerms--;
             }
             exp.slice(1).map(scan);
@@ -466,6 +502,7 @@ function knowTerms(fact) {
     // dependency. But this should never happen in tacro.
     scan(fact.Core[Fact.CORE_STMT]);
     fact.Core[Fact.CORE_HYPS].forEach(scan);
+    return newTerms;
 }
 
 function setWork(work) {
@@ -614,7 +651,6 @@ function enterLand(landData) {
         goals:[],            // structs
     };
     state.lands.push(land);
-    addLandToUi(land);
     land.goals = landData.goals.slice();
     if (landData.axioms) {
         landData.axioms.forEach(function(data) {
@@ -624,30 +660,28 @@ function enterLand(landData) {
     }
 }
 
-function addLandToUi(land) {
-    console.log("XXX adding land to ui: " + land.name);
-    if (landMap[land.name] && landMap[land.name].pane) {
-        console.log("Warning: Skipping already-added land " + land.name);
-        return;
-    }
+function Pane(newTerm) {
+    console.log("XXXX New pane " + newTerm);
     var tab = document.createElement("button");
+    tab.addEventListener("click", function() {
+        var doc = window.document; var docEl = doc.documentElement; var requestFullscreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        requestFullscreen.call(docEl);
+    });
     document.getElementById("shooterTabs").appendChild(tab);
     tab.className = "tab";
-    tab.innerHTML = land.name.replace(/[<]/g,"&lt;");
+    tab.innerHTML = newTerm.replace(/[<]/g,"&lt;");
     var pane = document.createElement("span");
     document.getElementById("shooterTape").appendChild(pane);
-    if (!landMap[land.name]) {
-        landMap[land.name] = {land:land};
-    }
-    landMap[land.name].pane = pane;
-    landMap[land.name].tab = tab;
-    pane.className = "pane pane" + land.name;
-    tab.onclick = function() {
+    pane.className = "pane"
+    function onclick() {
         if (currentPane) {currentPane.style.display="none";}
         pane.style.display="inline-block";
         currentPane = pane;
-    };
-    tab.onclick();
+    }
+    tab.addEventListener("click", onclick);
+    onclick();
+    this.pane = pane;
+    panes.push(this);
 }
 
 function message(msg) {
@@ -704,10 +738,10 @@ function firebaseLoginLoaded() {
             var loginNode = document.getElementById("login");
             loginNode.disabled = false;
             loginNode.innerText = user.displayName;
-            loginNode.onclick = function() {
+            loginNode.addEventListener("click", function() {
                 storage.authLogout();
                 return false;
-            }
+            });
             storage.remote.child("users").child(user.uid).child(STATE_KEY).
                 on('value', function(snap) {
                     var logFp = snap.val();
@@ -798,7 +832,6 @@ var logFp = storage.local.getItem(STATE_KEY);
 if (logFp) {
     loadLogFp(logFp, function() {
         state.lands.forEach(function(land) {
-            addLandToUi(land);
             land.thms.forEach(function(thmFp) {
                 storage.fpLoad("fact", thmFp, function(thmObj) {
                     addToShooter(thmObj, land);
@@ -826,4 +859,7 @@ if (logFp) {
         storage.local.setItem("my-checked-lands", JSON.stringify(lands));
         loadLands(lands);
     });
+}
+
+if (document.documentElement.requestFullscreen) {
 }

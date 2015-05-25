@@ -602,8 +602,8 @@ var Fact = require('./fact.js'); //XXX
     // Applies the given inference fact, which must have exactly one
     // hypothesis. The conclusion of the inference must unify against the work's
     // only hypothesis. The work's new hypothesis will be the fact's hypothesis.
-    function applyInference(work, infFact) {
-        var varMap = getMandHyps(work, [], infFact, []);
+    function applyInference(work, infFact, optVarMap) {
+        var varMap = getMandHyps(work, [], infFact, [], optVarMap);
         if (DEBUG) {console.log("# Inf MandHyps: " + JSON.stringify(varMap));}
         var newSteps = [];
         // Need a mandhyp step for each var appearing in the stmt which does NOT

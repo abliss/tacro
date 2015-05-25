@@ -21,7 +21,9 @@
         FirebaseStub.prototype.push =
         FirebaseStub.prototype.set =
         FirebaseStub.prototype.on =
+        FirebaseStub.prototype.off =
         FirebaseStub.prototype.name =
+        FirebaseStub.prototype.authWithCustomToken =
         function() {
             return new FirebaseStub();
         };
