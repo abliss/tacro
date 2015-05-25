@@ -665,7 +665,7 @@ function Pane(newTerm) {
     var tab = document.createElement("button");
     tab.addEventListener("click", function() {
         var doc = window.document; var docEl = doc.documentElement; var requestFullscreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
-        requestFullscreen.call(docEl);
+        //requestFullscreen.call(docEl);
     });
     document.getElementById("shooterTabs").appendChild(tab);
     tab.className = "tab";
@@ -859,7 +859,4 @@ if (logFp) {
         storage.local.setItem("my-checked-lands", JSON.stringify(lands));
         loadLands(lands);
     });
-}
-
-if (document.documentElement.requestFullscreen) {
 }
