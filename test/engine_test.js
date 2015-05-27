@@ -1339,7 +1339,6 @@ applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
 applyArrow([0,1,1,0],"harr_equals_a_b_equals_b_a",0)
  saveAs("_dv_A_y_B_y___rarr_forall_z_forall_y_rarr_equals_z_y_rarr_A_B_rarr_forall_z_A_forall_z_B") //undefined
 
-
 startWith("_dv_a_z___exist_z_equals_z_a")
 generify()
 applyArrow([1],"rarr_A_rarr_B_and_A_B",0)
@@ -1475,7 +1474,7 @@ applyArrow([1,1,1,0],"rarr_forall_z_A_A",1)
 save();
 
 var landPlus = getLand("../data/land_10_plus.js");
-DUMP=true;
+
 startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
 saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
