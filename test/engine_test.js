@@ -7,6 +7,7 @@ var lands = [];
 var state = {};
 
 var DEBUG = false;
+var DUMP = false;
 var GROUNDDEBUG = false;
 var start = new Date();
 
@@ -557,6 +558,15 @@ function saveAs(str) {
 
 
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+    if (DUMP) {
+        out = {
+            Core: state.work.Core,
+            Skin: {TermNames: state.work.Skin.TermNames},
+            FreeMaps: state.work.FreeMaps,
+        };
+        console.log(JSON.stringify(out));
+        console.log(",");
+    }
     startWith(state.work);
     return state.work;
 }
@@ -1247,10 +1257,11 @@ save();
 var landEquals = getLand("../data/land_07_equals.js");
 
 
-startWith("_dv_a_z___not_forall_z_not_equals_z_a")
-applyArrow([],"harr_exist_z_A_not_forall_z_not_A",1)
-//saveAs("_dv_a_z___exist_z_equals_z_a") //thms.tyex
-save();
+startWith("_dv_a_z___rarr_rarr_not_forall_z_not_equals_z_a_A_A")
+applyArrow([0,0],"harr_exist_z_A_not_forall_z_not_A",1)
+applyArrow([],thms.idie,0);
+saveAs("_dv_a_z___exist_z_equals_z_a") //thms.tyex
+//save();
 
 startNextGoal();
 // = A A
@@ -1464,7 +1475,7 @@ applyArrow([1,1,1,0],"rarr_forall_z_A_A",1)
 save();
 
 var landPlus = getLand("../data/land_10_plus.js");
-
+DUMP=true;
 startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
 saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined

@@ -28,10 +28,10 @@ var termToPane = {};
 var shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 var workTreeWidth = 50; // XXXX in VW. sync with stairs.less
 var usableTools = {};
-var auto = window.location.search.match(/auto/) ? true : false;
+var auto = false;
 var reflexives = {};
 var thms = {};
-
+window.FAST_TICK = true; //XXX
 Error.stackTraceLimit = Infinity;
 
 var varColors = [
@@ -76,6 +76,7 @@ if (typeof document == 'undefined') {
 
 if (window.location.search.match("CLEAR")) {
     localStorage.clear();
+    window.location.assign(window.location.href.replace("CLEAR",""));
 }
 
 function newVarNamer() {
@@ -163,6 +164,7 @@ function setWorkPath(wp) {
         usableTools = Engine.getUsableTools(state.work, state.workPath);
         for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
             var v = usableTools[k];
+            //console.log("XXXX Usable tool:" + " tool" + cssEscape(v[0]) + "_" + v[1]);
             className += " tool" + cssEscape(v[0]) + "_" + v[1];
         }
     }
@@ -682,10 +684,17 @@ function Pane(newTerm) {
     onclick();
     this.pane = pane;
     panes.push(this);
+    if (panes.length == 3) {
+        auto = true;
+        message("Automatic Activation mode enabled! Manual Training/promoting is now optional.");
+    }
 }
 
 function message(msg) {
     if (msg) {console.log("Tacro: " + msg);}
+    if (msg.stack) {
+        console.log(msg.stack);
+    }
     document.getElementById("message").innerText = msg;
 }
 
@@ -800,15 +809,19 @@ function loadLands(lands) { // TODO: this has become totally gefucked
     console.log("Got checked lands: " + numLands);
 }
 
-function ChatListener(pane) {
-    
-}
-
 // ==== STARTUP ====
 window.addEventListener('popstate', function(ev) {
     console.log("popstate to " + ev.state);
     if (ev.state) {
         loadLogFp(ev.state);
+    } else {
+        var match = window.location.hash.match(/CHEAT=(\d+)/);
+        if (match) {
+            cheat(match[1]);
+        }
+        if (window.location.search.match(/auto=1/)) {
+            auto = true;
+        }
     }
 });
 document.getElementById("rewind").onclick = function() {
@@ -840,10 +853,7 @@ if (logFp) {
             });
         });
         loadLands(JSON.parse(storage.local.getItem("my-checked-lands")));
-        var match = window.location.search.match(/CHEAT=(\d+)/);
-        if (match) {
-            cheat(match[1]);
-        }
+
     });
 } else {
     state = {

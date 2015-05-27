@@ -1,7 +1,7 @@
 (function(module) {
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
-    var OFFLINE = false;
+    var OFFLINE = true;
     var FB_URL = "https://tacro.firebaseio.com/tacroV001";
     var nextTick;
     var offlineEnabled = false;
@@ -9,8 +9,10 @@
 
     if (typeof process !== 'undefined' && process.nextTick) {
         nextTick = process.nextTick;
+    } else if (typeof window !== 'undefined' && window.FAST_TICK) {
+        nextTick = function nextTick(cb) {cb();};
     } else if (typeof window !== 'undefined' && window.setTimeout) {
-        nextTick = function(cb) {window.setTimeout(cb, 0);}
+        nextTick = function nextTick(cb) {window.setTimeout(cb, 0);}
     } else {
         throw new Error("No nextTick");
     }
