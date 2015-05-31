@@ -507,7 +507,27 @@ function knowTerms(fact) {
     return newTerms;
 }
 
+function verifyWork(fact) {
+    try {
+        return fact.verify();
+    } catch (e) {
+        if (e.calculated && e.declared && e.context) {
+            // Caghni considers it an error for there to be too many freeness
+            // constraints declared. But for our purposes, it just represents an
+            // expected constraint in the goal which hasn't shown up in the
+            // proof yet. So just check that each calculated is also declared.
+            var dMap = {};
+            e.declared.forEach(function(d) { dMap[d] = true; });
+            e.calculated.forEach(function(c) { if (!dMap[c]) { throw e; } });
+            return e.context;
+        } else {
+            throw e;
+        }
+    }
+}
+
 function setWork(work) {
+    verifyWork(work);
     state.work = work;
     state.workHash = Engine.fingerprint(work);
     var ground = document.getElementById('ground');

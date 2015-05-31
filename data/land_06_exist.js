@@ -2,7 +2,7 @@
     name:"&exist;",
     depends:["&forall;"],  
     goals:[
-        {Core:[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]],
+        {Core:[[[0,[1,[2,0,[1,1]]],[1,[2,0,[1,1]]]]],[0,[1,[2,0,[1,1]]],[3,0,1]],[]],
          Skin:{TermNames:["&harr;","&not;","&forall;","&exist;"]},
          FreeMaps:[[],[],[[]],[[]]],
          Tree:{Cmd:"defthm",Definiendum: 3}},
