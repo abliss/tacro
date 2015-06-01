@@ -31,6 +31,7 @@ var usableTools = {};
 var auto = false;
 var reflexives = {};
 var thms = {};
+var currentGoal = null;
 window.FAST_TICK = true; //XXX
 Error.stackTraceLimit = Infinity;
 
@@ -250,6 +251,10 @@ function groundOut() {
         var fact = this;
         state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
         var thm = Engine.ground(state.work, fact);
+        if (JSON.stringify(thm.Core) != JSON.stringify(currentGoal.Core)) {
+            throw new Error("Core mismatch! Wanted " + JSON.stringify(currentGoal.Core)
+                            + " found " + JSON.stringify(thm.Core));
+        }
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);
         if (storage.user) {
@@ -542,6 +547,7 @@ function setWork(work) {
             ground.removeAttribute('disabled');
             ground.className = "enabled";
             ground.onclick = groundOut.bind(idFact);
+            break;
         } catch (e) {
             // can't ground this way
         }
@@ -590,9 +596,9 @@ function nextGoal() {
             return;
         }
     }
-    var goal = land.goals.shift();
-    knowTerms(goal);
-    setWork(startWork(goal));
+    currentGoal = land.goals.shift();
+    knowTerms(currentGoal);
+    setWork(startWork(currentGoal));
     setWorkPath([]);
     return;
 }
