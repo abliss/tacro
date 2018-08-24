@@ -1,6 +1,6 @@
 [submodule "caghni"]
 	path = caghni
-	url = https://github.com/abliss/caghni.git
+	url = https://github.com/abliss/caghni
 [submodule "ghilbert"]
 	path = ghilbert
 	url = https://github.com/abliss/ghilbert.git
