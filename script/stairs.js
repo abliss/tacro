@@ -251,9 +251,18 @@ function groundOut() {
         var fact = this;
         state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
         var thm = Engine.ground(state.work, fact);
-        if (!thm || JSON.stringify(thm.Core) != JSON.stringify(currentGoal.Core)) {
-            throw new Error("Core mismatch! Wanted " + JSON.stringify(currentGoal.Core)
-                            + " found " + JSON.stringify(thm));
+        if (currentGoal == null || thm == null) {
+            console.warn("null goal " + JSON.stringify(thm));
+        } else {
+            // NOTE: we used to assert that the Cores matched, but then some
+            // special goal start off with a Hyp, and the grounded-out version
+            // doesn't have any Hyps. So just assert the Stmt and Dvs match.
+            var expected = JSON.stringify(currentGoal.Core.slice(1));
+            var actual = JSON.stringify(thm.Core.slice(1));
+            if (expected != actual) {
+                throw new Error("Core mismatch! Wanted " + expected
+                                + " found " + actual)
+            };
         }
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);
@@ -811,7 +820,7 @@ function getPageCoords(node) {
 }
 
 
-function loadLands(lands) { // TODO: this has become totally gefucked
+function loadLands(lands) { // TODO: this has become totally gefucked PICKUP
     var numLands = 0;
     for (var n in lands) if (lands.hasOwnProperty(n)) {
         numLands++;
