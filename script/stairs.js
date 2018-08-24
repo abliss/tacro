@@ -251,9 +251,9 @@ function groundOut() {
         var fact = this;
         state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
         var thm = Engine.ground(state.work, fact);
-        if (JSON.stringify(thm.Core) != JSON.stringify(currentGoal.Core)) {
+        if (!thm || JSON.stringify(thm.Core) != JSON.stringify(currentGoal.Core)) {
             throw new Error("Core mismatch! Wanted " + JSON.stringify(currentGoal.Core)
-                            + " found " + JSON.stringify(thm.Core));
+                            + " found " + JSON.stringify(thm));
         }
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);

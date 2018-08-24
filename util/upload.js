@@ -1,6 +1,6 @@
 // Uploads lands and facts to firebase; also prepares lands as a locally
 // fetchable json.
-var Firebase = require('firebase');
+// var Firebase = require('firebase');
 var Facts = require('../data/factlog.js').facts;
 var Fact = require('../script/fact.js');
 var Storage = require('../script/storage.js');
