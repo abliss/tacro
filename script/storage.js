@@ -50,7 +50,12 @@
             var str = JSON.stringify(obj);
             var fp = fingerprinter(str);
             var key = "fp/" + kind + "/" + fp;
-            this.local.setItem(key, str);
+            try {
+                this.local.setItem(key, str);
+            } catch (e) {
+                console.warn("failed to setItem key=" + key.length + " val=" + str.length);
+                throw(e);
+            }
             var pushRef = this.remote.child("incoming").child(kind).push(
                 {
                     "when":Firebase.ServerValue.TIMESTAMP,

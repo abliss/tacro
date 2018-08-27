@@ -509,8 +509,13 @@ function addSpecify(path, term, arity, freeMap) {
         if (DEBUG) {console.log("Work specced: " + JSON.stringify(state.work));}
     });
 }
-function save() {
-    startNextGoal();
+function save(goal) {
+    if (goal) {
+        state.work = startWork(goal);
+        state.goal--;
+    } else {
+        startNextGoal();
+    }
     stack.forEach(function(step) {
         if (DEBUG) {console.log("Work now: " + JSON.stringify(state.work));}
         try {
@@ -529,7 +534,7 @@ function save() {
 
     });
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
-    saveGoal();
+    saveGoal(goal);
     startWith(state.work);
     return state.work;
 }
@@ -711,6 +716,9 @@ startWith(thms.conj);
 applyArrow([], thms.contract, 0);
 thms.anid = save();
 
+startWith(thms.id);
+applyArrow([], thms.conj, 0);
+thms.idanda=save()
 
 startWith(thms.and1);
 applyArrow([1,0], thms.Transpose, 1);
@@ -1191,7 +1199,10 @@ thms.df_ex = saveGoal();
 startWith("harr_not_forall_z_not_A_exist_z_A")
 applyArrow([],thms.bicom,0);
 //saveAs("harr_exist_z_A_not_forall_z_not_A") // orcat reverses defthms
-save();
+save({Core:[[],[0,[1,0,1],[2,[3,0,[2,1]]]],[]],
+         Skin:{TermNames:["&harr;","&exist;","&not;","&forall;"]},
+         FreeMaps:[[],[[]],[],[[]]]});
+
 
 startWith("harr_exist_z_A_not_forall_z_not_A")
 applyArrow([1,0,1,0],"harr_and_A_B_not_rarr_A_not_B",0)
@@ -1242,10 +1253,6 @@ applyArrow([1,1],"harr_exist_z_A_not_forall_z_not_A",1)
 //saveAs("rarr_forall_z_harr_A_B_harr_exist_z_A_exist_z_B") //undefined
 save();
 
-startWith("rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B")
-applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
-//saveAs("rarr_exist_z_A_rarr_forall_z_rarr_A_B_exist_z_B") //undefined
-save();
 
 startWith("harr_exist_z_A_not_forall_z_not_A")
 applyArrow([],"rarr_harr_A_B_rarr_A_B",0)

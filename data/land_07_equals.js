@@ -20,7 +20,7 @@
          Skin:{TermNames:["&rarr;","&equals;"]},
          FreeMaps:[[],[]]},
         {Core:[[],[0,[1,0,1],[1,1,0]],[]],
-         Skin:{TermNames:["&harr;","&equals;","&rarr;"]},
+         Skin:{TermNames:["&harr;","&equals;"]},
          FreeMaps:[[],[],[]]},
         {Core:[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]],
          Skin:{TermNames:["&rarr;","&equals;","&harr;"]},
