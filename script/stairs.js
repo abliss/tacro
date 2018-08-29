@@ -286,6 +286,7 @@ function groundOut() {
 
         message("");
         setWorkPath([]);
+        currentLand().goals.shift();
         nextGoal();
         redraw();
     } catch (e) {
@@ -423,11 +424,6 @@ function addToShooter(factData, land) {
             message(e);
         }
     }
-    
-    // Undo button
-    var undo = box.spanMap[[]].appendChild(document.createElement("button"));
-    undo.className = "undo";
-    undo.innerHTML = "&laquo;";
 
     // Apply buttons (left and right)
     // TODO: assumes all tools are (at most) binary
@@ -594,7 +590,7 @@ function currentLand() {
 }
 function nextGoal() {
     var land = currentLand();
-    if (!land.goals || (land.goals.length == 0)) {
+    if (!land.goals || (land.goals.length <= 0)) {
         delete land.goals;
         var nextLand = landDepMap[land.name]; // XXX
         if (nextLand) {
@@ -605,7 +601,7 @@ function nextGoal() {
             return;
         }
     }
-    currentGoal = land.goals.shift();
+    currentGoal = land.goals[0];
     knowTerms(currentGoal);
     setWork(startWork(currentGoal));
     setWorkPath([]);
@@ -743,6 +739,7 @@ function cheat(n) {
         var factFp = addToShooter(thm).local;
         currentLand().thms.push(factFp);
         message("");
+        currentLand().goals.shift();
         nextGoal();
         n--;
         redraw();
@@ -873,6 +870,11 @@ window.addEventListener('popstate', function(ev) {
         }
     }
 });
+document.getElementById("restart").onclick = function() {
+    nextGoal();
+    redraw();
+    return false;
+};
 document.getElementById("rewind").onclick = function() {
     var parentFp = log.parent;
     if (parentFp) {
