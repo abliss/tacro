@@ -11,7 +11,7 @@ var chat = new Chat(storage, Engine.fingerprint, document.getElementById('chatPa
                     document.getElementById('chatInput'));
 var log = {};
 var state;
-var lastStateFp = null;
+var MAX_STATES=100;
 var STATE_KEY = "lastState-v13";
 var USERID_KEY = "tacro-userid";
 var SIZE_MULTIPLIER = 3;
@@ -671,6 +671,7 @@ function loadLogFp(logFp, cb) {
     storage.fpLoad("log", logFp, function(logObj) {
         storage.fpLoad("state", logObj.now, function(stateObj) {
             log = logObj;
+            expireOldStates(MAX_STATES, logObj);
             loadState(stateObj);
             // TODO: should popstate? double-undo problem.
             history.pushState(logFp, "state",
@@ -844,6 +845,19 @@ function loadLands(lands) { // TODO: this has become totally gefucked PICKUP
     console.log("Got checked lands: " + numLands);
 }
 
+function expireOldStates(maxStates, logObj) {
+    if (logObj) {
+        var parentFp = logObj.parent;
+        var stateFp = logObj.now;
+        storage.fpLoad("log", parentFp, 
+                       expireOldStates.bind(null, maxStates-1));
+        if (maxStates <= 0) {
+            console.info("removing state " + stateFp);
+            storage.fpRm("log", parentFp);
+            storage.fpRm("state", stateFp);
+        }
+    }
+}
 // ==== STARTUP ====
 window.addEventListener('popstate', function(ev) {
     console.log("popstate to " + ev.state);

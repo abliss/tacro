@@ -41,7 +41,10 @@
         } else {
             this.local = localStorage;
         }
-
+        this.fpRm = function(kind, fp) {
+            var key = "fp/" + kind + "/" + fp;
+            this.local.removeItem(key);
+        }
         // Save the given obj in a content-addressable location. also upload to
         // firebase. Returns the local key (content-based) and the remote key
         // (uniquely generated).
