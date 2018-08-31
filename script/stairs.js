@@ -537,7 +537,23 @@ function verifyWork(fact) {
 }
 
 function setWork(work) {
-    verifyWork(work);
+    var verified = verifyWork(work);
+    // Check for drift from planned FreeVar set. It would be nice to keep these
+    // in lockstep but that requires more sophisticted dummy-tracking than we
+    // currently do.
+    if (currentGoal) {
+        var goalFree = currentGoal.Core[Fact.CORE_FREE]
+        // The engine sometimes spits out spurious FreeVar constraints of one
+        // bindingVar in another. Trim them out before comparing. See the proof
+        // of finds for example.
+        var workFree = work.Core[Fact.CORE_FREE]
+            .filter(f=>!(f[0] in verified.bindingVars));
+        var expected = JSON.stringify(goalFree);
+        var actual = JSON.stringify(workFree);
+        if (expected != actual) {
+            message('FreeVar drift: want ' + expected + " have " + actual);
+        }
+    }
     state.work = work;
     state.workHash = Engine.fingerprint(work);
     var ground = document.getElementById('ground');
@@ -660,6 +676,7 @@ function redraw() {
 function loadState(flat) {
     state = flat;
     setWork(new Fact(state.work));
+    currentGoal = currentLand().goals[0];
     message("");
 }
 
