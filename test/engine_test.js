@@ -2,7 +2,7 @@ var Fs = require('fs');
 var Async = require('async');
 var Fact = require('../script/fact.js');
 var Engine = require('../script/engine.js');
-
+var He = require('he');
 var lands = [];
 var state = {};
 
@@ -12,7 +12,20 @@ var GROUNDDEBUG = false;
 var start = new Date();
 
 state.factsByMark = {};
+
+var ENTITY_MAP = {
+    "=":"&equals;",
+    "plus":"&plus;",
+};
 function sfbm(mark) {
+    // usually mark has entities like &rarr; but when copying dumps from the
+    // browser, they come as unicode.
+    var arr = mark.split(";");
+    var core = arr.shift();
+    var termsArr = JSON.parse(arr.join(";"));
+    termsArr = termsArr.map(x => x.match(/&/) ? x : He.encode(x, {useNamedReferences:true}));
+    termsArr = termsArr.map(x => ENTITY_MAP.hasOwnProperty(x) ? ENTITY_MAP[x] : x);
+    mark = core + ";" + JSON.stringify(termsArr);
     var fact = state.factsByMark[mark];
     if (!fact) throw new Error("mark not found: " + mark);
     return fact;
@@ -413,6 +426,8 @@ function startNextGoal() {
     var goal = state.land.goals[state.goal];
     if (!goal) throw new Error("no more goals!");
     state.work = startWork(goal);
+    if (DEBUG) {console.log("Starting goal " + JSON.stringify(state.work));}
+
 }
 function saveGoal() {
     state.land.addFact(state.work);
@@ -1432,6 +1447,9 @@ var landOslash = getLand("../data/land_08_Oslash.js");
 // No goals. :(
 
 var landSect = getLand("../data/land_09_sect.js");
+var oldFinds = {Core:[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]],
+                Skin:{TermNames:["&rarr;","&forall;","&equals;","&Oslash;","&harr;","&sect;","&and;","&exist;"]},
+                FreeMaps:[[],[[]],[],[],[],[],[],[[]]]};
 
 startWith("_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A")
 applyArrow([0,1,1],"rarr_and_A_rarr_A_B_B",1)
@@ -1476,15 +1494,136 @@ applyArrow([1,1,1,1,1,1],"rarr_forall_z_rarr_A_B_rarr_exist_z_A_exist_z_B",0)
 applyArrow([1,1,1,1,1,1],"_dv_a_z___rarr_rarr_exist_z_equals_z_a_A_A",0)
 applyArrow([1,1,1,1,1,1],"_dv_A_z___rarr_exist_z_A_A",0)
 applyArrow([1,1,1,0],"rarr_forall_z_A_A",1)
-
+save(oldFinds);
 //saveAs("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E") //undefined
-save();
+//save();
+
+DEBUG=true;
+startNextGoal();
+state.work = applyFact(state.work, [1,1],
+                      sfbm('[[],[0,[1,0,1],1],[]];["→","∀"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,2,2,1],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,2,1],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,1],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+
+ state.work = applyFact(state.work, [1,1,2],
+ sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]); //
+ state.work = applyFact(state.work, [1,1],
+ sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,1,2],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,1,2],
+ sfbm('[[],[0,[1,0,[0,1,2]],[0,1,[1,0,2]]],[]];["→","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,1,2,2,2],
+ sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]); //
+ state.work = applyFact(state.work, [1,1,2,2],
+ sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2,2],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,1,2],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,1,1],
+ sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,1],
+ sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,1,2,1,1,2,2],
+ sfbm('[[],[0,[1,0,1],[0,0,1]],[]];["→","↔"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,2,2,2],
+ sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,1,1,2],
+ sfbm('[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]];["→"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,1,1],
+ sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,1,1,2],
+ sfbm('[[],[0,[1,0,[0,1,2]],[0,[2,0,1],[2,0,2]]],[]];["→","∀","∃"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,1,1,2],
+
+                        sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [1]); //PICKUP
+ state.work = applyFact(state.work, [1,2,1,2,1,1,2],
+ sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,2,2],
+ sfbm('[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]];["→"]'), [1]); //
+
+ state.work = applyFact(state.work, [1,2,1,2,2],
+ sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [1]); //
+
+
+
+ state.work = applyFact(state.work, [1,2,1,2,2,1,2],
+ sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,1,2,2,1],
+ sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2]); //
+ state.work = applyFact(state.work, [1,2,1,2,1,2],
+ sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["→"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,1],
+ sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2,2],
+ sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["→"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,1,2],
+ sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]); //
+
+
+ state.work = applyFact(state.work, [1,1],
+ sfbm('[[],[0,[1,0,[0,[2,0,[3]],1]],[0,[1,2,[0,[1,0,[0,[2,0,2],1]],[1,0,[0,[2,0,[4,2]],1]]]],[1,0,1]]],[[1,2]]];["→","∀","=","Ø","§"]'), [1]); //
+ state.work = applyFact(state.work, [1],
+ sfbm('[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]];["↔","∧"]'), [2]); //
+
+ state.work = applyFact(state.work, [1,1],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]); //
+
+ state.work = applyFact(state.work, [1,1],
+ sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2],
+ sfbm('[[],[0,[1,0,1],1],[]];["→","∀"]'), [1]); //
+ state.work = applyFact(state.work, [1],
+ sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]); //
+ state.work = applyFact(state.work, [1,2],
+ sfbm('[[],[0,[1,0,[0,1,2]],[0,1,[1,0,2]]],[]];["→","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2,2],
+ sfbm('[[],[0,[1,0,1],[0,0,1]],[]];["→","↔"]'), [1]); //
+ state.work = applyFact(state.work, [1,2,2],
+ sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]); //
+ state.work = applyFact(state.work, [1],
+ sfbm('[[],[0,[1,0,[0,1,2]],[0,[2,0,1],[2,0,2]]],[]];["→","∀","∃"]'), [1]); //
+ state.work = applyFact(state.work, [1],
+ sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [1]); //
+ state.work = applyFact(state.work, [1],
+ sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]); //
+state.work = ground(state.work, "rarr_A_A");
+saveGoal();
+
+DEBUG=false;
 
 var landPlus = getLand("../data/land_10_plus.js");
-
+startNextGoal();
 startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
 saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
+//saveGoal()
+state.goal++;
 
 // NOTE: can't stop here or plus infers binding
 generify()
@@ -1591,6 +1730,9 @@ saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
   // ==== END import from orcat_test.js ====
   */
 
+// Now let's redo addass the tacro way.
+
+
 console.log("proved " + proofCtx.length() + " thms.");
 
 // ==== Verify ====
@@ -1650,3 +1792,31 @@ Async.parallel(
         console.log("FINISHED in " + (new Date() - start));
     });
 /**/
+/*
+console.log(JSON.stringify(Engine.canonicalize(       new Fact(
+        {Core:[[],
+               [0,
+                [6, [1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],
+                 [6, [1,0,[1,1,[0,[2,1,0],[4,2,4]]]],
+                  [6, [1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],
+                   [6, [1,0,[1,1,[0,[2,1,6],[4,2,7]]]],
+                    [6, 3,
+                     [1,0,[0,4,5]]]]]]],
+                7
+               ],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]],
+               Skin:{TermNames:[
+                   "&rarr;",   // 0
+                   "&forall;", // 1
+                   "&equals;", // 2
+                   "&Oslash;", // 3
+                   "&harr;",   // 4
+                   "&sect;",   // 5
+                   "&and;",    // 6
+                   "&exist;",  // 7
+               ]},
+               FreeMaps:[[],[[]],[],[],[],[],[],[[]]]}
+    
+
+                                                              ))))
+process.exit()
+*/

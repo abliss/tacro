@@ -154,6 +154,7 @@ function registerNewTool(toolOp) {
 }
 
 function setWorkPath(wp) {
+    console.log("dump: state.work = applyFact(state.work, " + JSON.stringify(wp) + ",");
     var className = "";
     if (typeof wp == 'undefined') {
         delete state.workPath;
@@ -404,7 +405,8 @@ function addToShooter(factData, land) {
 
     
     function applyChild(argNum) {
-        console.log("ApplyFact " + fact.Skin.Name + " arg " + argNum);
+        console.log("dump: sfbm('" + JSON.stringify(fact.Core) + ";" +
+                    JSON.stringify(fact.Skin.TermNames) +"'), [" + argNum + "]); //");
         // TODO: PICKUP: undummy
         try {
             var varMap = null;
