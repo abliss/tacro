@@ -1498,7 +1498,7 @@ save(oldFinds);
 //saveAs("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E") //undefined
 //save();
 
-DEBUG=true;
+
 startNextGoal();
 state.work = applyFact(state.work, [1,1],
                       sfbm('[[],[0,[1,0,1],1],[]];["→","∀"]'), [1]); //
@@ -1615,19 +1615,25 @@ state.work = applyFact(state.work, [1,1],
 state.work = ground(state.work, "rarr_A_A");
 saveGoal();
 
-DEBUG=false;
 
 var landPlus = getLand("../data/land_10_plus.js");
+
 startNextGoal();
+/*
 startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
 saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
-//saveGoal()
-state.goal++;
+*/
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,0,1],[0,[1,2,3],[1,[2,0,2],[2,1,3]]]],[]];["&rarr;","&equals;","&plus;"]'),
+                       [2]);
+state.work = ground(state.work, "equals_A_A");
+saveGoal();
+
 
 // NOTE: can't stop here or plus infers binding
-generify()
-saveAs("forall_z_rarr_equals_z_a_equals_plus_Oslash_z_plus_Oslash_a") //undefined
+//generify()
+//saveAs("forall_z_rarr_equals_z_a_equals_plus_Oslash_z_plus_Oslash_a") //undefined
 
 startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
