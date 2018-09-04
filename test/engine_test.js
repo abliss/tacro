@@ -15,7 +15,7 @@ state.factsByMark = {};
 
 var ENTITY_MAP = {
     "=":"&equals;",
-    "plus":"&plus;",
+    "+":"&plus;",
 };
 function sfbm(mark) {
     // usually mark has entities like &rarr; but when copying dumps from the
@@ -1736,9 +1736,33 @@ saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
   // ==== END import from orcat_test.js ====
   */
 
-// Now let's redo addass the tacro way.
+// Now let's redo goals the tacro way.
 
+startNextGoal();
+ state.work = applyFact(state.work, [],
+                        sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [2]); //
+        state.work = Engine.applyInference(state.work,
+                                           sfbm('[[0],[0,1,0],[]];["&forall;"]'));
+        state.work = Engine.applyInference(state.work,
+                                           sfbm('[[0],[0,1,0],[]];["&forall;"]'));
 
+ state.work = applyFact(state.work, [2],
+ sfbm('[[],[0,[1,[2,0,1],[2,0,2]],[2,1,2]],[]];["→","∧","↔"]'), [2]); //
+ state.work = applyFact(state.work, [2,2],
+ sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [2]); //
+ state.work = applyFact(state.work, [2,1],
+ sfbm('[[],[0,[1,0,1],[2,[1,0,2],[1,1,2]]],[]];["→","=","↔"]'), [2]); //
+ state.work = applyFact(state.work, [2,1],
+ sfbm('[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]];["→","=","+"]'), [2]); //
+ state.work = applyFact(state.work, [2,1],
+ sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","="]'), [1]); //
+ state.work = applyFact(state.work, [2],
+ sfbm('[[],[0,0,[1,0,0]],[]];["→","∧"]'), [2]); //
+state.work = ground(state.work, "rarr_A_A");
+saveGoal();
+
+DEBUG=true;
+DEBUG=false;
 console.log("proved " + proofCtx.length() + " thms.");
 
 // ==== Verify ====
