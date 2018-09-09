@@ -1,6 +1,6 @@
 ### What is it?
 
-Tacro is a browser game wherein you solve puzzles to advance, and your solutions
+Tacro is a [browser game](https://abliss.github.com/tacro) wherein you solve puzzles to advance, and your solutions
 provide computer-verifiable formal proofs for mathematical theorems.
 
 Tacro comprises a few different parts:
