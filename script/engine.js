@@ -311,6 +311,7 @@ var Fact = require('./fact.js'); //XXX
             varMap[factVarName] = workExp;
         }
         function recurse(workSubExp, factSubExp, alreadyMapped) {
+            if (DEBUG) {console.log("# Recurse: " + JSON.stringify(workSubExp));}
             if (!alreadyMapped && !Array.isArray(factSubExp) &&
                 (varMap[factSubExp] != undefined)) {
                 factSubExp = varMap[factSubExp];
@@ -398,8 +399,11 @@ var Fact = require('./fact.js'); //XXX
                 }
             }
         }
+        if (DEBUG) {console.log("# about to Recurse: " + JSON.stringify(workExp));}
         recurse(workExp, factExp, false);
+        if (DEBUG) {console.log("# Done : " + JSON.stringify(workExp));}
         undummy(work, dummyMap);
+        if (DEBUG) {console.log("# Undummied : " + JSON.stringify(workExp));}
         //console.log("Unified: " + JSON.stringify(varMap));
         for (x in varMap) if (varMap.hasOwnProperty(x)) {
             varMap[x] = undummy(varMap[x], dummyMap);

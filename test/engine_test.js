@@ -1613,9 +1613,9 @@ state.work = applyFact(state.work, [1,1],
  state.work = applyFact(state.work, [1],
  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]); //
 state.work = ground(state.work, "rarr_A_A");
-DEBUG=true;
+
 thms.findsand = saveGoal();
-DEBUG=false;
+
 
 
 var landPlus = getLand("../data/land_10_plus.js");
@@ -1626,12 +1626,13 @@ startWith("equals_a_a")
 applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
 saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
 */
+DEBUG=true;
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,[1,0,1],[0,[1,2,3],[1,[2,0,2],[2,1,3]]]],[]];["&rarr;","&equals;","&plus;"]'),
                        [2]);
 state.work = ground(state.work, "equals_A_A");
 saveGoal();
-
+DEBUG=false;
 
 // NOTE: can't stop here or plus infers binding
 //generify()
@@ -1771,8 +1772,10 @@ state.work = applyFact(state.work, [],
                         thms.findsand,
                        [2]); //
 // infinite loop!
+Engine.DEBUG();
 state.work = applyFact(state.work, [2,2,2],
- sfbm('[[],[0,0,[1,[2,1,[2,2,[0,[3,3,4],[4,[3,[5,[6],3],3],[3,[5,[6],4],4]]]]],0]],[]];["→","∧","∀","=","↔","+","Ø"]'), [2]); //
+ sfbm('[[],[0,0,[1,[2,1,[2,2,[0,[3,3,4],[4,[3,[5,[6],3],3],[3,[5,[6],4],4]]]]],0]],[]];["→","∧","∀","=","↔","+","Ø"]'),
+                       [2]); //
 
 state.work = ground(state.work, "rarr_A_A");
 saveGoal();
