@@ -197,22 +197,32 @@ var Fact = require('./fact.js'); //XXX
     // Given a fact or an expression, replace its variables with the
     // corresponding (transitively-closed) values from the map.
     function undummy(workOrExp, dummyMap) {
-        function replaceDummies(x) {
+        function replaceDummies(x, alreadyReplaced) {
             // TODO: handle freemap dummies correctly!
             if (Array.isArray(x)) {
                 for (var i = 1; i < x.length; i++) {
-                    x[i] = replaceDummies(x[i]);
+                    x[i] = replaceDummies(x[i], alreadyReplaced);
                 }
                 return x;
             } else if ((typeof x == 'number') || (typeof x == 'string')) {
+                if (DEBUG) console.log("ar: " + JSON.stringify(alreadyReplaced));
+                if (typeof alreadyReplaced != 'object') {
+                    alreadyReplaced = {};
+                }
                 while (dummyMap[x] != undefined) {
+                    if (alreadyReplaced[x]) {
+                        throw new Error("DummyMap has cyle through " + x + ":" + JSON.stringify(dummyMap));
+                    }
+                    if (DEBUG) console.log("replacing: " + x + " with " + JSON.stringify(dummyMap[x]));
+                    alreadyReplaced[x] = 1;
                     x = dummyMap[x];
                 }
-                return Array.isArray(x) ? replaceDummies(x) : x;
+                return Array.isArray(x) ? replaceDummies(x, alreadyReplaced) : x;
             } else {
                 throw new Error("hmm")
             }
         }
+
         if ((typeof workOrExp == 'number') || Array.isArray(workOrExp)) {
             return replaceDummies(workOrExp);
         } else if (workOrExp.ensureFree) {
@@ -311,7 +321,6 @@ var Fact = require('./fact.js'); //XXX
             varMap[factVarName] = workExp;
         }
         function recurse(workSubExp, factSubExp, alreadyMapped) {
-            if (DEBUG) {console.log("# Recurse: " + JSON.stringify(workSubExp));}
             if (!alreadyMapped && !Array.isArray(factSubExp) &&
                 (varMap[factSubExp] != undefined)) {
                 factSubExp = varMap[factSubExp];
@@ -399,9 +408,9 @@ var Fact = require('./fact.js'); //XXX
                 }
             }
         }
-        if (DEBUG) {console.log("# about to Recurse: " + JSON.stringify(workExp));}
         recurse(workExp, factExp, false);
-        if (DEBUG) {console.log("# Done : " + JSON.stringify(workExp));}
+        if (DEBUG) {console.log("# About to undummy : " + JSON.stringify(work));}
+        if (DEBUG) {console.log("# Dummy map : " + JSON.stringify(dummyMap));}
         undummy(work, dummyMap);
         if (DEBUG) {console.log("# Undummied : " + JSON.stringify(workExp));}
         //console.log("Unified: " + JSON.stringify(varMap));
