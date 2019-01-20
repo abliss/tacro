@@ -8,6 +8,7 @@ var Fact = require('./fact.js'); //XXX
 // beginning of the proof, while the conclusion remains the same. Eventually we
 // hope to "ground" the workspace in a known Fact, leaving us with a completed
 // zero-hypothesis theorem.
+Error.stackTraceLimit = Infinity;
 (function(module) {
     // Enable for logs
     var DEBUG = false;
@@ -205,7 +206,7 @@ var Fact = require('./fact.js'); //XXX
                 }
                 return x;
             } else if ((typeof x == 'number') || (typeof x == 'string')) {
-                while (dummyMap[x] != undefined) {
+                while (!Array.isArray(x) && (dummyMap[x] != undefined)) {
                     x = dummyMap[x];
                 }
                 return Array.isArray(x) ? replaceDummies(x) : x;
