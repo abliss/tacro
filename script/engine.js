@@ -227,9 +227,15 @@ Error.stackTraceLimit = Infinity;
             workOrExp.setFree([]);
             oldFreeLists.forEach(function(freeList) {
                 var oldTv = freeList.shift();
+                if (DEBUG) console.log("oldTv: " + JSON.stringify(oldTv));
+                if (DEBUG) console.log("freeList: " + JSON.stringify(freeList));
+                if (DEBUG) console.log("dummyMap: " + JSON.stringify(dummyMap));
                 eachVarOnce([replaceDummies(oldTv)], function(newV) {
                     freeList.forEach(function(v) {
-                        workOrExp.ensureFree(newV, replaceDummies(v));
+                        newTerm = replaceDummies(v);
+                        eachVarOnce([newTerm], function(newTermVar) {
+                            workOrExp.ensureFree(newV, newTermVar);
+                        });
                     });
                 });
             });

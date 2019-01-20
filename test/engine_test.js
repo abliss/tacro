@@ -1771,6 +1771,7 @@ state.work = applyFact(state.work, [],
                         thms.findsand,
                        [2]); //
 // infinite loop!
+//Engine.DEBUG();
 state.work = applyFact(state.work, [2,2,2],
  sfbm('[[],[0,0,[1,[2,1,[2,2,[0,[3,3,4],[4,[3,[5,[6],3],3],[3,[5,[6],4],4]]]]],0]],[]];["→","∧","∀","=","↔","+","Ø"]'), [2]); //
 
