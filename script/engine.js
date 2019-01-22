@@ -234,6 +234,7 @@ Error.stackTraceLimit = Infinity;
                     freeList.forEach(function(v) {
                         newTerm = replaceDummies(v);
                         eachVarOnce([newTerm], function(newTermVar) {
+                            // XXX PICKUP: this can be absurd if newTermVar == newV.
                             workOrExp.ensureFree(newV, newTermVar);
                         });
                     });
@@ -406,11 +407,13 @@ Error.stackTraceLimit = Infinity;
             }
         }
         recurse(workExp, factExp, false);
+        // XXX PICKUP: this mutates work despite our doc promising not to. Move it belove cVMFF?
         undummy(work, dummyMap);
         //console.log("Unified: " + JSON.stringify(varMap));
         for (x in varMap) if (varMap.hasOwnProperty(x)) {
             varMap[x] = undummy(varMap[x], dummyMap);
         }
+        // XXX PICKUP: Why does this not catch the 13 free in 13 error? also why is that error happening?
         checkVarMapForFreeness(varMap);
 
         eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {

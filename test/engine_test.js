@@ -1613,9 +1613,7 @@ state.work = applyFact(state.work, [1,1],
  state.work = applyFact(state.work, [1],
  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]); //
 state.work = ground(state.work, "rarr_A_A");
-DEBUG=true;
 thms.findsand = saveGoal();
-DEBUG=false;
 
 
 var landPlus = getLand("../data/land_10_plus.js");
@@ -1761,22 +1759,31 @@ startNextGoal();
  state.work = applyFact(state.work, [2],
  sfbm('[[],[0,0,[1,0,0]],[]];["→","∧"]'), [2]); //
 state.work = ground(state.work, "rarr_A_A");
-saveGoal();
+
+thms.zeroadd_lem1 = saveGoal();
 
 startNextGoal();
-state.work = applyFact(state.work, [],
-                       // PICKUP: why this doesn't work?
-                       //# Canonically: {"Core":[[],[0,[1,[2,0,[2,1,[0,[3,1,[4]],[5,2,3]]]],[1,[2,0,[2,1,[0,[3,1,0],[5,2,4]]]],[1,[2,0,[2,1,[0,[3,1,[6,0]],[5,2,5]]]],[1,[2,0,[2,1,[0,[3,1,6],[5,2,7]]]],[1,3,[2,0,[0,4,5]]]]]]],7],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]],"Skin":{"Name":"MkEw8B","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2","V3","V4","V5","V6","V7"],"TermNames":["&rarr;","&and;","&forall;","&equals;","&Oslash;","&harr;","&sect;","&exist;"],"Delimiters":[]},"Tree":{"Cmd":"thm","Deps":[[[[],[0,[1,0,1],1],[
-                        // sfbm('[[],[0,[1,[2,0,[2,1,[0,[3,1,[4]],[5,2,3]]]],[1,[2,0,[2,1,[0,[3,1,0],[5,2,4]]]],[1,[2,0,[2,1,[0,[3,1,[6,0]],[5,2,5]]]],[1,[2,0,[2,1,[0,[3,1,6],[5,2,7]]]],[1,3,[2,0,[0,4,5]]]]]]],7],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]];["→","∧","∀","=","Ø","↔","§","∃"]'),
-                        thms.findsand,
-                       [2]); //
-// infinite loop!
-//Engine.DEBUG();
-state.work = applyFact(state.work, [2,2,2],
- sfbm('[[],[0,0,[1,[2,1,[2,2,[0,[3,3,4],[4,[3,[5,[6],3],3],[3,[5,[6],4],4]]]]],0]],[]];["→","∧","∀","=","↔","+","Ø"]'), [2]); //
+state.work = applyFact(state.work, [], thms.findsand, [2]);
+console.log("A Work now:" + JSON.stringify(state.work));
+state.work.toGhilbert(state, function(err, ghTxt) {
+    console.log("as ghilbert: err=" + err +"\n" + ghTxt);
+});
+state.work = applyFact(state.work, [], thms.zeroadd_lem1, [2]);
+console.log("B Work now:" + JSON.stringify(state.work));
+state.work.toGhilbert(state, function(err, ghTxt) {
+    console.log("as ghilbert: err=" + err +"\n" + ghTxt);
+});
+
+
+state.work.verify();
+state.work = applyFact(state.work, [], thms.zeroadd_lem1, [2]);
+state.work = applyFact(state.work, [], thms.zeroadd_lem1, [2]);
+state.work = applyFact(state.work, [], thms.zeroadd_lem1, [2]);
+
+
 
 state.work = ground(state.work, "rarr_A_A");
-saveGoal();
+thms.addass = saveGoal();
 
 console.log("proved " + proofCtx.length() + " thms.");
 
