@@ -1761,7 +1761,7 @@ startNextGoal();
 state.work = ground(state.work, "rarr_A_A");
 
 thms.zeroadd_lem1 = saveGoal();
-
+/*
 startNextGoal();
 state.work = applyFact(state.work, [], thms.findsand, [2]);
 console.log("A Work now:" + JSON.stringify(state.work));
@@ -1781,9 +1781,9 @@ state.work = applyFact(state.work, [], thms.zeroadd_lem1, [2]);
 state.work = applyFact(state.work, [], thms.zeroadd_lem1, [2]);
 
 
-
 state.work = ground(state.work, "rarr_A_A");
 thms.addass = saveGoal();
+*/
 
 console.log("proved " + proofCtx.length() + " thms.");
 

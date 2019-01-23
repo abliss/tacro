@@ -217,29 +217,36 @@ Error.stackTraceLimit = Infinity;
         if ((typeof workOrExp == 'number') || Array.isArray(workOrExp)) {
             return replaceDummies(workOrExp);
         } else if (workOrExp.ensureFree) {
+            var oldFreeLists = workOrExp.Core[Fact.CORE_FREE];
+            var freePairsToEnsure = [];
+            oldFreeLists.forEach(function(freeList) {
+                var oldTv = freeList[0];
+                var newTerm = replaceDummies(oldTv);
+                eachVarOnce([newTerm], function(newTermVar) {
+                    freeList.slice(1).forEach(function(bv) {
+                        newBV = replaceDummies(bv);
+                        if (Array.isArray(newBV)) {
+                            throw new Error("Matched binding var " + v + " to term " + JSON.stringify(newBV));
+                        } else if (newBV == newTermVar) {
+                            throw new Error("Freeness violation! Matched binding var " + bv + " to " + newBV + ";" +
+                                            " matched term var " + oldTv + " to term " + JSON.stringify(newTerm));
+                        } else {
+                            freePairsToEnsure.push([newTermVar, newBV]);
+                        }
+                    });
+                });
+            });
+            workOrExp.setFree([]);
+            // NOW we mutate the work. TOD: Still seems a bit early.
+            freePairsToEnsure.forEach(pair => workOrExp.ensureFree(pair[0], pair[1]));
+
             workOrExp.Core[Fact.CORE_STMT] = replaceDummies(
                 workOrExp.Core[Fact.CORE_STMT])
             workOrExp.Core[Fact.CORE_HYPS] =
                 workOrExp.Core[Fact.CORE_HYPS].map(replaceDummies);
             workOrExp.Tree.Proof =
                 workOrExp.Tree.Proof.map(replaceDummies);
-            var oldFreeLists = workOrExp.Core[Fact.CORE_FREE];
-            workOrExp.setFree([]);
-            oldFreeLists.forEach(function(freeList) {
-                var oldTv = freeList.shift();
-                if (DEBUG) console.log("oldTv: " + JSON.stringify(oldTv));
-                if (DEBUG) console.log("freeList: " + JSON.stringify(freeList));
-                if (DEBUG) console.log("dummyMap: " + JSON.stringify(dummyMap));
-                eachVarOnce([replaceDummies(oldTv)], function(newV) {
-                    freeList.forEach(function(v) {
-                        newTerm = replaceDummies(v);
-                        eachVarOnce([newTerm], function(newTermVar) {
-                            // XXX PICKUP: this can be absurd if newTermVar == newV.
-                            workOrExp.ensureFree(newV, newTermVar);
-                        });
-                    });
-                });
-            });
+
             return workOrExp;
         } else {
             throw new Error("Not work or exp: " + workOrExp);
@@ -407,7 +414,7 @@ Error.stackTraceLimit = Infinity;
             }
         }
         recurse(workExp, factExp, false);
-        // XXX PICKUP: this mutates work despite our doc promising not to. Move it belove cVMFF?
+        // XXX PICKUP: this mutates work despite our doc promising not to. Move it below cVMFF?
         undummy(work, dummyMap);
         //console.log("Unified: " + JSON.stringify(varMap));
         for (x in varMap) if (varMap.hasOwnProperty(x)) {
@@ -760,7 +767,11 @@ Error.stackTraceLimit = Infinity;
             if (varsSeen[termVar] && !bindingVars[termVar]) {
                 freeList.slice(1).forEach(function(v) {
                     if (varsSeen[v]) {
-                        out.ensureFree(termVar, mapExp(v));
+                        var bVar = mapExp(v)
+                        if (bVar == termVar) {
+                            throw new Error("Freeness violation! bVar=" + bVar);
+                        }
+                        out.ensureFree(termVar, bVar);
                     }
                 });
             }
