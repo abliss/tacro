@@ -189,10 +189,15 @@ Error.stackTraceLimit = Infinity;
         }
         exps.forEach(visit);
     }
-
+    function resetDummies() {
+        dummyNum = 0;
+    }
     function newDummy() {
         dummyNum++;
-        return "DUMMY_" + dummyNum;
+        //alpha is 03b1
+        var codePoint = 0x03b0 + dummyNum;
+        return String.fromCodePoint(codePoint);
+        //return "DUMMY_" + dummyNum;
     }
 
     // Given a fact or an expression, replace its variables with the
@@ -1027,5 +1032,6 @@ Error.stackTraceLimit = Infinity;
     module.exports.getMandHyps = getMandHyps;
     module.exports.globalSub = globalSub;
     module.exports.specify = specify;
+    module.exports.resetDummies = resetDummies;
     module.exports.DEBUG = function() {DEBUG = true;};
 })(module);

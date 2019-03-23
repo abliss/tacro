@@ -548,8 +548,9 @@ function setWork(work) {
         // The engine sometimes spits out spurious FreeVar constraints of one
         // bindingVar in another. Trim them out before comparing. See the proof
         // of finds for example.
+        var bindingVars = verified ? verified.bindingVars : {};
         var workFree = work.Core[Fact.CORE_FREE]
-            .filter(f=>!(f[0] in verified.bindingVars));
+            .filter(f=>!(f[0] in bindingVars));
         var expected = JSON.stringify(goalFree);
         var actual = JSON.stringify(workFree);
         if (expected != actual) {
@@ -623,6 +624,7 @@ function nextGoal() {
     knowTerms(currentGoal);
     setWork(startWork(currentGoal));
     setWorkPath([]);
+    Engine.resetDummies();
     return;
 }
 
