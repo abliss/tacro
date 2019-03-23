@@ -231,7 +231,7 @@ Error.stackTraceLimit = Infinity;
                     freeList.slice(1).forEach(function(bv) {
                         newBV = replaceDummies(bv);
                         if (Array.isArray(newBV)) {
-                            throw new Error("Matched binding var " + v + " to term " + JSON.stringify(newBV));
+                            throw new Error("Matched binding var " + bv + " to term " + JSON.stringify(newBV));
                         } else if (newBV == newTermVar) {
                             throw new Error("Freeness violation! Matched binding var " + bv + " to " + newBV + ";" +
                                             " matched term var " + oldTv + " to term " + JSON.stringify(newTerm));
