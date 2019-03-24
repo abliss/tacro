@@ -189,8 +189,16 @@ Error.stackTraceLimit = Infinity;
         }
         exps.forEach(visit);
     }
-    function resetDummies() {
+    // Reset the dummy counter to use the first available dummy not in optFact.
+    function resetDummies(optFact) {
         dummyNum = 0;
+        if (optFact && optFact.Skin.VarNames) {
+            usedVars = {};
+            optFact.Skin.VarNames.forEach(v => { usedVars[v] = 1; });
+            while (usedVars[newDummy()]) {
+            }
+            dummyNum--;
+        }
     }
     function newDummy() {
         dummyNum++;

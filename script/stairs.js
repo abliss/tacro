@@ -35,17 +35,6 @@ var currentGoal = null;
 window.FAST_TICK = true; //XXX
 Error.stackTraceLimit = Infinity;
 
-var varColors = [
-    "#9370db",
-    "#70db93",
-    "#f13e44",
-    "#cc4a14",
-    "#99583d",
-    "#3d983d",
-    "#3d9898",
-];
-
-
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -624,7 +613,7 @@ function nextGoal() {
     knowTerms(currentGoal);
     setWork(startWork(currentGoal));
     setWorkPath([]);
-    Engine.resetDummies();
+    Engine.resetDummies(state.work);
     return;
 }
 
