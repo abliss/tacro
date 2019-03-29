@@ -430,6 +430,11 @@ function startNextGoal() {
 
 }
 function saveGoal() {
+    var origCore = JSON.stringify(Engine.canonicalize(new Fact(state.land.goals[state.goal])).Core.slice(1));
+    var newCore = JSON.stringify(Engine.canonicalize(state.work).Core.slice(1));
+    if (origCore != newCore) {
+        throw new Error("Core mismatch! Wanted\n" + origCore + "\nGot\n" + newCore);
+    }
     state.land.addFact(state.work);
     proofCtx.append(state.work);
     state.goal++;
@@ -1191,6 +1196,24 @@ startWith("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B")
 applyArrow([0,1],"harr_harr_A_B_harr_not_B_not_A",1)
 //saveAs("rarr_forall_z_harr_A_B_harr_forall_z_not_B_forall_z_not_A") //undefined
 save();
+
+startNextGoal();
+state.work = applyFact(state.work, [],
+sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]); //
+state.work = applyFact(state.work, [1,1],
+sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [1]); //
+Engine.DEBUG();
+console.log("Work now " + JSON.stringify(state.work));
+state.work = applyFact(state.work, [1,1,1],
+sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2]); //
+state.work = applyFact(state.work, [],
+sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]); //
+state.work = applyFact(state.work, [1],
+sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]); //
+state.work = applyFact(state.work, [1,2,2],
+sfbm('[[],[0,[1,0,1],1],[]];["→","∀"]'), [1]); //
+state.work = ground(state.work, thms.id);
+thms['19.21'] = saveGoal();
 
 startWith("rarr_A_A")
 generify()
