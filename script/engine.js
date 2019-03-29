@@ -337,7 +337,7 @@ Error.stackTraceLimit = Infinity;
             nonDummy[v] = true;
         });
         // from fact vars to work exps
-        var varMap = {};
+        var varMap = clone(optVarMap||{});
         var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
         var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
         if (workExp == undefined) {
@@ -490,11 +490,7 @@ Error.stackTraceLimit = Infinity;
         }
         eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
             if (!varMap.hasOwnProperty(v)) {
-                if (optVarMap && optVarMap.hasOwnProperty(v)) {
-                    varMap[v] = optVarMap[v];
-                } else {
-                    varMap[v] = work.nameVar(newDummy());
-                }
+                varMap[v] = work.nameVar(newDummy());
             }
         });
         fact.Core[Fact.CORE_FREE].forEach(checkVarMapForFreeness);

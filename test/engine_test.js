@@ -32,7 +32,7 @@ function sfbm(mark) {
 }
 
 
-function applyFact(work, workPath, fact, factPath) {
+function applyFact(work, workPath, fact, factPath, optVarMap) {
     if (typeof fact == 'string') {
         fact = sfbm(parseMark(fact).getMark());
     }
@@ -41,7 +41,7 @@ function applyFact(work, workPath, fact, factPath) {
     if (!usable[[toolOp, factPath[0]]]) {
         throw new Error("Unusable tool!" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
     }
-    return Engine.applyFact(work, workPath, fact, factPath);
+    return Engine.applyFact(work, workPath, fact, factPath, optVarMap);
 }
 function ground(work, dirtFact) {
     if (typeof dirtFact == 'string') {
@@ -1199,19 +1199,17 @@ save();
 
 startNextGoal();
 state.work = applyFact(state.work, [],
-sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]); //
+                       sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]); //
 state.work = applyFact(state.work, [1,1],
-sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [1]); //
-Engine.DEBUG();
-console.log("Work now " + JSON.stringify(state.work));
+                       sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [1]); //
 state.work = applyFact(state.work, [1,1,1],
-sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2]); //
+                       sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2], {1:0}); //
 state.work = applyFact(state.work, [],
-sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]); //
+                       sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]); //
 state.work = applyFact(state.work, [1],
-sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]); //
+                       sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1], {1:0}); //
 state.work = applyFact(state.work, [1,2,2],
-sfbm('[[],[0,[1,0,1],1],[]];["→","∀"]'), [1]); //
+                       sfbm('[[],[0,[1,0,1],1],[]];["→","∀"]'), [1]); //
 state.work = ground(state.work, thms.id);
 thms['19.21'] = saveGoal();
 
