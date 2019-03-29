@@ -531,11 +531,10 @@ function addSpecify(path, term, arity, freeMap) {
 }
 function save(goal) {
     if (goal) {
-        state.work = startWork(goal);
-        state.goal--;
-    } else {
-        startNextGoal();
+        state.land.goals.splice(state.goal, 0, goal);
     }
+    startNextGoal();
+
     stack.forEach(function(step) {
         if (DEBUG) {console.log("Work now: " + JSON.stringify(state.work));}
         try {
@@ -1213,6 +1212,7 @@ state.work = applyFact(state.work, [1,2,2],
 state.work = ground(state.work, thms.id);
 thms['19.21'] = saveGoal();
 
+
 startWith("rarr_A_A")
 generify()
 applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
@@ -1462,12 +1462,13 @@ applyArrow([1,0],"harr_harr_A_B_harr_B_A",0)
 applyArrow([1],"rarr_and_harr_A_B_harr_A_C_harr_B_C",0)
  saveAs("rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d") //undefined
 
+var landInt = getLand("../data/land_08_int.js");
+// TODO
 
-
-var landOslash = getLand("../data/land_08_Oslash.js");
+var landOslash = getLand("../data/land_09_Oslash.js");
 // No goals. :(
 
-var landSect = getLand("../data/land_09_sect.js");
+var landSect = getLand("../data/land_10_sect.js");
 var oldFinds = {Core:[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]],
                 Skin:{TermNames:["&rarr;","&forall;","&equals;","&Oslash;","&harr;","&sect;","&and;","&exist;"]},
                 FreeMaps:[[],[[]],[],[],[],[],[],[[]]]};
@@ -1637,14 +1638,14 @@ state.work = ground(state.work, "rarr_A_A");
 thms.findsand = saveGoal();
 
 
-var landPlus = getLand("../data/land_10_plus.js");
+var landPlus = getLand("../data/land_11_plus.js");
 
 startNextGoal();
-/*
-startWith("equals_a_a")
-applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
-saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
-*/
+
+//startWith("equals_a_a")
+//applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
+//saveAs("rarr_equals_a_b_equals_plus_c_a_plus_c_b") //undefined
+
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,[1,0,1],[0,[1,2,3],[1,[2,0,2],[2,1,3]]]],[]];["&rarr;","&equals;","&plus;"]'),
                        [2]);
@@ -1753,9 +1754,9 @@ applyArrow([0,1,1],"rarr_equals_a_b_equals_sect_a_sect_b",1)
 applyArrow([],"rarr_rarr_forall_z_rarr_A_A_B_B",0)
 saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
 
-  /*
+  //
   // ==== END import from orcat_test.js ====
-  */
+  //
 
 // Now let's redo goals the tacro way.
 
@@ -1803,7 +1804,7 @@ state.work = applyFact(state.work, [], thms.zeroadd_lem1, [2]);
 
 
 state.work = ground(state.work, "rarr_A_A");
-thms.addass = saveGoal();
+ thms.addass = saveGoal();
 */
 
 console.log("proved " + proofCtx.length() + " thms.");
