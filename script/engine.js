@@ -175,19 +175,20 @@ Error.stackTraceLimit = Infinity;
 
     // Visits each var in each exp exactly once, in left-to-right depth-first order
     // TODO: this is an error-prone api since exps will be confused for an exp
+    // cb will be called with (var, pathFromRoot, Root)
     function eachVarOnce(exps, cb, seen) {
-        function visit(exp) {
+        function visit(exp, path, root) {
             seen = seen || {};
             if (!Array.isArray(exp)) {
                 if (!seen[exp]) {
                     seen[exp] = 1;
-                    cb(exp);
+                    cb(exp, path, root);
                 }
             } else {
-                exp.slice(1).forEach(visit);
+                exp.slice(1).forEach((x, i) => {path.push(i+1); visit(x, path, root); path.pop();});
             }
         }
-        exps.forEach(visit);
+        exps.forEach(exp => visit(exp, [], exp));
     }
     // Reset the dummy counter to use the first available dummy not in optFact.
     function resetDummies(optFact) {
@@ -235,14 +236,16 @@ Error.stackTraceLimit = Infinity;
             oldFreeLists.forEach(function(freeList) {
                 var oldTv = freeList[0];
                 var newTerm = replaceDummies(oldTv);
-                eachVarOnce([newTerm], function(newTermVar) {
+                eachVarOnce([newTerm], function(newTermVar, pathFromRoot) {
                     freeList.slice(1).forEach(function(bv) {
                         newBV = replaceDummies(bv);
                         if (Array.isArray(newBV)) {
                             throw new Error("Matched binding var " + bv + " to term " + JSON.stringify(newBV));
                         } else if (newBV == newTermVar) {
+                            // TODO: check freemap
                             throw new Error("Freeness violation! Matched binding var " + bv + " to " + newBV + ";" +
-                                            " matched term var " + oldTv + " to term " + JSON.stringify(newTerm));
+                                            " matched term var " + oldTv + " at zpath " + JSON.stringify(pathFromRoot)
+                                            + " in " + JSON.stringify(newTerm) + " to term " + JSON.stringify(newTerm));
                         } else {
                             freePairsToEnsure.push([newTermVar, newBV]);
                         }
@@ -309,32 +312,38 @@ Error.stackTraceLimit = Infinity;
             }
         }
 
-        function checkVarMapForFreeness(varMap) {
-            fact.Core[Fact.CORE_FREE].forEach(function(freeList) {
-                var newExp = varMap[freeList[0]];
-                if (newExp == undefined) {
-                    return;
+        function checkVarMapForFreeness(freeList) {
+            var newExp = varMap[freeList[0]];
+            if (newExp == undefined) {
+                return;
+            }
+            var varsAppearing = {};
+            eachVarOnce([newExp], function(v) {
+                varsAppearing[v] = true; // TODO: what if binding??
+            });
+            freeList.slice(1).forEach(function(freeVar) {
+                var newVar = varMap[freeVar];
+                if (newVar === undefined) {
+                    throw new Error("Could not find var " + freeVar + 
+                                    " in varMap " + JSON.stringify(varMap));
+                } else if (Array.isArray(newVar)) {
+                    // This should not be possible.
+                    throw new Error("Substituting term " + JSON.stringify(newVar) + 
+                                    " for binding var " + freeVar +
+                                    " (was " + freeList[0] +")" +
+                                    " in " + JSON.stringify(fact));
                 }
-                var varsAppearing = {};
-                eachVarOnce([newExp], function(v) {
-                    varsAppearing[v] = true; // TODO: what if binding??
-                });
-                freeList.slice(1).forEach(function(freeVar) {
-                    var newVar = varMap[freeVar];
-                    if (Array.isArray(newVar)) {
-                        // This should not be possible.
-                        throw new Error("Substituting term for binding var?!");
-                    }
-                    if (varsAppearing[newVar]) {
-                        throw new Error(
-                            "Freeness Violation:\n  Found var " + newVar +
-                                " (was " + freeVar +")\n  in exp " +
-                                JSON.stringify(newExp) +
-                                " (was " + freeList[0] +")");
-                    }
-                });
+                if (varsAppearing[newVar]) {
+                    // TODO: check freemap
+                    throw new Error(
+                        "Freeness Violation:\n  Found var " + newVar +
+                            " (was " + freeVar +")\n  in exp " +
+                            JSON.stringify(newExp) +
+                            " (was " + freeList[0] +")");
+                }
             });
         }
+
         function mapVarTo(factVarName, workExp) {
             varMap[factVarName] = workExp;
         }
@@ -433,9 +442,6 @@ Error.stackTraceLimit = Infinity;
         for (x in varMap) if (varMap.hasOwnProperty(x)) {
             varMap[x] = undummy(varMap[x], dummyMap);
         }
-        // XXX PICKUP: Why does this not catch the 13 free in 13 error? also why is that error happening?
-        checkVarMapForFreeness(varMap);
-
         eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
             if (!varMap.hasOwnProperty(v)) {
                 if (optVarMap && optVarMap.hasOwnProperty(v)) {
@@ -445,6 +451,8 @@ Error.stackTraceLimit = Infinity;
                 }
             }
         });
+        fact.Core[Fact.CORE_FREE].forEach(checkVarMapForFreeness);
+
         return varMap;
     }
 
@@ -618,6 +626,7 @@ Error.stackTraceLimit = Infinity;
                     var bV = varMap[origBV];
                     if (newV == bV) {
                         // Shouldn't happen; this is checked for in mandHyps
+                        // TODO: pickup: check freemap
                         throw new Error("Freeness violation!");
                     }
                     work.ensureFree(newV, bV);
@@ -737,7 +746,7 @@ Error.stackTraceLimit = Infinity;
         var out = new Fact();
         function mapTerm(t) {
             if (!work.FreeMaps[t]) {
-                throw new Error("canon " + JSON.stringify(work));
+                throw new Error("Missing FreeMap for term " + t + " in " + JSON.stringify(work));
             }
             return out.nameTerm(work.Skin.TermNames[t], work.FreeMaps[t]);
         }
