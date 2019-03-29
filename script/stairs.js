@@ -321,10 +321,7 @@ function addToShooter(factData, land) {
             // TODO: display hyp somehow
             box.className += " shooter";
             box.onclick = function() {
-                var varMap = null;
-                if (!auto) {
-                    varMap = box.tree.getVarMap(state.work);
-                }
+                var varMap = box.tree.getVarMap(state.work);
                 var newWork = Engine.applyInference(state.work, fact, varMap);
                 message("");
                 state.url = "";
@@ -398,10 +395,7 @@ function addToShooter(factData, land) {
                     JSON.stringify(fact.Skin.TermNames) +"'), [" + argNum + "]); //");
         // TODO: PICKUP: undummy
         try {
-            var varMap = null;
-            if (!auto) {
-                varMap = box.tree.getVarMap(state.work);
-            }
+            var varMap = box.tree.getVarMap(state.work);
             var newWork = Engine.applyFact(state.work, state.workPath,
                                            fact, [argNum], varMap);
             message("");

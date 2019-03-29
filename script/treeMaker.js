@@ -404,6 +404,9 @@
         root.getVarMap = function(work) {
             var map = {};
             function getSpecifiedExp(node) {
+                if (!node.optionValues || !node.optionValues.hasOwnProperty(node.span.value)) {
+                    return undefined;
+                }
                 var specifyOption = node.optionValues[node.span.value];
                 if (specifyOption.group == 'Terms') {
                     var arr = node.children.map(getSpecifiedExp);
