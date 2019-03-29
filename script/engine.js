@@ -176,9 +176,9 @@ Error.stackTraceLimit = Infinity;
     // Visits each var in each exp exactly once, in left-to-right depth-first order
     // TODO: this is an error-prone api since exps will be confused for an exp
     // cb will be called with (var, pathFromRoot, Root)
-    function eachVarOnce(exps, cb, seen) {
+    function eachVarOnce(exps, cb) {
+        var seen = {};
         function visit(exp, path, root) {
-            seen = seen || {};
             if (!Array.isArray(exp)) {
                 if (!seen[exp]) {
                     seen[exp] = 1;
@@ -186,6 +186,52 @@ Error.stackTraceLimit = Infinity;
                 }
             } else {
                 exp.slice(1).forEach((x, i) => {path.push(i+1); visit(x, path, root); path.pop();});
+            }
+        }
+        exps.forEach(exp => visit(exp, [], exp));
+    }
+
+    // Visits each free var in each exp exactly once, in left-to-right depth-first order
+    // TODO: this is an error-prone api since exps will be confused for an exp
+    // cb will be called with (var, pathFromRoot, Root)
+    function eachFreeVarOnce(exps, freeMaps, cb) {
+        var seen = {};
+        // var -> number of levels bound
+        var bound = {};
+        function visit(exp, path, root) {
+            if (!Array.isArray(exp)) {
+                if (!seen[exp] && !bound[exp]) {
+                    seen[exp] = 1;
+                    cb(exp, path, root);
+                }
+            } else {
+                var freeMap = freeMaps[exp[0]];
+                var bindingVar;
+                var nonbindingArgNum;
+                freeMap.forEach((bindingList,i) => {
+                    if (Array.isArray(bindingList)) {
+                        if (bindingVar != undefined) {
+                            throw new Error("TODO: I don't yet support a term with multiple binding vars: " + exp[0]);
+                        }
+                        bindingVar = exp[i+1];
+                        if (bindingList.length > 1) {
+                            throw new Error("TODO: I don't yet support a bindingList with multiple entries: " + bindingList);
+                        } else if (bindingList.length == 1) {
+                            // TODO: test this codepath with [/]
+                            nonbindingArgNum = bindingList[0];
+                        }
+                        if (!bound.hasOwnProperty(bindingVar)) {
+                            bound[bindingVar] = 0;
+                        }
+                    }
+                });
+                exp.slice(1).forEach((x, i) => {
+                    path.push(i+1);
+                    if (i != nonbindingArgNum) bound[bindingVar]++;
+                    visit(x, path, root);
+                    if (i != nonbindingArgNum) bound[bindingVar]--;
+                    path.pop();
+                });
             }
         }
         exps.forEach(exp => visit(exp, [], exp));
@@ -245,7 +291,7 @@ Error.stackTraceLimit = Infinity;
                             // TODO: check freemap
                             throw new Error("Freeness violation! Matched binding var " + bv + " to " + newBV + ";" +
                                             " matched term var " + oldTv + " at zpath " + JSON.stringify(pathFromRoot)
-                                            + " in " + JSON.stringify(newTerm) + " to term " + JSON.stringify(newTerm));
+                                            + " in " + JSON.stringify(newTerm) + " to termVar " + newTermVar);
                         } else {
                             freePairsToEnsure.push([newTermVar, newBV]);
                         }
@@ -588,10 +634,7 @@ Error.stackTraceLimit = Infinity;
         // invariant: subexp A == subexp B
         function checkInvariant() {
             if (DEBUG) {
-                console.log("Check invariant: \n" +
-                            JSON.stringify(zpath(pusp.tool, pusp.toolPath)) +
-                            "\n" +
-                            JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
+                console.log("Check invariant: " + JSON.stringify(zpath(pusp.tool, pusp.toolPath)));
                 console.log("  pusp: ", JSON.stringify(pusp));
             }
             if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
@@ -621,7 +664,11 @@ Error.stackTraceLimit = Infinity;
             var newExp = varMap[origTermVar];
             // NOTE: this creates freelists even for binding vars. They will be
             // omitted in the ghilbert serialization (Context.toString)
-            eachVarOnce([newExp], function(newV) {
+            if (DEBUG) {
+                console.debug("Walking " + JSON.stringify(newExp) +
+                              " to ensure these are not free in it:" + freeList.slice(1).map(x => varMap[x]));
+            }
+            eachFreeVarOnce([newExp], work.FreeMaps, function(newV) {
                 freeList.slice(1).forEach(function(origBV) {
                     var bV = varMap[origBV];
                     if (newV == bV) {
@@ -629,6 +676,7 @@ Error.stackTraceLimit = Infinity;
                         // TODO: pickup: check freemap
                         throw new Error("Freeness violation!");
                     }
+                    if (DEBUG) console.debug("  ensureFree " + newV);
                     work.ensureFree(newV, bV);
                 });
             });
