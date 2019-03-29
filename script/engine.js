@@ -191,18 +191,16 @@ Error.stackTraceLimit = Infinity;
         exps.forEach(exp => visit(exp, [], exp));
     }
 
-    // Visits each free var in each exp exactly once, in left-to-right depth-first order
+    // Visits each free var in each exp as many times as it appears, in left-to-right depth-first order
     // TODO: this is an error-prone api since exps will be confused for an exp
-    // cb will be called with (var, pathFromRoot, Root)
-    function eachFreeVarOnce(exps, freeMaps, cb) {
-        var seen = {};
+    // cb will be called with (var, bound, pathFromRoot, Root)
+    function eachFreeVar(exps, freeMaps, cb) {
         // var -> number of levels bound
         var bound = {};
         function visit(exp, path, root) {
             if (!Array.isArray(exp)) {
-                if (!seen[exp] && !bound[exp]) {
-                    seen[exp] = 1;
-                    cb(exp, path, root);
+                if (!bound[exp]) {
+                    cb(exp, clone(bound), path, root);
                 }
             } else {
                 var freeMap = freeMaps[exp[0]];
@@ -364,8 +362,8 @@ Error.stackTraceLimit = Infinity;
                 return;
             }
             var varsAppearing = {};
-            eachVarOnce([newExp], function(v) {
-                varsAppearing[v] = true; // TODO: what if binding??
+            eachFreeVar([newExp], work.FreeMaps, function(v, bound, pathFromRoot) {
+                varsAppearing[v] = pathFromRoot.slice();
             });
             freeList.slice(1).forEach(function(freeVar) {
                 var newVar = varMap[freeVar];
@@ -379,13 +377,13 @@ Error.stackTraceLimit = Infinity;
                                     " (was " + freeList[0] +")" +
                                     " in " + JSON.stringify(fact));
                 }
-                if (varsAppearing[newVar]) {
-                    // TODO: check freemap
+                if (varsAppearing.hasOwnProperty(newVar)) {
                     throw new Error(
                         "Freeness Violation:\n  Found var " + newVar +
-                            " (was " + freeVar +")\n  in exp " +
+                            " (was " + freeVar +")\n free in exp " +
                             JSON.stringify(newExp) +
-                            " (was " + freeList[0] +")");
+                            " (was " + freeList[0] +") at zpath " + 
+                            JSON.stringify(varsAppearing[newVar]));
                 }
             });
         }
@@ -664,16 +662,17 @@ Error.stackTraceLimit = Infinity;
                 console.debug("Walking " + JSON.stringify(newExp) +
                               " to ensure these are not free in it:" + freeList.slice(1).map(x => varMap[x]));
             }
-            eachFreeVarOnce([newExp], work.FreeMaps, function(newV) {
+            eachFreeVar([newExp], work.FreeMaps, function(newV, bound) {
                 freeList.slice(1).forEach(function(origBV) {
                     var bV = varMap[origBV];
                     if (newV == bV) {
                         // Shouldn't happen; this is checked for in mandHyps
-                        // TODO: pickup: check freemap
                         throw new Error("Freeness violation!");
                     }
-                    if (DEBUG) console.debug("  ensureFree " + newV);
-                    work.ensureFree(newV, bV);
+                    if (!bound[bV]) {
+                        if (DEBUG) console.debug("  ensureFree " + newV);
+                        work.ensureFree(newV, bV);
+                    }
                 });
             });
         });
