@@ -241,6 +241,7 @@ function groundOut() {
         var fact = this;
         state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
         var thm = Engine.ground(state.work, fact);
+        thm.verify();
         if (currentGoal == null || thm == null) {
             console.warn("null goal " + JSON.stringify(thm));
         } else {
@@ -557,6 +558,8 @@ function setWork(work) {
             break;
         } catch (e) {
             // can't ground this way
+            // TODO: need some way to tell the user why. Especially for
+            // definition dummy var issues.
         }
     }
     // TODO: might we need an extra var here?
