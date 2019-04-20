@@ -326,6 +326,9 @@ function addToShooter(factData, land) {
             box.onclick = function() {
                 var varMap = box.tree.getVarMap(state.work);
                 var newWork = Engine.applyInference(state.work, fact, varMap);
+                console.log("dump: state.work = Engine.applyInference(state.work, "); 
+                console.log("dump: sfbm('" + JSON.stringify(fact.Core) + ";" +
+                            JSON.stringify(fact.Skin.TermNames) +"')); //");
                 message("");
                 state.url = "";
                 setWorkPath([]);
@@ -396,7 +399,7 @@ function addToShooter(factData, land) {
     function applyChild(argNum) {
         console.log("dump: sfbm('" + JSON.stringify(fact.Core) + ";" +
                     JSON.stringify(fact.Skin.TermNames) +"'), [" + argNum + "]); //");
-        // TODO: PICKUP: undummy
+         // TODO: PICKUP: undummy
         try {
             var varMap = box.tree.getVarMap(state.work);
             var newWork = Engine.applyFact(state.work, state.workPath,
@@ -454,9 +457,11 @@ function startWork(fact) {
     var work = new Fact(fact);
     if (work.Core[Fact.CORE_HYPS].length == 0) {
         work.setHyps([work.Core[Fact.CORE_STMT]]);
-        work.Skin.HypNames = ["Hyps.0"];
-        work.setProof(["Hyps.0"]);
     }
+    work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
+    work.Skin.HypNames = ["Hyps.0"];
+    work.setProof(["Hyps.0"]);
+
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }

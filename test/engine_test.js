@@ -31,7 +31,7 @@ function sfbm(mark) {
     return fact;
 }
 
-
+var TMPI = 0;
 function applyFact(work, workPath, fact, factPath, optVarMap) {
     if (typeof fact == 'string') {
         fact = sfbm(parseMark(fact).getMark());
@@ -41,7 +41,9 @@ function applyFact(work, workPath, fact, factPath, optVarMap) {
     if (!usable[[toolOp, factPath[0]]]) {
         throw new Error("Unusable tool!" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
     }
-    return Engine.applyFact(work, workPath, fact, factPath, optVarMap);
+    var newFact = Engine.applyFact(work, workPath, fact, factPath, optVarMap);
+    if (DEBUG) { console.log("DEBUG: " + (TMPI++) + " work now " + JSON.stringify(newFact.Tree.Proof)); }
+    return newFact;
 }
 function ground(work, dirtFact) {
     if (typeof dirtFact == 'string') {
@@ -99,13 +101,15 @@ function getLand(filename) {
 }
 
 function startWork(fact) {
+
     var work = new Fact(fact);
     if (work.Core[Fact.CORE_HYPS].length == 0) {
         work.setHyps([work.Core[Fact.CORE_STMT]]);
-        work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
-        work.Skin.HypNames = ["Hyps.0"];
-        work.setProof(["Hyps.0"]);
     }
+    work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
+    work.Skin.HypNames = ["Hyps.0"];
+    work.setProof(["Hyps.0"]);
+
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
@@ -141,7 +145,7 @@ function Context() {
         try {
             x.verify();
         } catch (e) {
-            console.log("Cannot verify " + JSON.stringify(x));
+            e.message = "Cannot verify " + JSON.stringify(x) + ":" + e.message;
             throw e;
         }
         facts.push(x);
@@ -424,6 +428,7 @@ thms.Simplify = ax1;
 var stack = []; // goalPath, fact, factPath
 function startNextGoal() {
     var goal = state.land.goals[state.goal];
+
     if (!goal) throw new Error("no more goals!");
     state.work = startWork(goal);
     if (DEBUG) {console.log("Starting goal " + JSON.stringify(state.work));}
@@ -1463,8 +1468,64 @@ applyArrow([1],"rarr_and_harr_A_B_harr_A_C_harr_B_C",0)
  saveAs("rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d") //undefined
 
 var landInt = getLand("../data/land_08_int.js");
-// TODO
+startNextGoal();
+var tmpWork = JSON.parse(JSON.stringify(state.work));
+try {
+    state.work = ground(state.work, "harr_A_A");
+    saveGoal();
+    throw new Error("You cannot prove df-subst with biid! Verify should complain about a non-arg non-dummy var!");
+} catch (e) {
+    // verification error expected
+}
 
+state.work = new Fact(tmpWork);
+state.work = applyFact(state.work, [],
+   sfbm('[[],[0,[1,0,[1,1,[0,[2,0,1],[3,2,3]]]],[3,[4,1,2],[4,0,3]]],[[2,0],[3,1]]];["→","∀","=","↔","∃"]'), [2]); //
+
+state.work = Engine.applyInference(state.work,
+                                   sfbm('[[0],[0,1,0],[]];["&forall;"]'));
+state.work = Engine.applyInference(state.work,
+                                   sfbm('[[0],[0,1,0],[]];["&forall;"]'));
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["→"]'), [2]); //
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]); //
+state.work = applyFact(state.work, [2,1,2],
+                       sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]); //
+state.work = applyFact(state.work, [1],
+                       sfbm('[[],[0,[1,0,1],[2,[1,0,2],[1,1,2]]],[]];["→","=","↔"]'), [1]); //
+state.work = applyFact(state.work, [1],
+                       sfbm('[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]];["→","↔","∧"]'), [1]); //
+state.work = applyFact(state.work, [2,1,2],
+                       sfbm('[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]];["→","↔","∧"]'), [1]); //
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[1,0,[2,1,2]],[2,[3,0,1],[3,0,2]]],[]];["→","∀","↔","∃"]'), [1]); //
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]];["→","↔","∧"]'), [1]); //
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,0,[1,1,2]],[1,[2,0,1],2]],[]];["↔","→","∧"]'), [1]); //
+state.work = applyFact(state.work, [1,2],
+                       sfbm('[[],[0,[0,0,1],[0,1,0]],[]];["↔"]'), [1]); //
+state.work = applyFact(state.work, [1],
+                       sfbm('[[],[0,[1,[2,0,1],[2,0,2]],[2,1,2]],[]];["→","∧","↔"]'), [1]); //
+state.work = ground(state.work, "rarr_A_A");
+saveGoal();
+
+
+
+/*                       
+startNextGoal();
+state.work =  applyFact(state.work, [1,2,1],
+                       sfbm('[[],[0,[1,0,1],[0,2,[2,0,[0,[1,0,1],2]]]],[[1,0]]];["→","=","∀"]'), [1]); //
+state.work = applyFact(state.work, [1,2],
+                       sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]); //
+state.work = applyFact(state.work, [1,2],
+                       sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]); //
+state.work = applyFact(state.work, [1],
+                       sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]); //
+state.work = ground(state.work, "equals_A_A");
+saveGoal();
+/*
 var landOslash = getLand("../data/land_09_Oslash.js");
 // No goals. :(
 
