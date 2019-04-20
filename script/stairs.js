@@ -240,7 +240,9 @@ function groundOut() {
     try {
         var fact = this;
         state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
-        var thm = Engine.ground(state.work, fact);
+        // Make a protective clone in case ground() mutates but verify fails.
+        var workClone = new Fact(JSON.parse(JSON.stringify(state.work)));
+        var thm = Engine.ground(workClone, fact);
         thm.verify();
         if (currentGoal == null || thm == null) {
             console.warn("null goal " + JSON.stringify(thm));
