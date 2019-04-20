@@ -551,7 +551,8 @@ function setWork(work) {
         var idFact = reflexives[k]; 
         try {
             // TODO: should not be using exceptions for this
-            Engine.getMandHyps(state.work, [], idFact, []);
+            var workClone = new Fact(JSON.parse(JSON.stringify(work)));
+            Engine.getMandHyps(workClone, [], idFact, [], null, true);
             ground.removeAttribute('disabled');
             ground.className = "enabled";
             ground.onclick = groundOut.bind(idFact);
