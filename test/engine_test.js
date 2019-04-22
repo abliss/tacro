@@ -131,6 +131,8 @@ function Context() {
 
     var queue = Async.queue(function(task, cb) {
         task.toGhilbert(state, function(err, ghTxt) {
+            var DDEBUG=false; //(task.Skin.Name == "VLjpP.");
+            if (DDEBUG) console.log("XXX gh: " + ghTxt);
             txt += ghTxt;
             cb(err);
         });
@@ -154,6 +156,8 @@ function Context() {
 
 
     function checkFact(fact, ignored, ignored, termsAreDone) {
+        var DDEBUG=false; //(fact.Skin.Name == "VLjpP.");
+        if (DDEBUG) console.log("XXX checking " + JSON.stringify(fact));
         var factVarIsBinding = [];
         factVarIsBinding.sourceFact = fact;
 
@@ -178,7 +182,8 @@ function Context() {
         // otherwise null.
         function checkExp(exp) {
             if (Array.isArray(exp) && (exp.length > 0)) {
-                var tn = fact.Skin.TermNames[exp[0]];
+                var termNum = exp[0];
+                var tn = fact.Skin.TermNames[termNum];
                 if (!that.terms.hasOwnProperty(tn)) that.terms[tn] = [];
                 myTerms[tn] = true;
                 var termArgIsTerm = that.terms[tn];
@@ -204,14 +209,15 @@ function Context() {
                         }
                     }
                     // Positive (or presumptive) bindingness from the term
-                    // constrains var arg. TODO:??
+                    // constrains var arg, UNLESS the term is the definiendum. TODO:??
                     if ((termArgIsTerm[i] == false)
                        || (termsAreDone && (termArgIsTerm[i] == null))
                        ) {
                         if (typeof arg == 'number') {
                             if (factVarIsBinding[arg] == false) {
                                 throw new Error("Var bind mismatch");
-                            } else {
+                            } else if (termNum != fact.Tree.Definiendum) {
+                                if (DDEBUG) console.log("XXX arg " + arg + " is presumed binding because of term " + tn);
                                 factVarIsBinding[arg] = true;
                             }
                         } else {
@@ -225,6 +231,7 @@ function Context() {
                     maxVar[exp] = exp;
                 }
                 if (exp >= factVarIsBinding.length) {
+                    if (DDEBUG) console.log("XXX arg " + exp + " is nullbinding??");
                     factVarIsBinding[exp] = null;
                 }
                 return factVarIsBinding[exp];
@@ -238,6 +245,7 @@ function Context() {
             // ghilbert doesn't.
             //factVarIsBinding[fm[0]] = false;
             fm.slice(1).forEach(function(v) {
+                if (DDEBUG) console.log("XXX arg " + v + " is binding because flist");
                 factVarIsBinding[v] = true;
             });
         }
@@ -277,6 +285,7 @@ function Context() {
                                         JSON.stringify(depFvib.sourceFact)
                                 );
                             }
+                            if (DDEBUG) console.log("XXX arg " + mandHyp + " is binding because mandhyp of " + step );
                             factVarIsBinding[mandHyp] = true;
                         }
                     });
@@ -1478,7 +1487,9 @@ try {
     // verification error expected
 }
 
-state.work = new Fact(tmpWork);
+state.work = new Fact(tmpWork); // df-subst
+// TODO: should be able to verify this, but hyps screw up the dummy-detection and freelists.
+// state.work.verify();
 state.work = applyFact(state.work, [],
    sfbm('[[],[0,[1,0,[1,1,[0,[2,0,1],[3,2,3]]]],[3,[4,1,2],[4,0,3]]],[[2,0],[3,1]]];["→","∀","=","↔","∃"]'), [2]); //
 
@@ -1509,7 +1520,7 @@ state.work = applyFact(state.work, [1,2],
 state.work = applyFact(state.work, [1],
                        sfbm('[[],[0,[1,[2,0,1],[2,0,2]],[2,1,2]],[]];["→","∧","↔"]'), [1]); //
 state.work = ground(state.work, "rarr_A_A");
-saveGoal();
+thms['df-subst']= saveGoal(); //
 
 
 

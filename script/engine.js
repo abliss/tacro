@@ -320,7 +320,7 @@ Error.stackTraceLimit = Infinity;
     // Assumes fact has no hypotheses.
     //
     // Modifies the work as necessary (but only once success is guaranteed) by
-    // specifying dummy vars and adding Free constraints.
+    // specifying dummy vars and adding Free constraints. (TODO: not true!)
     //
     // @return a map from fact vars to terms in the work's variables. dummy
     //     variables will get new names for use in the work.
@@ -702,7 +702,9 @@ Error.stackTraceLimit = Infinity;
         });
         newSteps = newSteps.filter(function(x) { return x !== "";});
         // preserve "hyps.0"
-        newSteps.unshift(work.Tree.Proof.shift());
+        var step0 = work.Tree.Proof.shift();
+        if ("Hyps.0" != step0) { throw new Error("Expected proof to start with Hyps.0; got " + step0); }
+        newSteps.unshift(step0);
         newSteps.push(nameDep(work, infFact));
         newSteps.push.apply(newSteps, work.Tree.Proof);
         work.setProof(newSteps);
