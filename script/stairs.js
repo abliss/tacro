@@ -32,6 +32,7 @@ var auto = false;
 var reflexives = {};
 var thms = {};
 var currentGoal = null;
+var dumpStepMap = {}; // logFp => {parent, step}
 window.FAST_TICK = true; //XXX
 Error.stackTraceLimit = Infinity;
 
@@ -143,7 +144,6 @@ function registerNewTool(toolOp) {
 }
 
 function setWorkPath(wp) {
-    console.log("dump: state.work = applyFact(state.work, " + JSON.stringify(wp) + ",");
     var className = "";
     if (typeof wp == 'undefined') {
         delete state.workPath;
@@ -257,6 +257,10 @@ function groundOut() {
                                 + " found " + actual)
             };
         }
+        var dumpStep="state.work = ground(state.work, sfbm('" + JSON.stringify(fact.Core) + ";" +
+            JSON.stringify(fact.Skin.TermNames) +"'));\n" +
+            "saveGoal() // " + JSON.stringify(thm.Core);
+        dump(log, dumpStep);
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);
         if (storage.user) {
@@ -326,13 +330,13 @@ function addToShooter(factData, land) {
             box.onclick = function() {
                 var varMap = box.tree.getVarMap(state.work);
                 var newWork = Engine.applyInference(state.work, fact, varMap);
-                console.log("dump: state.work = Engine.applyInference(state.work, "); 
-                console.log("dump: sfbm('" + JSON.stringify(fact.Core) + ";" +
-                            JSON.stringify(fact.Skin.TermNames) +"')); //");
+                var dumpStep = "state.work = Engine.applyInference(state.work, " +
+                    "    sfbm('" + JSON.stringify(fact.Core) + ";" +
+                    JSON.stringify(fact.Skin.TermNames) +"'));";
                 message("");
                 state.url = "";
                 setWorkPath([]);
-                setWork(newWork);
+                setWork(newWork, dumpStep);
                 redraw();
             };
             var pane = panes[panes.length-1];
@@ -397,8 +401,6 @@ function addToShooter(factData, land) {
 
     
     function applyChild(argNum) {
-        console.log("dump: sfbm('" + JSON.stringify(fact.Core) + ";" +
-                    JSON.stringify(fact.Skin.TermNames) +"'), [" + argNum + "]); //");
          // TODO: PICKUP: undummy
         try {
             var varMap = box.tree.getVarMap(state.work);
@@ -406,8 +408,11 @@ function addToShooter(factData, land) {
                                            fact, [argNum], varMap);
             message("");
             state.url = "";
+            var dumpStep = "state.work = applyFact(state.work, " + JSON.stringify(state.workPath) + ",\n" +
+                "  sfbm('" + JSON.stringify(fact.Core) + ";" +
+                JSON.stringify(fact.Skin.TermNames) +"'), [" + argNum + "]);";
             setWorkPath([]);
-            setWork(newWork);
+            setWork(newWork, dumpStep);
             redraw();
         } catch (e) {
             console.log("Error in applyFact: " + e);
@@ -532,7 +537,7 @@ function verifyWork(fact) {
     }
 }
 
-function setWork(work) {
+function setWork(work, optDumpStep) {
     var verified = verifyWork(work);
     // Check for drift from planned FreeVar set. It would be nice to keep these
     // in lockstep but that requires more sophisticted dummy-tracking than we
@@ -580,16 +585,17 @@ function setWork(work) {
     for (var k in factToShooterBox) if (factToShooterBox.hasOwnProperty(k)) {
         factToShooterBox[k].box.tree.onchange();
     }
-    save();
+    save(optDumpStep);
 }
 
-function save() {
+function save(optDumpStep) {
     var stateKey = storage.fpSave("state", state);
     var stateFp = stateKey.local;
     if (stateFp != log.now) {
         var oldNow = log.now;
         log.now = stateFp;
         var logFp = storage.fpSave("log", log).local;
+        dumpStepMap[logFp] = {parent:log.parent, step:optDumpStep};
         log.parent = logFp;
         storage.local.setItem("childOf/" + oldNow, logFp);
         storage.local.setItem(STATE_KEY, logFp);
@@ -599,6 +605,22 @@ function save() {
         }
         history.pushState(logFp, STATE_KEY, "#s=" + stateFp + "/" + state.url);
     }
+}
+
+function dump(logObj, finalStep) {
+    var steps = [finalStep];
+    var fp = logObj.parent;
+    while (v = dumpStepMap[fp]) {
+        fp = v.parent;
+        var step = v.step;
+        if (step) {
+            steps.unshift(step);
+            if (step.match("startNewGoal")) {
+                break;
+            }
+        }
+    }
+    console.log(steps.join("\n"));
 }
 
 function currentLand() {
@@ -619,7 +641,7 @@ function nextGoal() {
     }
     currentGoal = land.goals[0];
     knowTerms(currentGoal);
-    setWork(startWork(currentGoal));
+    setWork(startWork(currentGoal), "startNewGoal();");
     setWorkPath([]);
     Engine.resetDummies(state.work);
     return;
@@ -676,7 +698,7 @@ function redraw() {
 
 function loadState(flat) {
     state = flat;
-    setWork(new Fact(state.work));
+    setWork(new Fact(state.work), "load()");
     currentGoal = currentLand().goals[0];
     message("");
 }
