@@ -259,7 +259,7 @@ function groundOut() {
         }
         var dumpStep="state.work = ground(state.work, sfbm('" + JSON.stringify(fact.Core) + ";" +
             JSON.stringify(fact.Skin.TermNames) +"'));\n" +
-            "saveGoal() // " + JSON.stringify(thm.Core);
+            "saveGoal(); // " + JSON.stringify(thm.Core);
         dump(log, dumpStep);
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);
@@ -312,6 +312,7 @@ function addToShooter(factData, land) {
 
     var newTool = Engine.onAddFact(facet.fact);
     if (newTool) {
+        message("New root unlocked: " + newTool);
         registerNewTool(newTool);
     }
     switch (factData.Core[Fact.CORE_HYPS].length) {
@@ -615,7 +616,7 @@ function dump(logObj, finalStep) {
         var step = v.step;
         if (step) {
             steps.unshift(step);
-            if (step.match("startNewGoal")) {
+            if (step.match("startNextGoal")) {
                 break;
             }
         }
@@ -641,7 +642,7 @@ function nextGoal() {
     }
     currentGoal = land.goals[0];
     knowTerms(currentGoal);
-    setWork(startWork(currentGoal), "startNewGoal();");
+    setWork(startWork(currentGoal), "startNextGoal();");
     setWorkPath([]);
     Engine.resetDummies(state.work);
     return;

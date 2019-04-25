@@ -17,6 +17,22 @@ var ENTITY_MAP = {
     "=":"&equals;",
     "+":"&plus;",
 };
+
+// Scan the array of exps and return the highest-seen term
+function maxTermOfCore(core) {
+    var max = -1;
+    function visit(exp) {
+        if (Array.isArray(exp) && exp.length > 0) {
+            if (exp[0] > max) {
+                max = exp[0];
+            }
+            exp.slice(1).forEach(visit);
+        }
+    }
+    core[Fact.CORE_HYPS].forEach(visit);
+    visit(core[Fact.CORE_STMT]);
+    return max;
+}
 function sfbm(mark) {
     // usually mark has entities like &rarr; but when copying dumps from the
     // browser, they come as unicode.
@@ -25,6 +41,7 @@ function sfbm(mark) {
     var termsArr = JSON.parse(arr.join(";"));
     termsArr = termsArr.map(x => x.match(/&/) ? x : He.encode(x, {useNamedReferences:true}));
     termsArr = termsArr.map(x => ENTITY_MAP.hasOwnProperty(x) ? ENTITY_MAP[x] : x);
+    termsArr = termsArr.slice(0, 1 + maxTermOfCore(JSON.parse(core)));
     mark = core + ";" + JSON.stringify(termsArr);
     var fact = state.factsByMark[mark];
     if (!fact) throw new Error("mark not found: " + mark);
@@ -77,6 +94,7 @@ function getLand(filename) {
         fact = Engine.canonicalize(fact);
         if (DEBUG) {
             console.log("# Canonically: " + JSON.stringify(fact));
+            console.log("# Mark: " + JSON.stringify(fact.getMark()));
         }
         state.factsByMark[fact.getMark()] = fact;
         Engine.onAddFact(fact);
@@ -1551,6 +1569,132 @@ startNextGoal();
 state.work = ground(state.work, "rarr_A_A");
 thms['aeee']= saveGoal(); //
 
+ startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,[2,0,1],[3,0,2]],[3,0,[1,1,2]]],[]];["→","∧","∀","∃"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,[2,0,1],[3,0,2]],[3,0,[1,1,2]]],[]];["→","∧","∀","∃"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+thms['asb'] = saveGoal(); // [[],[0,[1,0,1],[2,0,2,1]],[]]
+
+
+startNextGoal();
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [2,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]];["→"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]];["→"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,2,1,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,2,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [2,1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,1],[2,[0,0,[2,1]]]],[]];["→","∧","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,2,1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2,2,1,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2,2],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,0,[1,0,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2,1,2],
+  sfbm('[[],[0,[1,0,1],0],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["→","∀","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,0,[1,0,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,1,2],
+  sfbm('[[],[0,[1,0,1],0],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["→","∀","∧"]'), [1]);
+state.work = applyFact(state.work, [2,1,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [2,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [2,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[0,0,[2,1]]]],[]];["→","∧","¬"]'), [1]);
+state.work = applyFact(state.work, [2,2,2,1,1,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [2,2,2,1,1,2,1,1,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[0,0,[2,1]]]],[]];["→","∧","¬"]'), [1]);
+state.work = applyFact(state.work, [2,2,2],
+  sfbm('[[],[0,0,[1,[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [2,2,2,2],
+  sfbm('[[],[0,0,[1,[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [2,2,2,2,2],
+  sfbm('[[],[0,0,[1,[1,0]]],[]];["→","¬"]'), [2]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+thms['sbim'] = saveGoal(); // [[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]],f
+
+ startNextGoal();
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],[2,0,2,1]],[]];["→","∀","∫"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]];["↔","∫","→"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+thms['imsb3'] = saveGoal(); // [[],[0,[1,0,[0,1,2]],[0,[2,0,3,1],[2,0,3,2]]],[]]
+
+
 startNextGoal();
 state.work = applyFact(state.work, [1],
   sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
@@ -1577,7 +1721,26 @@ state.work = applyFact(state.work, [2,2,2],
 state.work = applyFact(state.work, [2,2,2,2],
   sfbm('[[],[0,0,[1,[1,0]]],[]];["↔","¬"]'), [2]);
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
-thms['sbn'] = saveGoal() // [[],[0,[1,0,1,[2,2]],[2,[1,0,1,2]]],[]]
+thms['sbn'] = saveGoal(); // [[],[0,[1,0,1,[2,2]],[2,[1,0,1,2]]],[]]
+
+
+startNextGoal();
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2,2],
+  sfbm('[[],[0,[1,0,1],[2,[3,0,[2,1]]]],[]];["↔","∧","¬","→"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1,[2,2]],[2,[1,0,1,2]]],[]];["↔","∫","¬","∀","→","=","∃","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]];["↔","∫","→","∧","∀","=","¬","∃"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,1,[2,2]],[2,[1,0,1,2]]],[]];["↔","∫","¬","∀","→","=","∃","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],[2,[3,0,[2,1]]]],[]];["↔","∧","¬","→"]'), [2]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
+thms['sban'] = saveGoal() // [[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]]
 
 
 /*                       

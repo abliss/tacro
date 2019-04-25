@@ -986,6 +986,7 @@ Error.stackTraceLimit = Infinity;
             anteArrow = terms[stmt[1][0]];
             anteArg1 = 0;
             anteArg2 = 1;
+            // TODO:PICKUP binary assumption
         } else if (Array.isArray(stmt[1][2]) &&
                    (greaser = scheme.greaseMemo[terms[stmt[1][0]]]) &&
                    (stmt[1][2].length == 3) &&
