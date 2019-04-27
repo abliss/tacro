@@ -8,7 +8,7 @@ var Chat = require('./chat.js');
 
 var storage = new Storage(Engine.fingerprint);
 var chat = new Chat(storage, Engine.fingerprint, document.getElementById('chatPane'),
-                    document.getElementById('chatInput'));
+                    document.getElementById('chatInput'), chatFilter);
 var log = {};
 var state;
 var MAX_STATES=100;
@@ -64,6 +64,19 @@ if (typeof document == 'undefined') {
 }
 
 // ==== END stubs ====
+
+function chatFilter(msg) {
+    var match;
+    if (match = msg.match(/^\//)) {
+        message(eval(msg.substring(1)));
+        return false;
+    }
+    return true;
+}
+
+function clear() {
+    localStorage.clear();
+}
 
 if (window.location.search.match("CLEAR")) {
     localStorage.clear();
@@ -596,6 +609,7 @@ function save(optDumpStep) {
         var oldNow = log.now;
         log.now = stateFp;
         var logFp = storage.fpSave("log", log).local;
+        console.log("XXXX setting dump: " + logFp + " = " + log.parent + " : " + optDumpStep);
         dumpStepMap[logFp] = {parent:log.parent, step:optDumpStep};
         log.parent = logFp;
         storage.local.setItem("childOf/" + oldNow, logFp);
@@ -612,6 +626,7 @@ function dump(logObj, finalStep) {
     var steps = [finalStep];
     var fp = logObj.parent;
     while (v = dumpStepMap[fp]) {
+        console.log("XXXX pulling dump: " + JSON.stringify(v));
         fp = v.parent;
         var step = v.step;
         if (step) {
@@ -918,6 +933,8 @@ document.getElementById("restart").onclick = function() {
 };
 document.getElementById("rewind").onclick = function() {
     var parentFp = log.parent;
+    console.log("XXXX rewind to: " + parentFp);
+
     if (parentFp) {
         loadLogFp(parentFp);
     }
@@ -948,6 +965,10 @@ if (logFp) {
 
     });
 } else {
+    init();
+}
+
+function init() {
     state = {
         lands: [],
         url:"",
