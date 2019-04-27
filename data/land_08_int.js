@@ -49,10 +49,13 @@
          FreeMaps:[[],[[]],[],[[1]]]},
         
         {Core:[[],[0,[1,0,0,1],1],[]],
-         Skin:{TermNames:["&harr;", "&int;"]},
+         Skin:{Name: "sbid", TermNames:["&harr;", "&int;"]},
          FreeMaps:[[],[[1]]]},
         {Core:[[],[0,[1,0,1],[1,2,[2,0,2,1]]],[[1,2]]],
-         Skin:{TermNames:["&harr;", "&forall;", "&int;"]},
+         Skin:{Name: "sbalpha", TermNames:["&harr;", "&forall;", "&int;"]},
+         FreeMaps:[[],[[]],[[1]]]},
+        {Core:[[],[0,[1,0,1],[2,0,2,1]],[]],
+         Skin:{Name: "axsb", TermNames:["&rarr;", "&forall;", "&int;"]},
          FreeMaps:[[],[[]],[[1]]]},
     ],
 })
