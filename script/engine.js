@@ -98,7 +98,9 @@ Error.stackTraceLimit = Infinity;
                     arr2.push(arg);
                 }
             }
-            if (grease) grease(pusp, work);
+            if (grease) {
+                grease(pusp, work);
+            }
             pusp.newSteps.push(nameDep(work, fact));
             pusp.newSteps.push(nameDep(work, axMp));
             var parentArrowN = work.nameTerm(parentArrow.name,
@@ -981,36 +983,6 @@ Error.stackTraceLimit = Infinity;
         var anteArg1;
         var anteArg2;
         var greaser;
-        if (stmt[1][2] == 1) {
-            // This is a greaseless pushUp
-            anteArrow = terms[stmt[1][0]];
-            anteArg1 = 0;
-            anteArg2 = 1;
-            // TODO:PICKUP binary assumption
-        } else if (Array.isArray(stmt[1][2]) &&
-                   (greaser = scheme.greaseMemo[terms[stmt[1][0]]]) &&
-                   (stmt[1][2].length == 3) &&
-                   (stmt[1][2][1] == 1) &&
-                   (stmt[1][2][2] == 2)) {
-            // Handle greasing forall
-            anteArrow = terms[stmt[1][2][0]];
-            anteArg1 = 1;
-            anteArg2 = 2;
-            grease = function(pusp, work) {
-                var x = pusp.newSteps.pop();
-                var b = pusp.newSteps.pop();
-                var a = pusp.newSteps.pop();
-                pusp.newSteps.push(x);
-                pusp.newSteps.push(nameDep(work, greaser.fact));
-                pusp.newSteps.push(x);
-                pusp.newSteps.push(a);
-                pusp.newSteps.push(b);
-            };
-        } else {
-            // Not a valid pushUp
-            return;
-        }
-
 
         if (!Array.isArray(stmt[2]) || (stmt[2].length != 3) ||
             (!Array.isArray(stmt[2][1])) || (!Array.isArray(stmt[2][2])) ||
@@ -1021,6 +993,56 @@ Error.stackTraceLimit = Infinity;
             // except for the replacement of the antecedent args
             return;
         }
+
+        if (stmt[1][2] == 1) {
+            // This is a greaseless pushUp
+            anteArrow = terms[stmt[1][0]];
+            anteArg1 = 0;
+            anteArg2 = 1;
+        } else if (Array.isArray(stmt[1][2]) &&
+                   (greaser = scheme.greaseMemo[terms[stmt[1][0]]]) &&
+                   (stmt[1][2].length == 3) &&
+                   (stmt[1][2][1] == 1) &&
+                   (stmt[1][2][2] == 2)) {
+            // Handle greasing forall
+            anteArrow = terms[stmt[1][2][0]];
+            anteArg1 = 1;
+            anteArg2 = 2;
+            var childArity = stmt[2][1].length;
+            // Need to figure out which arg of the child corresponds to the binding var in ax-gen.
+            var bindingVar = stmt[1][1];
+            var greasedArgOfChild = null;
+            for (var arg = 1; arg < stmt[2][1].length; arg++) {
+                if (stmt[2][1][arg] == bindingVar) {
+                    if (null !== greasedArgOfChild) {
+                        throw new Error("Repeated binding var " + bindingVar + " in greasechild args");
+                    }
+                    greasedArgOfChild = arg;
+                }
+            }
+            if (null === greasedArgOfChild) {
+                throw new Error("Binding var " + bindingVar + " not found in greasechild args:" + JSON.stringify(stmt));
+            }
+
+            grease = function(pusp, work) {
+                // Assume the greased pushup is:
+                // (1. x (a 2> b)) 3> ((4. ... a ...) 5> (4. ... b ...))
+                // currently, (a 2> b) is on the proofstack.
+                // The newSteps ends with (a, b, ... ...).
+                var arr = pusp.newSteps;
+                // splice out the binding var, since it will need to move to the front of the mandhyps
+                var x = arr.splice(arr.length - childArity + greasedArgOfChild + 1,1)[0];
+                // need to scan back past all childArity args and a, b
+                var insertIndex = arr.length - (childArity - 2) - 1;
+                // insert the greaser step here, with x for its mandhyp
+                arr.splice(insertIndex, 0, x, nameDep(work, greaser.fact), x);
+            };
+        } else {
+            // Not a valid pushUp
+            return;
+        }
+
+
         var parentTermNum = stmt[2][0];
         var parentArrow = new Arrow(terms[parentTermNum],
                                     stmt[2].length,

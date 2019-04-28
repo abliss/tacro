@@ -141,7 +141,7 @@
                         console.log("Bad xhr: " + xhr.readyState);
                     }
                 };
-                xhr.open("GET", "rest/" + path + ".json", true);
+                xhr.open("GET", "rest/" + path + ".json?t=" + Date.now(), true);
                 xhr.send(null);
             };
         }
