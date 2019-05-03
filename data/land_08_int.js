@@ -50,6 +50,16 @@
         {Core:[[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]],
          Skin:{Name:"sbor", TermNames:["&harr;", "&int;", "&or;"]},
          FreeMaps:[[],[[1]],[]]},
+        {Core:[[],[0,[1,0,1,[2,2,3]],[2,2,[1,0,1,3]]],[
+            [1,2] // TODO doesn't seem like this freelist should be needed!
+        ]],
+         Skin:{Name:"sbal", TermNames:["&harr;", "&int;", "&forall;"]},
+         FreeMaps:[[],[[1]],[[]]]},
+        {Core:[[],[0,[1,0,1,[2,2,3]],[2,2,[1,0,1,3]]],[
+                        [1,2] // TODO doesn't seem like this freelist should be needed!
+        ]],
+         Skin:{Name:"sbex", TermNames:["&harr;", "&int;", "&exist;"]},
+         FreeMaps:[[],[[1]],[[]]]},
         
         {Core:[[],[0,[1,0,0,1],1],[]],
          Skin:{Name: "sbid", TermNames:["&harr;", "&int;"]},
