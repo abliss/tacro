@@ -68,7 +68,15 @@
          Skin:{Name: "sbalpha", TermNames:["&harr;", "&forall;", "&int;"]},
          FreeMaps:[[],[[]],[[1]]]},
         {Core:[[],[0,[1,0,1],[2,0,2,1]],[]],
-         Skin:{Name: "axsb", TermNames:["&rarr;", "&forall;", "&int;"]},
+         Skin:{Name: "alsb", TermNames:["&rarr;", "&forall;", "&int;"]},
          FreeMaps:[[],[[]],[[1]]]},
+
+        {Core:[[],[0,[1,0,1,[2,0,2]],[2,1,2]],[[2,0]]],
+         Skin:{Name:"sbeq1nf", TermNames:["&harr;", "&int;", "&equals;"]},
+         FreeMaps:[[],[[1]],[]]},
+        {Core:[[],[0,[1,0,1,2],2],[[2,0]]],
+         Skin:{Name: "sbnf", TermNames:["&harr;", "&int;"]},
+         FreeMaps:[[],[[1]]]},
+
     ],
 })

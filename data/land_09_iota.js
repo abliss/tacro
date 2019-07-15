@@ -2,10 +2,10 @@
     name:"&iota;",
     depends:["&int;"],  
     axioms:[
-        {Core:[[],[0,[1,0,[0,[2,0,[3,0,1]],1]],[1,0,1]],[]],
+        {Core:[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]],
          Skin:{Name:"ax-iota",
-               TermNames:["&rarr;","&forall;","&equals;","&iota;"]},
-         FreeMaps:[[],[[]],[],[[]]]},
+               TermNames:["&rarr;","&forall;","&equals;","&iota;","&not;"]},
+         FreeMaps:[[],[[]],[],[[]],[]]},
         {Core:[[],[0,[1,0,[2,1,2]],[3,[4,0,1],[4,0,2]]],[]],
          Skin:{Name:"ax-iotaeq",
                TermNames:["&rarr;","&forall;","&harr;","&equals;","&iota;"]},
@@ -13,7 +13,7 @@
     ],
     goals:[
         {Core:[[],[0,[1,0,1],[2,0,[3,0,1],1]],[]],
-         Skin:{Name:"ax-iotaeq",
+         Skin:{Name:"exiota",
                TermNames:["&harr;","&exist;","&int;","&iota;"]},
          FreeMaps:[[],[[]],[[1]],[[]]]},
         

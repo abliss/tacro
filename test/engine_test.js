@@ -119,7 +119,6 @@ function getLand(filename) {
 }
 
 function startWork(fact) {
-
     var work = new Fact(fact);
     if (work.Core[Fact.CORE_HYPS].length == 0) {
         work.setHyps([work.Core[Fact.CORE_STMT]]);
@@ -133,8 +132,6 @@ function startWork(fact) {
     }
     return Engine.canonicalize(work);
 }
-
-
 
 // A container to queue and collect async serializations
 function Context() {
@@ -1951,8 +1948,181 @@ state.work = applyFact(state.work, [2],
 state.work = applyFact(state.work, [2],
   sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
-thms['axsb'] = saveGoal(); // [[],[0,[1,0,1],[2,0,2,1]],[]]
+thms['alsb'] = saveGoal(); // [[],[0,[1,0,1],[2,0,2,1]],[]]
 
+ startNextGoal();
+applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,1,[1,0,2]]],[[1,0]]];["↔","∀","→"]'), [2]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[1,0,[1,1,2]],[1,[2,0,1],2]],[]];["↔","→","∧"]'), [1]);
+state.work = applyFact(state.work, [2,2,1,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","="]'), [1]);
+state.work = applyFact(state.work, [2,2,1,2],
+  sfbm('[[],[0,[1,0,1],[0,[1,0,2],[1,1,2]]],[]];["→","="]'), [1]);
+state.work = applyFact(state.work, [2,2,1],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [2,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,1,[1,0,2]]],[[1,0]]];["↔","∀","→"]'), [2]);
+state.work = applyFact(state.work, [2,2,2],
+  sfbm('[[],[0,[1,0,[1,1,2]],[1,[2,0,1],2]],[]];["↔","→","∧"]'), [1]);
+state.work = applyFact(state.work, [2,2,2,1,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","="]'), [1]);
+state.work = applyFact(state.work, [2,2,2,1,2],
+  sfbm('[[],[0,[1,0,1],[0,[1,0,2],[1,1,2]]],[]];["→","="]'), [1]);
+state.work = applyFact(state.work, [2,2,2,1],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[0,[1,0,[0,1,1]],2],2],[]];["→","∀"]'), [2]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[0,[1,0,[0,1,1]],2],2],[]];["→","∀"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,[1,0,2],[1,1,2]]],[]];["→","="]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","="]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,1],[0,[1,0,2],[1,1,2]]],[]];["→","="]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","="]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+thms['sbeq1nf'] = saveGoal(); // 
+
+ startNextGoal();
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[1,[2,1],[2,0]]],[]];["↔","→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,1,[1,0,2]]],[[1,0]]];["↔","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,[1,1,2]],[1,1,[1,0,2]]],[]];["↔","→"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,1,[1,0,2]]],[[1,0]]];["↔","∀","→"]'), [1]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,[2,1],[2,0]]],[]];["↔","→","¬"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],[1,[2,1],[2,0]]],[]];["↔","→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,0,[1,[1,0]]],[]];["↔","¬"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,0,[0,[0,0,1],1]],[]];["→"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[0,[1,[2,0,[1,[3,0,1]]]],2],2],[[1,0]]];["→","¬","∀","="]'), [2]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1,2],2],[[2,0]]]
+
+exit;
+/*
+ startNextGoal();
+ state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,[2,0,1],[3,0,2]],[3,0,[1,1,2]]],[]];["→","∧","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [2,1],
+  sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [2]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+thms['sbnf'] = saveGoal(); // [[],[0,[1,0,1,2],2],[[2,0]]]
+*/
+
+var landInt = getLand("../data/land_09_iota.js");
+
+startNextGoal();
+//todo
+
+saveGoal(); // [[],[0,[1,0,0,1],1],[]]
+// todo: dump failed somehow??
+
+throw 1
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+thms['exiota'] = saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+
+var landOslash = getLand("../data/land_10_intint.js");
 
 
 var landOslash = getLand("../data/land_11_Oslash.js");
@@ -1966,6 +2136,669 @@ var oldFinds = {Core:[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2
 startWith("_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A")
 applyArrow([0,1,1],"rarr_and_A_rarr_A_B_B",1)
 applyArrow([0,1,1,1],"rarr_harr_A_B_rarr_B_A",1)
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
+startNextGoal();
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],[1,2,[2,[3,2,0],3]]]],[4,2,1,3]],[[1,0],[3,0]]];["↔","∃","∧","=","∫"]'), [2]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[0,0,1],[0,[1,1],[1,0]]],[]];["→","¬"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,[2,0,[1,1]]],[3,0,1]],[]];["↔","¬","∀","∃"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2,1],
+  sfbm('[[],[0,[1,[0,0,[1,1]]],[2,0,1]],[]];["→","¬","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,[1,0]],0],[]];["→","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[2,1,2]],[2,[1,0,1],[1,0,2]]],[]];["↔","∀","∧"]'), [2]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,1],
+  sfbm('[[],[0,[1,0,1],[1,[0,1,2],[0,0,2]]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2,2],
+  sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1]);
+state.work = applyFact(state.work, [1,1,2,2],
+  sfbm('[[],[0,[1,0,[0,0,1]],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,1,2],
+  sfbm('[[],[0,[1,0,[0,[2,0,[3,0,1]],[4,1]]],[1,0,[4,1]]],[]];["→","∀","=","ι","¬"]'), [1]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
+state.work = applyFact(state.work, [1,2,2,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,1],1],[]];["→","∧"]'), [1]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,1],1],[[1,0]]];["→","∃"]'), [1]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,0,[3,0,1],1]],[]]
 applyArrow([0,1],"rarr_and_A_rarr_B_C_rarr_B_and_A_C",1)
 applyArrow([0,1],"harr_and_A_B_and_B_A",0)
 applyArrow([0],"harr_forall_z_and_A_B_and_forall_z_A_forall_z_B",0)
