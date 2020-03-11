@@ -465,17 +465,20 @@ function startNextGoal() {
     if (DEBUG) {console.log("Starting goal " + JSON.stringify(state.work));}
 
 }
-function saveGoal() {
-    var origCore = JSON.stringify(Engine.canonicalize(new Fact(state.land.goals[state.goal])).Core.slice(1));
+function checkGoalAndSave(goalFact) {
+    var origCore = JSON.stringify(Engine.canonicalize(new Fact(goalFact)).Core.slice(1));
     var newCore = JSON.stringify(Engine.canonicalize(state.work).Core.slice(1));
     if (origCore != newCore) {
         throw new Error("Core mismatch! Wanted\n" + origCore + "\nGot\n" + newCore);
     }
-    state.land.addFact(state.work);
     proofCtx.append(state.work);
+}
+function saveGoal() {
+    checkGoalAndSave(state.land.goals[state.goal]);
+    state.land.addFact(state.work);
     state.goal++;
     return state.work;
-}
+}    
 function startWith(fact) {
     if (typeof fact == 'string') {
         fact = Engine.canonicalize(parseMark(fact));
@@ -770,6 +773,19 @@ thms.conj = save();
 startWith(thms.conj);
 applyArrow([], thms.contract, 0);
 thms.anid = save();
+
+// Prove anid again with anchors
+// TODO:PICKUP
+
+var goal = {Core:[[],[0,0,[0,1,[1,0,1]]],[]],
+            Skin:{TermNames:["&rarr;","&and;"]},
+            FreeMaps:[[],[]]};
+
+state.work = startWork(goal); 
+state.work = applyFact(state.work, [2], thms.conj, [2,2], {}, [1]);
+state.work = ground(state.work, id);
+checkGoalAndSave(goal);
+/* XXX XXX
 
 startWith(thms.id);
 applyArrow([], thms.conj, 0);

@@ -598,7 +598,26 @@ Error.stackTraceLimit = Infinity;
     // subexpressions will be unified; then the fact (and the required pushup
     // procedures) will be added to the beginning of the work's proof, and the
     // work's hypthesis will be updated.
-    function applyFact(work, workPath, fact, factPath, optVarMap) {
+    //
+    // Optionally takes a varMap, which is a map from vars in the fact to target
+    // vars in the work. If given, this will constrain the unification.
+    //
+    // Optionally takes a list of anchors. Here the semantics of anchors:
+    //
+    // #. If optAnchors is missing or empty, then factPath must be [1] or
+    //    [2]. The fact must have a binary root. The subterm at workPath will be
+    //    replaced with the other side of the fact (i.e. the subterm at [2] or
+    //    [1], respectively).
+    //
+    // #. Otherwise: optAnchors must contain a single element, anchPath, a path
+    //    to a subterm in the work, called the "anchor". factPath must be [a,b]
+    //    where both a and b are 1 or 2. The fact's ops at [0] and at [a,0] must
+    //    both be binary. The fact subterm at [2-a] will be unified with the
+    //    anchor. The subterm at workPath will be replaced by the term at
+    //    [a,2-b]. workPath and anchPath must have a common prefix P (possibly
+    //    []) which points to a subterm with a binary op. anchPath must be P+[1]
+    //    or P+[2].
+    function applyFact(work, workPath, fact, factPath, optVarMap, optAnchors) {
         if (!Array.isArray(factPath) ||
             (factPath.length != 1) ||
             ((factPath[0] != 1) && (factPath[0] != 2))) {
@@ -619,8 +638,8 @@ Error.stackTraceLimit = Infinity;
             pusp.newSteps.push(varMap[v]);
         });
         pusp.newSteps.push(nameDep(work, fact));
-        // Now on the stack: an instance of fact, with factPath equalling a
-        // subexp of work.
+        // Now on the proof stack: an instance of fact, with factPath equalling
+        // a subexp of work.
 
         // #. invoke sequence of pushup theorems, ensuring presence in Deps
         pusp.tool = globalSub(fact, varMap, work);       // what's on the stack
