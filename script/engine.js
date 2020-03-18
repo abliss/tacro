@@ -42,6 +42,16 @@ Error.stackTraceLimit = Infinity;
             var r = this.pushUpHalfMemo[[goalOp, goalArgNum]];
             return r || {};
         },
+        /*
+        query: [G, g, T, t] where G, T are ops, and g, t are arg nums
+        Result: a PushUp wrapping a fact whose core stmt is of this form:
+               [A,[T,a,b],
+                  [T,[G, ..., a, ... ],
+                     [G, ..., b, ... ]]]
+        where A is a detachable arrow having an ax-mp equivalent (usually, -> or <->)
+        and g tells which arg of G changes.
+        The above example is covariant; in a contravariant example, a and b would switch.
+        */
         queryPushUp:  function(query) { // [goalOp, goalArgNum, toolOp, toolArgNum]
             var pushUp = this.pushUpMemo[query];
             if (!pushUp) {
@@ -68,48 +78,59 @@ Error.stackTraceLimit = Infinity;
         this.freeMap = freeMap;
     }
     
+    // TODO PICKUP XXX: applies a single pushUp to a PushUpScratchPad and a
+    // work-in-progress. This should perhaps move inside applyFact.
+    function applyPushUpToPusp(pushUp, pusp, work) {
+        pusp.newSteps.push(pusp.tool[1]);
+        pusp.newSteps.push(pusp.tool[2]);
+        pusp.goalPath.pop();
+        var goalParent = zpath(pusp.goal, pusp.goalPath);
+        var goalN = work.nameTerm(pushUp.goalArrow.name, pushUp.goalArrow.freeMap);
+        var arr1 = [goalN];
+        var arr2 = [goalN];
+        for (var i = 1; i < pushUp.goalArrow.arity; i++) {
+            if (i == pushUp.goalArg) {
+                arr1.push(pusp.tool[pushUp.toolArg]);
+                arr2.push(pusp.tool[3 - pushUp.toolArg]);
+            } else {
+                var arg = goalParent[i];
+                pusp.newSteps.push(arg);
+                arr1.push(arg);
+                arr2.push(arg);
+            }
+        }
+        if (pushUp.grease) {
+            pushUp.grease(pusp, work);
+        }
+        pusp.newSteps.push(nameDep(work, pushUp.fact));
+        pusp.newSteps.push(nameDep(work, pushUp.axMp));
+        var parentArrowN = work.nameTerm(pushUp.parentArrow.name,
+                                         pushUp.parentArrow.freeMap);
+        pusp.tool = [parentArrowN,
+                     pushUp.isCovar ? arr2 : arr1,
+                     pushUp.isCovar ? arr1 : arr2];
+        pusp.toolPath = [pushUp.isCovar ? 2 : 1];
+    }
+    
     // A data structure for keeping in the scheme.
-    // goalOp is an goalOpArity-arg term.
+    // goalArrow wraps a goalOpArity-arg term.
     // goalArg is in 1...goalOpArity, specifying which argchild the goal is
     // toolArg is 1 or 2, specifying one of the args of the tool on the stack.
-    // the current goal's paren'ts [goalArg] equals the current tool's [toolArg]
+    // the current goal's parent's [goalArg] equals the current tool's [toolArg]
     // we want to replace it with the tool's other arg.
     // isCovar tells whether the tool args will be reversed in order.
+    // An optional greasing function is allowed.
+    // fact's root arg must be detachable by the provided axMp.
     function PushUp(axMp, goalArrow, goalArg, toolArg,
                     isCovar, parentArrow, grease, fact) {
+        this.axMp = axMp;
+        this.goalArrow = goalArrow;
+        this.goalArg = goalArg;
+        this.toolArg = toolArg;
         this.isCovar = isCovar;
         this.parentArrow = parentArrow;
-        this.pushUp = function(pusp, work) {
-            pusp.newSteps.push(pusp.tool[1]);
-            pusp.newSteps.push(pusp.tool[2]);
-            pusp.goalPath.pop();
-            var goalParent = zpath(pusp.goal, pusp.goalPath);
-            var goalN = work.nameTerm(goalArrow.name, goalArrow.freeMap);
-            var arr1 = [goalN];
-            var arr2 = [goalN];
-            for (var i = 1; i < goalArrow.arity; i++) {
-                if (i == goalArg) {
-                    arr1.push(pusp.tool[toolArg]);
-                    arr2.push(pusp.tool[3 - toolArg]);
-                } else {
-                    var arg = goalParent[i];
-                    pusp.newSteps.push(arg);
-                    arr1.push(arg);
-                    arr2.push(arg);
-                }
-            }
-            if (grease) {
-                grease(pusp, work);
-            }
-            pusp.newSteps.push(nameDep(work, fact));
-            pusp.newSteps.push(nameDep(work, axMp));
-            var parentArrowN = work.nameTerm(parentArrow.name,
-                                             parentArrow.freeMap);
-            pusp.tool = [parentArrowN,
-                         isCovar ? arr2 : arr1,
-                         isCovar ? arr1 : arr2];
-            pusp.toolPath = [isCovar ? 2 : 1];
-        }
+        this.grease = grease;
+        this.fact = fact;     
     }
 
 
@@ -498,8 +519,9 @@ Error.stackTraceLimit = Infinity;
         return varMap;
     }
 
-    // Returns an array of functions to push the given toolOp/toolArg up the
-    // tree to the top and detach. Each one can be called on (pusp, work).
+    // Returns an array of pushUps to push the given toolOp/toolArg up the tree
+    // to the top, and a detacher to finish it off. Each pushUp can be passed to
+    // applyPushUpToPusp along with (pusp, work).
     function getPushUps(work, workPath, toolOp, toolArg) {
         // This looks a lot more complicated than it is.  Here's the concept: at
         // each level of the goal tree, we need to query for and apply a pushUp
@@ -520,15 +542,15 @@ Error.stackTraceLimit = Infinity;
             q.push(toolOp);
             q.push(toolArg);
             var pu = scheme.queryPushUp(q);
-            pushUps.push(pu.pushUp.bind(pu));
+            pushUps.push(pu);
             toolOp = pu.parentArrow.name;
             toolArg = (pu.isCovar ? 2 : 1);
         }
         // Now, since the invariant holds and goalPath = [], and
         // tool[toolPath[0]] == goal, so just detach.
         var detacher = scheme.queryDetach([toolOp, [toolArg]]);
-        pushUps.push(detacher.detach.bind(detacher));
-        return pushUps;
+        return {pushUps: pushUps,
+                detacher: detacher};
     }
     
     // Returns an map of {k: [operatator, argNum, opaque]} describing which theorems,
@@ -618,14 +640,59 @@ Error.stackTraceLimit = Infinity;
     //    []) which points to a subterm with a binary op. anchPath must be P+[1]
     //    or P+[2].
     function applyFact(work, workPath, fact, factPath, optVarMap, optAnchors) {
-        if (!Array.isArray(factPath) ||
-            (factPath.length != 1) ||
-            ((factPath[0] != 1) && (factPath[0] != 2))) {
-            throw new Error("factPath must be [1] or [2] for now.");
+        if (!Array.isArray(factPath)) {
+            throw new Error("Bad factPath " + workPath);
+        }
+        optAnchors = optAnchors || [];
+        if (optAnchors.length == 0) {
+            if ((factPath.length != 1) ||
+                ((factPath[0] != 1) && (factPath[0] != 2))) {
+                throw new Error("factPath must be [1] or [2] without anchor.");
+            }
+        } else if (optAnchors.length > 1) {
+            throw new Error("Multiple anchors not implemented");
+        } else {
+            if ((factPath.length != 2) ||
+                ((factPath[0] != 1) && (factPath[0] != 2)) ||
+                ((factPath[1] != 1) && (factPath[1] != 2))) {
+                throw new Error("factPath must be [1|2, 1|2] with anchor.");
+            }
+            // TODO: more validation on anchor paths
         }
         if (!Array.isArray(workPath)) {
             throw new Error("Bad workPath " + workPath);
         }
+
+        var anchPath = optAnchors[0];
+        var factAntecedentPath;
+        if (anchPath) {
+            factAncedentPath = [2 - factPath[0]];
+            optVarMap = getMandHyps(work, anchPath, fact, factAncedentPath,
+                                    optVarMap);
+            // PICKUP: augment PushUpScratchPad and getPushUps with anchor logic
+        }
+        /**
+         * XXX Worked example of an anchor:
+Fact: (1 a (2 b c))
+
+conc: (3 a (4 c d))
+hyp:  (3 a (4 b d))
+
+steps:
+hyp
+;; (3 a (4 b d))
+a b c fact
+;; (3 a (4 b d))  (1 a (2 b c))
+2x4x: (5 (2 A B) (6 (4 A C) (4 B C)))
+b c d 2x4x
+;; (3 a (4 b d))  (1 a (2 b c))  (5 (2 b c) (6 (4 b d) (4 c d)))
+1y5y: (7 (5 A B) (8 (1 C A) (1 C B)))
+(2 b c)  (6 (4 b d) (4 c d))  a  1y5y  mp7i    mp8i
+;; (3 a (4 b d))  (1 a (6 (4 b d) (4 c d)))
+1z6z: (9 (1 A (6 B C)) (10 (3 A B) (3 A C)))
+a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
+;; (3 a (4 c d))
+*/
         var varMap = getMandHyps(work, workPath, fact, factPath, optVarMap);
         if (DEBUG) {console.log("# MandHyps: " + JSON.stringify(varMap));}
         // If that didn't throw, we can start mutating
@@ -660,11 +727,11 @@ Error.stackTraceLimit = Infinity;
         var pushUps = getPushUps(work, workPath,
                                  fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[0]);
         // Now apply the pushups from the bottom up, and finally detach.
-        pushUps.forEach(function(pu) {
+        pushUps.pushUps.forEach(function(pu) {
             if (DEBUG) checkInvariant();
-            pu(pusp, work);
+            applyPushUpToPusp(pu, pusp, work);
         })
-
+        pushUps.detacher.detach(pusp, work);
         // Now we have a complete pusp, so apply it to the workspace.
 
         // don't delete any steps
@@ -1100,11 +1167,11 @@ Error.stackTraceLimit = Infinity;
                 }
             }
         }
-        /*
+/*
         console.log("Discovered pushup: " +
-                    " child=" + childArrow + "/" + whichArg + 
-                    " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow);
-        */
+                    " child=" + childArrow.name + "/" + whichArg + 
+                    " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark()));
+*/
         var halfMemo = scheme.pushUpHalfMemo[[childArrow.name, whichArg]];
         if (!halfMemo) {
             halfMemo = {};
@@ -1112,6 +1179,9 @@ Error.stackTraceLimit = Infinity;
         }
         for (var i = 1; i <= 2; i++) {
             halfMemo[[anteArrow, i]] = [anteArrow, i];
+            //console.log("pushup: " + [childArrow.name, whichArg, anteArrow, i] +
+            //            " -> " + JSON.stringify(fact.getMark()));
+
             scheme.pushUpMemo[[childArrow.name, whichArg, anteArrow, i]] =
                 new PushUp(detacher.fact, childArrow, whichArg,
                            i, (i == 2 ? isCov : !isCov),

@@ -49,7 +49,7 @@ function sfbm(mark) {
 }
 
 var TMPI = 0;
-function applyFact(work, workPath, fact, factPath, optVarMap) {
+function applyFact(work, workPath, fact, factPath, optVarMap, optAnchors) {
     if (typeof fact == 'string') {
         fact = sfbm(parseMark(fact).getMark());
     }
@@ -58,7 +58,7 @@ function applyFact(work, workPath, fact, factPath, optVarMap) {
     if (!usable[[toolOp, factPath[0]]]) {
         throw new Error("Unusable tool!" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
     }
-    var newFact = Engine.applyFact(work, workPath, fact, factPath, optVarMap);
+    var newFact = Engine.applyFact(work, workPath, fact, factPath, optVarMap, optAnchors);
     if (DEBUG) { console.log("DEBUG: " + (TMPI++) + " work now " + JSON.stringify(newFact.Tree.Proof)); }
     return newFact;
 }
@@ -777,15 +777,19 @@ thms.anid = save();
 // Prove anid again with anchors
 // TODO:PICKUP
 
-var goal = {Core:[[],[0,0,[0,1,[1,0,1]]],[]],
+var goal = {Core:[[],[0,0,[1,0,0]],[]],
             Skin:{TermNames:["&rarr;","&and;"]},
             FreeMaps:[[],[]]};
-
-state.work = startWork(goal); 
+DEBUG=true;
+state.work = startWork(goal);
+if (DEBUG) {console.log("# XXXX Fact now: " + JSON.stringify(thms.conj));}
+if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+Engine.DEBUG();
 state.work = applyFact(state.work, [2], thms.conj, [2,2], {}, [1]);
 state.work = ground(state.work, id);
 checkGoalAndSave(goal);
-/* XXX XXX
+/*
+ // XXX XXX
 
 startWith(thms.id);
 applyArrow([], thms.conj, 0);
