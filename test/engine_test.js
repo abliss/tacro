@@ -776,19 +776,20 @@ thms.anid = save();
 
 // Prove anid again with anchors
 // TODO:PICKUP
+if (false) {
+    var goal = {Core:[[],[0,0,[1,0,0]],[]],
+                Skin:{TermNames:["&rarr;","&and;"]},
+                FreeMaps:[[],[]]};
+    DEBUG=true;
+    state.work = startWork(goal);
+    if (DEBUG) {console.log("# XXXX Fact now: " + JSON.stringify(thms.conj));}
+    if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+    Engine.DEBUG();
+    state.work = applyFact(state.work, [2], thms.conj, [2,2], {}, [[1]]);
+    state.work = ground(state.work, id);
+    checkGoalAndSave(goal);
+}
 
-var goal = {Core:[[],[0,0,[1,0,0]],[]],
-            Skin:{TermNames:["&rarr;","&and;"]},
-            FreeMaps:[[],[]]};
-DEBUG=true;
-state.work = startWork(goal);
-if (DEBUG) {console.log("# XXXX Fact now: " + JSON.stringify(thms.conj));}
-if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
-Engine.DEBUG();
-state.work = applyFact(state.work, [2], thms.conj, [2,2], {}, [1]);
-state.work = ground(state.work, id);
-checkGoalAndSave(goal);
-/*
  // XXX XXX
 
 startWith(thms.id);

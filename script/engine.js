@@ -375,7 +375,8 @@ Error.stackTraceLimit = Infinity;
                                 JSON.stringify(debugPath) +
                                 "\nWork:  " + JSON.stringify(workExp) +
                                 "\nFact:  " + JSON.stringify(factExp) +
-                                "\nWant:  " + thing1 + " === " + thing2);
+                                "\nWant:  " + JSON.stringify(thing1) +
+                                " === " + JSON.stringify(thing2));
             }
         }
 
@@ -523,32 +524,30 @@ Error.stackTraceLimit = Infinity;
     // to the top, and a detacher to finish it off. Each pushUp can be passed to
     // applyPushUpToPusp along with (pusp, work).
     function getPushUps(work, workPath, toolOp, toolArg) {
-        // This looks a lot more complicated than it is.  Here's the concept: at
-        // each level of the goal tree, we need to query for and apply a pushUp
-        // theorem.  However, in order to know *which* pushUp theorem to apply,
-        // we need both the goal's operator at the level above, and the result
-        // of the pushUp query from the level below.
-        // Each query is [goalOp, goalArgNum, toolOp, toolArgNum];
-        var pushUps = []; // pushUp results, from the bottom up
-        var queries = []; // goalOps and argNums from the top down
-        var term = work.Core[Fact.CORE_HYPS][0];
-        workPath.forEach(function(z) { // walk down, filling in the first half of the queries
-            var op = work.Skin.TermNames[term[0]];
-            queries.push([op, z]);
-            term = term[z];
-        });
-        while (queries.length > 0) {        // walk back up, finishing and executing the queries
-            var q = queries.pop();
-            q.push(toolOp);
-            q.push(toolArg);
-            var pu = scheme.queryPushUp(q);
+        // At each level of the goal tree, we need to query for and apply a
+        // pushUp theorem.  However, in order to know *which* pushUp theorem to
+        // apply, we need both the goal's operator at the level above, and the
+        // result of the pushUp query from the level below.  Each query is
+        // [goalOp, goalArgNum, toolOp, toolArgNum];
+
+        var pushUps = [];
+        var goalTerm = work.Core[Fact.CORE_HYPS][0];
+        var myToolOp = toolOp;
+        var myToolArg = toolArg;
+        for (var workI = workPath.length - 1; workI >= 0; workI--) {
+            var pathToParentOp = clone(workPath);
+            pathToParentOp.splice(workI, workPath.length - workI, 0);
+            var goalOp = work.Skin.TermNames[zpath(goalTerm, pathToParentOp)];
+            var goalArg = workPath[workI];
+            var pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
             pushUps.push(pu);
-            toolOp = pu.parentArrow.name;
-            toolArg = (pu.isCovar ? 2 : 1);
+            myToolOp = pu.parentArrow.name;
+            myToolArg = (pu.isCovar ? 2 : 1);
         }
+
         // Now, since the invariant holds and goalPath = [], and
         // tool[toolPath[0]] == goal, so just detach.
-        var detacher = scheme.queryDetach([toolOp, [toolArg]]);
+        var detacher = scheme.queryDetach([myToolOp, [myToolArg]]);
         return {pushUps: pushUps,
                 detacher: detacher};
     }
@@ -651,6 +650,8 @@ Error.stackTraceLimit = Infinity;
             }
         } else if (optAnchors.length > 1) {
             throw new Error("Multiple anchors not implemented");
+        } else if (!Array.isArray(optAnchors[0])) {
+            throw new Error("Each anchor must be a zpath");
         } else {
             if ((factPath.length != 2) ||
                 ((factPath[0] != 1) && (factPath[0] != 2)) ||
@@ -663,11 +664,13 @@ Error.stackTraceLimit = Infinity;
             throw new Error("Bad workPath " + workPath);
         }
 
-        var anchPath = optAnchors[0];
+        var anchorPath;
         var factAntecedentPath;
-        if (anchPath) {
-            factAncedentPath = [2 - factPath[0]];
-            optVarMap = getMandHyps(work, anchPath, fact, factAncedentPath,
+        if (optAnchors.length == 1) {
+            debugger;
+            anchorPath = optAnchors[0];
+            factAncedentPath = [3 - factPath[0]];
+            optVarMap = getMandHyps(work, anchorPath, fact, factAncedentPath,
                                     optVarMap);
             // PICKUP: augment PushUpScratchPad and getPushUps with anchor logic
         }
@@ -713,6 +716,8 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         pusp.toolPath = clone(factPath);                 // path to subexp A
         pusp.goal = clone(work.Core[Fact.CORE_HYPS][0]); // what to prove
         pusp.goalPath = clone(workPath);                 // path to subexp B
+        pusp.toolAnchorPath = factAntecedentPath;
+        pusp.goalAnchorPath = anchorPath;
         // invariant: subexp A == subexp B
         function checkInvariant() {
             if (DEBUG) {
