@@ -776,7 +776,8 @@ thms.anid = save();
 
 // Prove anid again with anchors
 // TODO:PICKUP
-if (false) {
+if (true) {
+    
     var goal = {Core:[[],[0,0,[1,0,0]],[]],
                 Skin:{TermNames:["&rarr;","&and;"]},
                 FreeMaps:[[],[]]};
