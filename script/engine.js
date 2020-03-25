@@ -37,6 +37,7 @@ Error.stackTraceLimit = Infinity;
         pushUpMemo : {},
         detachMemo : {},
         greaseMemo : {},
+        distributeMemo: {},
         toolsSeen: {},
         halfQueryPushUp: function(goalOp, goalArgNum) {
             var r = this.pushUpHalfMemo[[goalOp, goalArgNum]];
@@ -71,6 +72,23 @@ Error.stackTraceLimit = Infinity;
                                 JSON.stringify(params));
             }
             return detach;
+        },
+        
+        /*
+         * Queries for a known distribution theorem of this form:
+         * [A, [G,a,[U,b,c]],
+         *     [U,[G,a,b],[G,a,c]]]
+         * where A is a detachable arrow (typically, -> detached with axMp)
+         * Params is [G, Garg, U] where the U subterm is the Gargth argument 
+         * of G. TODO: support more than binary??
+         */
+        queryDistribute: function(gOp, gArg, uOp) {
+            var key = [gOp, gArg, uOP];
+            var ret = this.distributeMemo[key];
+            if (!ret) {
+                throw new Error("No distribute for " + JSON.stringify(key));
+            }
+            return ret;
         }
     };
 
@@ -111,7 +129,7 @@ Error.stackTraceLimit = Infinity;
         }
         pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[1])));
         pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[2])));
-        // TODO: PICKUP2: this is haywire if goalPath.length = goalAncorPath.length
+
         pusp.goalPath.pop();
         var goalParent = zpath(pusp.goal, pusp.goalPath);
         var goalN = work.nameTerm(pushUp.goalArrow.name, pushUp.goalArrow.freeMap);
@@ -128,7 +146,6 @@ Error.stackTraceLimit = Infinity;
                 arr2.push(arg);
             }
         }
-        
         if (pushUp.grease) {
             pushUp.grease(pusp, work);
         }
@@ -600,7 +617,7 @@ Error.stackTraceLimit = Infinity;
     // Returns an array of pushUps to push the given toolOp/toolArg up the tree
     // to the top, and a detacher to finish it off. Each pushUp can be passed to
     // applyPushUpToPusp along with (pusp, work).
-    function getPushUps(work, workPath, toolOp, toolArg) {
+    function getPushUps(work, workPath, toolOp, toolArg, goalAnchorPath) {
         // At each level of the goal tree, we need to query for and apply a
         // pushUp theorem.  However, in order to know *which* pushUp theorem to
         // apply, we need both the goal's operator at the level above, and the
@@ -616,7 +633,13 @@ Error.stackTraceLimit = Infinity;
             pathToParentOp.splice(workI, workPath.length - workI, 0);
             var goalOp = work.Skin.TermNames[zpath(goalTerm, pathToParentOp)];
             var goalArg = workPath[workI];
-            var pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
+            var pu;
+            if (goalAnchorPath && (workI == goalAnchorPath.length)) {
+                pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg);
+                // YYYY Pickup!!
+            } else {
+                pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
+            }
             pushUps.push(pu);
             myToolOp = pu.parentArrow.name;
             myToolArg = (pu.isCovar ? 2 : 1);
@@ -1111,7 +1134,7 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         // Next, detect pushUp theorems.
         if (fact.Core[Fact.CORE_HYPS].length ||
             fact.Core[Fact.CORE_FREE].length) {
-            // Can't use pushUp theorems with hyps or free constrains.
+            // Can't use pushUp theorems with hyps or free constraints.
             return;
         }
         var stmt = fact.Core[Fact.CORE_STMT];
@@ -1146,8 +1169,8 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             (stmt[2][1].length != stmt[2][2].length) ||
             (stmt[2][1][0] != stmt[2][2][0])
            ) {
-            // Consequent must be an binary operation on two terms identical
-            // except for the replacement of the antecedent args
+            // Consequent must be an binary operation on two terms with
+            // identical operations
             return;
         }
 
@@ -1157,43 +1180,52 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             anteArg1 = 0;
             anteArg2 = 1;
         } else if (Array.isArray(stmt[1][2]) &&
-                   (greaser = scheme.greaseMemo[terms[stmt[1][0]]]) &&
                    (stmt[1][2].length == 3) &&
                    (stmt[1][2][1] == 1) &&
                    (stmt[1][2][2] == 2)) {
-            // Handle greasing forall
-            anteArrow = terms[stmt[1][2][0]];
-            anteArg1 = 1;
-            anteArg2 = 2;
-            var childArity = stmt[2][1].length;
-            // Need to figure out which arg of the child corresponds to the binding var in ax-gen.
-            var bindingVar = stmt[1][1];
-            var greasedArgOfChild = null;
-            for (var arg = 1; arg < stmt[2][1].length; arg++) {
-                if (stmt[2][1][arg] == bindingVar) {
-                    if (null !== greasedArgOfChild) {
-                        throw new Error("Repeated binding var " + bindingVar + " in greasechild args");
+            // This could be a valid distribute and/or a "greased" antecedent
+            if (greaser = scheme.greaseMemo[terms[stmt[1][0]]]) {
+                // Handle greasing forall
+                anteArrow = terms[stmt[1][2][0]];
+                anteArg1 = 1;
+                anteArg2 = 2;
+                var childArity = stmt[2][1].length;
+                // Need to figure out which arg of the child corresponds to the binding var in ax-gen.
+                var bindingVar = stmt[1][1];
+                var greasedArgOfChild = null;
+                for (var arg = 1; arg < stmt[2][1].length; arg++) {
+                    if (stmt[2][1][arg] == bindingVar) {
+                        if (null !== greasedArgOfChild) {
+                            throw new Error("Repeated binding var " + bindingVar + " in greasechild args");
+                        }
+                        greasedArgOfChild = arg;
                     }
-                    greasedArgOfChild = arg;
                 }
-            }
-            if (null === greasedArgOfChild) {
-                throw new Error("Binding var " + bindingVar + " not found in greasechild args:" + JSON.stringify(stmt));
-            }
+                if (null === greasedArgOfChild) {
+                    throw new Error("Binding var " + bindingVar + " not found in greasechild args:" + JSON.stringify(stmt));
+                }
 
-            grease = function(pusp, work) {
-                // Assume the greased pushup is:
-                // (1. x (a 2> b)) 3> ((4. ... a ...) 5> (4. ... b ...))
-                // currently, (a 2> b) is on the proofstack.
-                // The newSteps ends with (a, b, ... ...).
-                var arr = pusp.newSteps;
-                // splice out the binding var, since it will need to move to the front of the mandhyps
-                var x = arr.splice(arr.length - childArity + greasedArgOfChild + 1,1)[0];
-                // need to scan back past all childArity args and a, b
-                var insertIndex = arr.length - (childArity - 2) - 1;
-                // insert the greaser step here, with x for its mandhyp
-                arr.splice(insertIndex, 0, x, nameDep(work, greaser.fact), x);
-            };
+                grease = function(pusp, work) {
+                    // Assume the greased pushup is:
+                    // (1. x (a 2> b)) 3> ((4. ... a ...) 5> (4. ... b ...))
+                    // currently, (a 2> b) is on the proofstack.
+                    // The newSteps ends with (a, b, ... ...).
+                    var arr = pusp.newSteps;
+                    // splice out the binding var, since it will need to move to the front of the mandhyps
+                    var x = arr.splice(arr.length - childArity + greasedArgOfChild + 1,1)[0];
+                    // need to scan back past all childArity args and a, b
+                    var insertIndex = arr.length - (childArity - 2) - 1;
+                    // insert the greaser step here, with x for its mandhyp
+                    arr.splice(insertIndex, 0, x, nameDep(work, greaser.fact), x);
+                };
+            } else {
+                // this is a Distribute, which can be used as the PushUp that detaches an anchor.
+                // TODO: unify Distribute with Grease? is
+                // a Greased thm basically just Distributing the implicit
+                // universal quantifier?
+                // TODO: fair to treat a Distribute as a PushUp?
+                console.log("Discovered distribute? " + JSON.stringify(fact));
+            }
         } else {
             // Not a valid pushUp
             return;
