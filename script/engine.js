@@ -1,3 +1,4 @@
+'use strict';
 var Fact = require('./fact.js'); //XXX
 //var Crypto = require('crypto');
 // This engine assists in authoring proofs by working backwards from a target
@@ -79,11 +80,16 @@ Error.stackTraceLimit = Infinity;
          * [A, [G,a,[U,b,c]],
          *     [U,[G,a,b],[G,a,c]]]
          * where A is a detachable arrow (typically, -> detached with axMp)
-         * Params is [G, Garg, U] where the U subterm is the Gargth argument 
-         * of G. TODO: support more than binary??
+         *
+         * @param gOp: which op maps to G
+         * @param gArg: which arg of G varies in the consequent
+         * @param uOp: which op maps to U
+         * @param uArg: ???
+         *
+         *  TODO: support more than binary? Support mutated G in output?
          */
-        queryDistribute: function(gOp, gArg, uOp) {
-            var key = [gOp, gArg, uOP];
+        queryDistribute: function(gOp, gArg, uOp, uArg) {
+            var key = [gOp, gArg, uOp, uArg];
             var ret = this.distributeMemo[key];
             if (!ret) {
                 throw new Error("No distribute for " + JSON.stringify(key));
@@ -104,108 +110,7 @@ Error.stackTraceLimit = Infinity;
         return out;
     }
     
-    // TODO PICKUP XXX: applies a single pushUp to a PushUpScratchPad and a
-    // work-in-progress. This should perhaps move inside applyFact.
-    function applyPushUpToPusp(pushUp, pusp, work) {
-        // Invariant: the tool's subexp at toolPath (subexp A) must always equal
-        // the goal's subexp at goalPath (subexp B). this remains true as we
-        // travel up the tree, popping off the end of goalPath.
-        function checkInvariant() {
-            if (DEBUG) {
-                console.log("Check invariant: " + JSON.stringify(zpath(pusp.tool, pusp.toolPath)));
-                console.log("  pusp: ", JSON.stringify(pusp));
-            }
-            if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
-                JSON.stringify(zpath(pusp.goal, pusp.goalPath))) {
-                throw new Error("Invariant broken!");
-            }
-        }
-        if (true || DEBUG) checkInvariant();
-        // Prefix shared by toolPath and toolAnchorPath
-        var toolPathPrefix = [];
-        if (pusp.toolAnchorPath != undefined) {
-            debugger;
-            toolPathPrefix = pusp.toolPath.slice(0, pusp.toolAnchorPath.length);
-        }
-        pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[1])));
-        pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[2])));
-
-        pusp.goalPath.pop();
-        var goalParent = zpath(pusp.goal, pusp.goalPath);
-        var goalN = work.nameTerm(pushUp.goalArrow.name, pushUp.goalArrow.freeMap);
-        var arr1 = [goalN];
-        var arr2 = [goalN];
-        for (var i = 1; i < pushUp.goalArrow.arity; i++) {
-            if (i == pushUp.goalArg) {
-                arr1.push(zpath(pusp.tool, concatArr(toolPathPrefix, [pushUp.toolArg])));
-                arr2.push(zpath(pusp.tool, concatArr(toolPathPrefix, [3 - pushUp.toolArg])));
-            } else {
-                var arg = goalParent[i];
-                pusp.newSteps.push(arg);
-                arr1.push(arg);
-                arr2.push(arg);
-            }
-        }
-        if (pushUp.grease) {
-            pushUp.grease(pusp, work);
-        }
-        pusp.newSteps.push(nameDep(work, pushUp.fact));
-        var parentArrowN = work.nameTerm(pushUp.parentArrow.name,
-                                         pushUp.parentArrow.freeMap);
-        var nextTool = [parentArrowN,
-                        pushUp.isCovar ? arr2 : arr1,
-                        pushUp.isCovar ? arr1 : arr2];
-        var axMp = pushUp.axMp;
-        if (pusp.toolAnchorPath != undefined) {
-            debugger;
-            // If there's an anchor, we need to distribute it over the
-            // parentArrow before we can axMp.
-            if (pusp.toolAnchorPath.length != 1) {
-                throw new Error("Expected single depth anchor");
-            }
-            if (pusp.toolAnchorPath[0] != 1) {
-                console.warn("Non-1 anchorPath probably won't work.");
-            }
-            var toolAnchor = zpath(pusp.tool, pusp.toolAnchorPath);
-            var dstGoalOp = work.Skin.TermNames[pusp.tool[0]];
-            // If the anchor is the antecedent, then the thing that changes in
-            // the goal is the consequent.
-            var dstGoalArg = 3 - pusp.toolAnchorPath[0];
-            var dstToolOp = pushUp.parentArrow.name;
-            var dstToolArg = 2; // XXX Should be ??
-            var dstPU = scheme.queryPushUp([dstGoalOp, dstGoalArg, dstToolOp, dstToolArg]);
-            if (!dstPU.isCovar) {
-                console.warn("Non-covar dstPU probably won't work.");
-            }
-            pusp.newSteps.push(nextTool[1]);
-            pusp.newSteps.push(nextTool[2]);
-            pusp.newSteps.push(toolAnchor);
-            pusp.newSteps.push(nameDep(work, dstPU.fact));
-            pusp.newSteps.push(nameDep(work, dstPU.axMp));
-            var dstParentArrowN = work.nameTerm(dstPU.parentArrow.name,
-                                                dstPU.parentArrow.freeMap);
-            nextTool = [pusp.tool[0], // XXX Should be??
-                        dstPU.isCovar ? toolAnchor : nextTool,
-                        dstPU.isCovar ? nextTool : toolAnchor];
-            var dstDetacher = scheme.queryDetach(
-                [dstPU.parentArrow.name, dstPU.isCovar? [2] : [1]]); //XXX should be??
-            // TODO: should be able to handle an arbitrary dstDetacher here,
-            // e.g. by recursing this whole thing. for now, assume it's really
-            // ax-mp
-            if (dstDetacher.fact.Core[Fact.CORE_HYPS].length != 2) {
-                throw new Error("TODO: handle non-axmp detacher here: "
-                                + JSON.stringify(detacher.fact));
-            }
-            axMp = dstDetacher.fact;
-        }
-            
-        pusp.newSteps.push(nameDep(work, axMp));
-        pusp.tool = nextTool;
-        pusp.toolPath = concatArr(toolPathPrefix, [pushUp.isCovar ? 2 : 1]);
-
-        if (true || DEBUG) checkInvariant();
-    }
-    
+   
     // A data structure for keeping in the scheme.
     // goalArrow wraps a goalOpArity-arg term.
     // goalArg is in 1...goalOpArity, specifying which argchild the goal is
@@ -216,7 +121,7 @@ Error.stackTraceLimit = Infinity;
     // An optional greasing function is allowed.
     // fact's root arg must be detachable by the provided axMp.
     function PushUp(axMp, goalArrow, goalArg, toolArg,
-                    isCovar, parentArrow, grease, fact) {
+                    isCovar, parentArrow, grease, fact, isDistribute) {
         this.axMp = axMp;
         this.goalArrow = goalArrow;
         this.goalArg = goalArg;
@@ -224,7 +129,167 @@ Error.stackTraceLimit = Infinity;
         this.isCovar = isCovar;
         this.parentArrow = parentArrow;
         this.grease = grease;
-        this.fact = fact;     
+        this.fact = fact;
+        this.isDistribute = isDistribute||false;
+        if (isDistribute) {
+            this.applyToPusp = applyDistributeToPusp;
+        } else {
+            this.applyToPusp = applyPushUpToPusp;
+        }
+
+        function checkInvariant(pusp) {
+            if (DEBUG) {
+                console.log("Check invariant: " + JSON.stringify(zpath(pusp.tool, pusp.toolPath)));
+                console.log("  pusp: ", JSON.stringify(pusp));
+            }
+            if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
+                JSON.stringify(zpath(pusp.goal, pusp.goalPath))) {
+                throw new Error("Invariant broken!");
+            }
+        }
+
+        /** 
+         * Apply a distribute to the anchored tool, and detach the anchor from
+         *  the work. Preconditions:
+         *
+         * 1. stack now has (a 1> (b 2> c))
+         * 2. work subexp is the child of (a 1> c)
+         * 3. my fact is ((a 1> (b 2> c)) 3> ((a 1> b) 4> (a 1> c)))
+         * 4. my detacher detaches arrow 3>
+         * 5. invariant holds
+         *
+         * Postconditions:
+         * 1. work path is one shorter
+         * 2. invariant holds.
+         */
+        function applyDistributeToPusp(pusp, work) {
+            if (true || DEBUG) checkInvariant(pusp);
+            var toolAnchor = zpath(pusp.tool, pusp.toolAnchorPath);
+            var goalAnchor = zpath(pusp.goal, pusp.goalAnchorPath);
+
+            var want = JSON.stringify(toolAnchor);
+            var have = JSON.stringify(goalAnchor);
+            if (want != have) {
+                throw new Error("Anchor mismatch: want " + want + " = " + have);
+            }
+            if ((pusp.toolAnchorPath.length != 1) ||
+                (pusp.toolAnchorPath[0] != 1) ||
+                !this.isCovar
+               ) {
+                throw new Error("Fancy tool anchor not implemented");
+            }
+            pusp.newSteps.push(zpath(pusp.tool, [1]));
+            pusp.newSteps.push(zpath(pusp.tool, [2,1]));
+            pusp.newSteps.push(zpath(pusp.tool, [2,2]));
+            pusp.newSteps.push(nameDep(work, this.fact));
+            pusp.newSteps.push(nameDep(work, this.axMp));
+
+            pusp.goalPath.pop();
+            var goalParent = zpath(pusp.goal, pusp.goalPath);
+            var parentArrowN = work.nameTerm(this.parentArrow.name,
+                                             this.parentArrow.freeMap);
+            pusp.tool = [parentArrowN, 
+                         [goalParent[0],
+                          toolAnchor,
+                          zpath(pusp.tool, [2, 3-this.toolArg])],
+                         clone(zpath(pusp.goal, pusp.goalPath))];
+            pusp.goalAnchorPath = undefined;
+            pusp.toolAnchorPath = undefined;
+            pusp.toolPath = [2];
+            if (true || DEBUG) checkInvariant(pusp);
+        }
+
+        // TODO PICKUP XXX: applies a single pushUp to a PushUpScratchPad and a
+        // work-in-progress. This should perhaps move inside applyFact.
+        function applyPushUpToPusp(pusp, work) {
+            // Invariant: the tool's subexp at toolPath (subexp A) must always equal
+            // the goal's subexp at goalPath (subexp B). this remains true as we
+            // travel up the tree, popping off the end of goalPath.
+            if (true || DEBUG) checkInvariant(pusp);
+            // Prefix shared by toolPath and toolAnchorPath
+            var toolPathPrefix = [];
+            if (pusp.toolAnchorPath != undefined) {
+                debugger;
+                toolPathPrefix = pusp.toolPath.slice(0, pusp.toolAnchorPath.length);
+            }
+            pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[1])));
+            pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[2])));
+
+            pusp.goalPath.pop();
+            var goalParent = zpath(pusp.goal, pusp.goalPath);
+            var goalN = work.nameTerm(this.goalArrow.name, this.goalArrow.freeMap);
+            var arr1 = [goalN];
+            var arr2 = [goalN];
+            for (var i = 1; i < this.goalArrow.arity; i++) {
+                if (i == this.goalArg) {
+                    arr1.push(zpath(pusp.tool, concatArr(toolPathPrefix, [this.toolArg])));
+                    arr2.push(zpath(pusp.tool, concatArr(toolPathPrefix, [3 - this.toolArg])));
+                } else {
+                    var arg = goalParent[i];
+                    pusp.newSteps.push(arg);
+                    arr1.push(arg);
+                    arr2.push(arg);
+                }
+            }
+            if (this.grease) {
+                this.grease(pusp, work);
+            }
+            pusp.newSteps.push(nameDep(work, this.fact));
+            var parentArrowN = work.nameTerm(this.parentArrow.name,
+                                             this.parentArrow.freeMap);
+            var nextTool = [parentArrowN,
+                            this.isCovar ? arr2 : arr1,
+                            this.isCovar ? arr1 : arr2];
+            var axMp = this.axMp;
+            if (pusp.toolAnchorPath != undefined) {
+                debugger;
+                // If there's an anchor, we need to distribute it over the
+                // parentArrow before we can axMp.
+                if (pusp.toolAnchorPath.length != 1) {
+                    throw new Error("Expected single depth anchor");
+                }
+                if (pusp.toolAnchorPath[0] != 1) {
+                    console.warn("Non-1 anchorPath probably won't work.");
+                }
+                var toolAnchor = zpath(pusp.tool, pusp.toolAnchorPath);
+                var dstGoalOp = work.Skin.TermNames[pusp.tool[0]];
+                // If the anchor is the antecedent, then the thing that changes in
+                // the goal is the consequent.
+                var dstGoalArg = 3 - pusp.toolAnchorPath[0];
+                var dstToolOp = this.parentArrow.name;
+                var dstToolArg = 2; // XXX Should be ??
+                var dstPU = scheme.queryPushUp([dstGoalOp, dstGoalArg, dstToolOp, dstToolArg]);
+                if (!dstPU.isCovar) {
+                    console.warn("Non-covar dstPU probably won't work.");
+                }
+                pusp.newSteps.push(nextTool[1]);
+                pusp.newSteps.push(nextTool[2]);
+                pusp.newSteps.push(toolAnchor);
+                pusp.newSteps.push(nameDep(work, dstPU.fact));
+                pusp.newSteps.push(nameDep(work, dstPU.axMp));
+                var dstParentArrowN = work.nameTerm(dstPU.parentArrow.name,
+                                                    dstPU.parentArrow.freeMap);
+                nextTool = [pusp.tool[0], // XXX Should be??
+                            dstPU.isCovar ? toolAnchor : nextTool,
+                            dstPU.isCovar ? nextTool : toolAnchor];
+                var dstDetacher = scheme.queryDetach(
+                    [dstPU.parentArrow.name, dstPU.isCovar? [2] : [1]]); //XXX should be??
+                // TODO: should be able to handle an arbitrary dstDetacher here,
+                // e.g. by recursing this whole thing. for now, assume it's really
+                // ax-mp
+                if (dstDetacher.fact.Core[Fact.CORE_HYPS].length != 2) {
+                    throw new Error("TODO: handle non-axmp detacher here: "
+                                    + JSON.stringify(detacher.fact));
+                }
+                axMp = dstDetacher.fact;
+            }
+            
+            pusp.newSteps.push(nameDep(work, axMp));
+            pusp.tool = nextTool;
+            pusp.toolPath = concatArr(toolPathPrefix, [this.isCovar ? 2 : 1]);
+
+            if (true || DEBUG) checkInvariant(pusp);
+        }
     }
 
 
@@ -399,7 +464,7 @@ Error.stackTraceLimit = Infinity;
                 var newTerm = replaceDummies(oldTv);
                 eachVarOnce([newTerm], function(newTermVar, pathFromRoot) {
                     freeList.slice(1).forEach(function(bv) {
-                        newBV = replaceDummies(bv);
+                        var newBV = replaceDummies(bv);
                         if (Array.isArray(newBV)) {
                             throw new Error("Matched binding var " + bv + " to term " + JSON.stringify(newBV));
                         } else if (newBV == newTermVar) {
@@ -601,7 +666,7 @@ Error.stackTraceLimit = Infinity;
         // XXX PICKUP: this mutates work despite our doc promising not to. Move it below cVMFF?
         undummy(work, dummyMap);
         //console.log("Unified: " + JSON.stringify(varMap));
-        for (x in varMap) if (varMap.hasOwnProperty(x)) {
+        for (var x in varMap) if (varMap.hasOwnProperty(x)) {
             varMap[x] = undummy(varMap[x], dummyMap);
         }
         eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
@@ -628,14 +693,23 @@ Error.stackTraceLimit = Infinity;
         var goalTerm = work.Core[Fact.CORE_HYPS][0];
         var myToolOp = toolOp;
         var myToolArg = toolArg;
+        var anchorArrow = null;
+        if (goalAnchorPath != undefined) {
+            debugger;
+        }
         for (var workI = workPath.length - 1; workI >= 0; workI--) {
             var pathToParentOp = clone(workPath);
             pathToParentOp.splice(workI, workPath.length - workI, 0);
             var goalOp = work.Skin.TermNames[zpath(goalTerm, pathToParentOp)];
             var goalArg = workPath[workI];
             var pu;
-            if (goalAnchorPath && (workI == goalAnchorPath.length)) {
+            if ((goalAnchorPath != undefined) && (workI == goalAnchorPath.length - 1)) {
+                
+                // Now on the stack: A ~ (B > C)
+                // Work has: A ~ B
+                // Distribute to: (A ~ B) > (A ~ C) and resume pushing
                 pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg);
+                anchorArrow = goalOp;
                 // YYYY Pickup!!
             } else {
                 pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
@@ -649,13 +723,16 @@ Error.stackTraceLimit = Infinity;
         // tool[toolPath[0]] == goal, so just detach.
         var detacher = scheme.queryDetach([myToolOp, [myToolArg]]);
         return {pushUps: pushUps,
-                detacher: detacher};
+                detacher: detacher,
+                anchorArrow: anchorArrow
+               };
     }
     
     // Returns an map of {k: [operatator, argNum, opaque]} describing which theorems,
     // given the current set of known pushUps, could be applied to the given
     // work at the given path.  If you want, you can pass the opaque part back
     // to applyFact to maybe speed things up?
+    // TODO: add anchor support
     function getUsableTools(work, workPath) {
         var actuals = {};
         var term = work.Core[Fact.CORE_HYPS][0];
@@ -820,10 +897,11 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         // invariant: subexp A == subexp B
         // TODO PICKUP will need to pass anchor info to getPushUps
         var pushUps = getPushUps(work, workPath,
-                                 fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[0]);
+                                 fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[0],
+                                 pusp.goalAnchorPath);
         // Now apply the pushups from the bottom up, and finally detach.
         pushUps.pushUps.forEach(function(pu) {
-            applyPushUpToPusp(pu, pusp, work);
+            pu.applyToPusp(pusp, work);
         })
         pushUps.detacher.detach(pusp, work);
         // Now we have a complete pusp, so apply it to the workspace.
@@ -1160,6 +1238,7 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             return;
         }
         var anteArrow;
+        var isDistribute = false;
         var anteArg1;
         var anteArg2;
         var greaser;
@@ -1224,7 +1303,16 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                 // a Greased thm basically just Distributing the implicit
                 // universal quantifier?
                 // TODO: fair to treat a Distribute as a PushUp?
+                if ((stmt[1][0] != stmt[2][1][0]) ||
+                    (stmt[1][0] != stmt[2][2][0])) {
+                    console.log("TODO Fancy distribute not handled: " + JSON.stringify(fact));
+                    return;
+                }
+                isDistribute = true;
                 console.log("Discovered distribute? " + JSON.stringify(fact));
+                anteArrow = terms[stmt[1][2][0]];
+                anteArg1 = 1;
+                anteArg2 = 2;
             }
         } else {
             // Not a valid pushUp
@@ -1275,20 +1363,25 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                     " child=" + childArrow.name + "/" + whichArg + 
                     " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark()));
 */
-        var halfMemo = scheme.pushUpHalfMemo[[childArrow.name, whichArg]];
-        if (!halfMemo) {
-            halfMemo = {};
-            scheme.pushUpHalfMemo[[childArrow.name, whichArg]] = halfMemo;
+        if (!isDistribute) {
+            var halfMemo = scheme.pushUpHalfMemo[[childArrow.name, whichArg]];
+            if (!halfMemo) {
+                halfMemo = {};
+                scheme.pushUpHalfMemo[[childArrow.name, whichArg]] = halfMemo;
+            }
         }
         for (var i = 1; i <= 2; i++) {
-            halfMemo[[anteArrow, i]] = [anteArrow, i];
-            //console.log("pushup: " + [childArrow.name, whichArg, anteArrow, i] +
-            //            " -> " + JSON.stringify(fact.getMark()));
-
-            scheme.pushUpMemo[[childArrow.name, whichArg, anteArrow, i]] =
-                new PushUp(detacher.fact, childArrow, whichArg,
-                           i, (i == 2 ? isCov : !isCov),
-                           parentArrow, grease, fact);
+            var pushUp = new PushUp(detacher.fact, childArrow, whichArg,
+                                    i, (i == 2 ? isCov : !isCov),
+                                    parentArrow, grease, fact, isDistribute);
+            if (isDistribute) {
+                scheme.distributeMemo[[childArrow.name, whichArg, anteArrow, i]] = pushUp;
+            } else {
+                halfMemo[[anteArrow, i]] = [anteArrow, i];
+                //console.log("pushup: " + [childArrow.name, whichArg, anteArrow, i] +
+                //            " -> " + JSON.stringify(fact.getMark()));
+                scheme.pushUpMemo[[childArrow.name, whichArg, anteArrow, i]] = pushUp;
+            }
         }
         if (!scheme.toolsSeen[anteArrow]) {
             scheme.toolsSeen[anteArrow] = true;
