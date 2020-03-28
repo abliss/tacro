@@ -10,7 +10,7 @@ var DEBUG = false;
 var DUMP = false;
 var GROUNDDEBUG = false;
 var start = new Date();
-
+var UNUSABLE_OK=false;
 state.factsByMark = {};
 
 var ENTITY_MAP = {
@@ -53,10 +53,12 @@ function applyFact(work, workPath, fact, factPath, optVarMap, optAnchors) {
     if (typeof fact == 'string') {
         fact = sfbm(parseMark(fact).getMark());
     }
-    var usable = Engine.getUsableTools(work, workPath);
-    var toolOp = fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]];
-    if (!usable[[toolOp, factPath[0]]]) {
-        throw new Error("Unusable tool!" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
+    if (!UNUSABLE_OK) {
+        var usable = Engine.getUsableTools(work, workPath);
+        var toolOp = fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]];
+        if (!usable[[toolOp, factPath[0]]]) {
+            throw new Error("Unusable tool!" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
+        }
     }
     var newFact = Engine.applyFact(work, workPath, fact, factPath, optVarMap, optAnchors);
     if (DEBUG) { console.log("DEBUG: " + (TMPI++) + " work now " + JSON.stringify(newFact.Tree.Proof)); }
@@ -775,24 +777,19 @@ applyArrow([], thms.contract, 0);
 thms.anid = save();
 
 // Prove anid again with anchors
-// TODO:PICKUP
 if (true) {
     
     var goal = {Core:[[],[0,0,[1,0,0]],[]],
                 Skin:{TermNames:["&rarr;","&and;"]},
                 FreeMaps:[[],[]]};
-    //DEBUG=true;
     state.work = startWork(goal);
     if (DEBUG) {console.log("# XXXX Fact now: " + JSON.stringify(thms.conj));}
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
-    //Engine.DEBUG();
     state.work = applyFact(state.work, [2], thms.conj, [2,2], {}, [[1]]);
     state.work = ground(state.work, id);
     checkGoalAndSave(goal);
     if (true) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
 }
-
- // XXX XXX
 
 startWith(thms.id);
 applyArrow([], thms.conj, 0);
@@ -815,9 +812,44 @@ applyArrow([1], thms.contract, 0);
 applyArrow([0,0], thms.andl, 0);
 thms.imprt = save();
 
+if (true) {
+    //Prove imprt(?) again using anchor.
+    var goal = {Core:[[],[0,[0,0,1],[0,0,[1,0,1]]],[]],
+                Skin:{TermNames:["&rarr;","&and;"]},
+                FreeMaps:[[],[]]};
+
+    //DEBUG=true;
+    state.work = startWork(goal);
+    state.work = applyFact(state.work, [2,2],
+                           sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧","¬"]'), [2,2],{},[[2,1]]);
+    state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+    checkGoalAndSave(goal);
+    //saveGoal(); // [[],[0,[0,0,1],[0,0,[1,0,1]]],[]]
+}
+
 startWith(thms.mp);
 applyArrow([], thms.imprt, 0);
 thms.anmp = save();
+
+if (true) {
+    //Prove anmp(?) again using anchor.
+    var goal = {Core:[[],[0,[0,0,[0,1,2]],[0,[1,0,1],2]],[]],
+                Skin:{TermNames:["&rarr;","&and;"]},
+                FreeMaps:[[],[]]};
+
+    state.work = startWork(goal);
+    DEBUG=true;
+    Engine.DEBUG(true);
+    UNUSABLE_OK=true; //XXX
+    state.work = applyFact(state.work, [2,1,1],
+                           sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
+    checkGoalAndSave(goal);
+    UNUSABLE_OK=false;
+    Engine.DEBUG(false);
+    DEBUG=false;
+    //saveGoal(); // [[],[0,[0,0,1],[0,0,[1,0,1]]],[]]
+}
+
 
 startWith(thms.andl);
 applyArrow([1], thms.conj, 0);

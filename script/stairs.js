@@ -156,6 +156,15 @@ function registerNewTool(toolOp) {
     
 }
 
+function setAnchorPath(anchorPath) {
+    state.anchorPath = anchorPath;
+    if (state.anchorPath == undefined) {
+        document.getElementById("anchor").innerText = "anchor";
+    } else {
+        document.getElementById("anchor").innerText = "unanchor";
+    }
+}
+
 function setWorkPath(wp) {
     var className = "";
     if (typeof wp == 'undefined') {
@@ -296,6 +305,7 @@ function groundOut() {
 
         message("");
         setWorkPath([]);
+        setAnchorPath();
         currentLand().goals.shift();
         nextGoal();
         redraw();
@@ -350,6 +360,7 @@ function addToShooter(factData, land) {
                 message("");
                 state.url = "";
                 setWorkPath([]);
+                setAnchorPath();
                 setWork(newWork, dumpStep);
                 redraw();
             };
@@ -368,7 +379,6 @@ function addToShooter(factData, land) {
         addCssRule('.name'+cssEscape(reflexiveTerm) + " .depth1.arg2 {" +
                 "border-left: 1px solid red;}");
         reflexives[reflexiveTerm] = fact;
-        return factFp;
     }
     var box;
     function onchange() {
@@ -418,14 +428,21 @@ function addToShooter(factData, land) {
          // TODO: PICKUP: undummy
         try {
             var varMap = box.tree.getVarMap(state.work);
-            var newWork = Engine.applyFact(state.work, state.workPath,
-                                           fact, [argNum], varMap);
-            message("");
-            state.url = "";
             var dumpStep = "state.work = applyFact(state.work, " + JSON.stringify(state.workPath) + ",\n" +
                 "  sfbm('" + JSON.stringify(fact.Core) + ";" +
-                JSON.stringify(fact.Skin.TermNames) +"'), [" + argNum + "]);";
+                JSON.stringify(fact.Skin.TermNames) +"'), " +
+                JSON.stringify(state.anchorPath ? [2, argNum] : [argNum]) + ",{}," +
+                JSON.stringify([state.anchorPath]) + ");";
+            console.log("XXXX trying step:\n  " + dumpStep);
+            var newWork = Engine.applyFact(state.work, state.workPath,
+                                           fact,
+                                           (state.anchorPath ? [2, argNum] : [argNum]),
+                                           varMap,
+                                           state.anchorPath ? [state.anchorPath] : undefined);
+            message("");
+            state.url = "";
             setWorkPath([]);
+            setAnchorPath();
             setWork(newWork, dumpStep);
             redraw();
         } catch (e) {
@@ -659,6 +676,7 @@ function nextGoal() {
     knowTerms(currentGoal);
     setWork(startWork(currentGoal), "startNextGoal();");
     setWorkPath([]);
+    setAnchorPath();
     Engine.resetDummies(state.work);
     return;
 }
@@ -715,6 +733,7 @@ function redraw() {
 function loadState(flat) {
     state = flat;
     setWork(new Fact(state.work), "load()");
+    setAnchorPath(flat.anchorPath);
     currentGoal = currentLand().goals[0];
     message("");
 }
@@ -926,11 +945,14 @@ window.addEventListener('popstate', function(ev) {
         }
     }
 });
-document.getElementById("restart").onclick = function() {
-    nextGoal();
-    redraw();
-    return false;
+document.getElementById("anchor").onclick = function() {
+    if (state.anchorPath == undefined) {
+        setAnchorPath(state.workPath.slice());;
+    } else {
+        setAnchorPath(undefined);
+    }
 };
+
 document.getElementById("rewind").onclick = function() {
     var parentFp = log.parent;
     console.log("XXXX rewind to: " + parentFp);

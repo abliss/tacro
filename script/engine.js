@@ -173,9 +173,7 @@ Error.stackTraceLimit = Infinity;
                 throw new Error("Anchor mismatch: want " + want + " = " + have);
             }
             if ((pusp.toolAnchorPath.length != 1) ||
-                (pusp.toolAnchorPath[0] != 1) ||
-                !this.isCovar
-               ) {
+                (pusp.toolAnchorPath[0] != 1)) {
                 throw new Error("Fancy tool anchor not implemented");
             }
             pusp.newSteps.push(zpath(pusp.tool, [1]));
@@ -188,14 +186,17 @@ Error.stackTraceLimit = Infinity;
             var goalParent = zpath(pusp.goal, pusp.goalPath);
             var parentArrowN = work.nameTerm(this.parentArrow.name,
                                              this.parentArrow.freeMap);
+            if (pusp.toolPath.length != 2 || pusp.toolPath[0] != 2) {
+                throw new Error("TODO: Revisit assumption in next zpath");
+            }
             pusp.tool = [parentArrowN, 
                          [goalParent[0],
                           toolAnchor,
-                          zpath(pusp.tool, [2, 3-this.toolArg])],
+                          zpath(pusp.tool, [2, 3-pusp.toolPath[1]])],
                          clone(zpath(pusp.goal, pusp.goalPath))];
             pusp.goalAnchorPath = undefined;
             pusp.toolAnchorPath = undefined;
-            pusp.toolPath = [2];
+            pusp.toolPath = [2]; //XXX should be ???
             if (true || DEBUG) checkInvariant(pusp);
         }
 
@@ -209,7 +210,6 @@ Error.stackTraceLimit = Infinity;
             // Prefix shared by toolPath and toolAnchorPath
             var toolPathPrefix = [];
             if (pusp.toolAnchorPath != undefined) {
-                debugger;
                 toolPathPrefix = pusp.toolPath.slice(0, pusp.toolAnchorPath.length);
             }
             pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[1])));
@@ -241,8 +241,8 @@ Error.stackTraceLimit = Infinity;
                             this.isCovar ? arr2 : arr1,
                             this.isCovar ? arr1 : arr2];
             var axMp = this.axMp;
+            var whichArg = this.isCovar ? 2 : 1;
             if (pusp.toolAnchorPath != undefined) {
-                debugger;
                 // If there's an anchor, we need to distribute it over the
                 // parentArrow before we can axMp.
                 if (pusp.toolAnchorPath.length != 1) {
@@ -257,13 +257,17 @@ Error.stackTraceLimit = Infinity;
                 // the goal is the consequent.
                 var dstGoalArg = 3 - pusp.toolAnchorPath[0];
                 var dstToolOp = this.parentArrow.name;
-                var dstToolArg = 2; // XXX Should be ??
+                var dstToolArg = 2; // XXX Should be ?? 3-pusp.tap[0]
                 var dstPU = scheme.queryPushUp([dstGoalOp, dstGoalArg, dstToolOp, dstToolArg]);
                 if (!dstPU.isCovar) {
                     console.warn("Non-covar dstPU probably won't work.");
                 }
-                pusp.newSteps.push(nextTool[1]);
-                pusp.newSteps.push(nextTool[2]);
+                // TODO: first step should be ???
+                pusp.newSteps.push(
+                    [parentArrowN,
+                     zpath(pusp.tool, concatArr(toolPathPrefix,[1])),
+                     zpath(pusp.tool, concatArr(toolPathPrefix,[2]))]);
+                pusp.newSteps.push(nextTool);
                 pusp.newSteps.push(toolAnchor);
                 pusp.newSteps.push(nameDep(work, dstPU.fact));
                 pusp.newSteps.push(nameDep(work, dstPU.axMp));
@@ -282,11 +286,12 @@ Error.stackTraceLimit = Infinity;
                                     + JSON.stringify(detacher.fact));
                 }
                 axMp = dstDetacher.fact;
+                whichArg = this.isCovar? 1 : 2; // seems legit
             }
             
             pusp.newSteps.push(nameDep(work, axMp));
             pusp.tool = nextTool;
-            pusp.toolPath = concatArr(toolPathPrefix, [this.isCovar ? 2 : 1]);
+            pusp.toolPath = concatArr(toolPathPrefix, [whichArg]);
 
             if (true || DEBUG) checkInvariant(pusp);
         }
@@ -420,7 +425,7 @@ Error.stackTraceLimit = Infinity;
     function resetDummies(optFact) {
         dummyNum = 0;
         if (optFact && optFact.Skin.VarNames) {
-            usedVars = {};
+            var usedVars = {};
             optFact.Skin.VarNames.forEach(v => { usedVars[v] = 1; });
             while (usedVars[newDummy()]) {
             }
@@ -519,7 +524,8 @@ Error.stackTraceLimit = Infinity;
         // from fact vars to work exps
         var varMap = clone(optVarMap||{});
         var workExp = zpath(work.Core[Fact.CORE_HYPS][0], hypPath);
-        var factExp = zpath(fact.Core[Fact.CORE_STMT], stmtPath);
+        var factExp = fact.Core[Fact.CORE_STMT];
+        var factPath = stmtPath.slice();
         if (workExp == undefined) {
             throw new Error("Bad work path:\n" + hypPath + "\n" +
                             JSON.stringify(work));
@@ -534,6 +540,7 @@ Error.stackTraceLimit = Infinity;
                                 JSON.stringify(debugPath) +
                                 "\nWork:  " + JSON.stringify(workExp) +
                                 "\nFact:  " + JSON.stringify(factExp) +
+                                "\nFactPath: " + factPath +
                                 "\nWant:  " + JSON.stringify(thing1) +
                                 " === " + JSON.stringify(thing2));
             }
@@ -574,11 +581,19 @@ Error.stackTraceLimit = Infinity;
         function mapVarTo(factVarName, workExp) {
             varMap[factVarName] = workExp;
         }
-        function recurse(workSubExp, factSubExp, alreadyMapped) {
+        function recurse(workSubExp, factSubExp, factSubPath, alreadyMapped) {
             if (!alreadyMapped && !Array.isArray(factSubExp) &&
                 (varMap[factSubExp] != undefined)) {
-                factSubExp = varMap[factSubExp];
-                alreadyMapped = true;
+                return recurse(workSubExp, varMap[factSubExp], factSubPath, true);
+            }
+            if (factSubPath.length > 0) {
+                if (!Array.isArray(factSubExp)) {
+                    throw new Error("fact path too long: " + factSubPath);
+                }
+                if (factSubExp.length <= factSubPath[0]) {
+                    throw new Error("fact exp too short: " + JSON.stringify(factSubExp));
+                }
+                return recurse(workSubExp, factSubExp[factSubPath.shift()], factSubPath, alreadyMapped);
             }
             if (alreadyMapped) {
                 while (dummyMap[factSubExp]) {
@@ -656,13 +671,13 @@ Error.stackTraceLimit = Infinity;
                     for (var i = 1; i < workSubExp.length; i++) {
                         debugPath.push(i);
                         // TODO: possible infinite loop here on bad unification
-                        recurse(workSubExp[i], factSubExp[i], alreadyMapped);
+                        recurse(workSubExp[i], factSubExp[i], [], alreadyMapped);
                         debugPath.pop();
                     }
                 }
             }
         }
-        recurse(workExp, factExp, false);
+        recurse(workExp, factExp, factPath, false);
         // XXX PICKUP: this mutates work despite our doc promising not to. Move it below cVMFF?
         undummy(work, dummyMap);
         //console.log("Unified: " + JSON.stringify(varMap));
@@ -694,9 +709,6 @@ Error.stackTraceLimit = Infinity;
         var myToolOp = toolOp;
         var myToolArg = toolArg;
         var anchorArrow = null;
-        if (goalAnchorPath != undefined) {
-            debugger;
-        }
         for (var workI = workPath.length - 1; workI >= 0; workI--) {
             var pathToParentOp = clone(workPath);
             pathToParentOp.splice(workI, workPath.length - workI, 0);
@@ -710,13 +722,13 @@ Error.stackTraceLimit = Infinity;
                 // Distribute to: (A ~ B) > (A ~ C) and resume pushing
                 pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg);
                 anchorArrow = goalOp;
-                // YYYY Pickup!!
+                myToolArg = 2;
             } else {
                 pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
+                myToolArg = (pu.isCovar ? 2 : 1);
             }
             pushUps.push(pu);
             myToolOp = pu.parentArrow.name;
-            myToolArg = (pu.isCovar ? 2 : 1);
         }
 
         // Now, since the invariant holds and goalPath = [], and
@@ -817,7 +829,7 @@ Error.stackTraceLimit = Infinity;
     //    or P+[2].
     function applyFact(work, workPath, fact, factPath, optVarMap, optAnchors) {
         if (!Array.isArray(factPath)) {
-            throw new Error("Bad factPath " + workPath);
+            throw new Error("Bad factPath: " + JSON.stringify(factPath));
         }
         optAnchors = optAnchors || [];
         if (optAnchors.length == 0) {
@@ -828,7 +840,7 @@ Error.stackTraceLimit = Infinity;
         } else if (optAnchors.length > 1) {
             throw new Error("Multiple anchors not implemented");
         } else if (!Array.isArray(optAnchors[0])) {
-            throw new Error("Each anchor must be a zpath");
+            throw new Error("Each anchor must be a zpath: " + JSON.stringify(optAnchors[0]));
         } else {
             if ((factPath.length != 2) ||
                 ((factPath[0] != 1) && (factPath[0] != 2)) ||
@@ -1403,5 +1415,5 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
     module.exports.globalSub = globalSub;
     module.exports.specify = specify;
     module.exports.resetDummies = resetDummies;
-    module.exports.DEBUG = function() {DEBUG = true;};
+    module.exports.DEBUG = function(d) {DEBUG = d;};
 })(module);
