@@ -58,11 +58,11 @@ Error.stackTraceLimit = Infinity;
         */
         queryPushUp:  function(query) { // [goalOp, goalArgNum, toolOp, toolArgNum]
             var pushUp = this.pushUpMemo[query];
+            if (DEBUG) console.log("queryPushUp: " + JSON.stringify(query) + " => " +  JSON.stringify(pushUp ? pushUp.fact.Core[Fact.CORE_STMT] : null));
             if (!pushUp) {
                 throw new Error("pushUp not found! Check commit d2a748c " +
                                 "for how this used to work.");
             }
-            if (DEBUG) console.log("queryPushUp: " + JSON.stringify(query) + " => " +  pushUp);
             return pushUp;
         },
         queryDetach: function(params) {
@@ -1383,11 +1383,11 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                 }
             }
         }
-/*
-        console.log("Discovered pushup: " +
-                    " child=" + childArrow.name + "/" + whichArg + 
-                    " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark()));
-*/
+        if (true) {
+            console.log("Discovered pushup: " + JSON.stringify([childArrow.name, whichArg, anteArrow, "*"]) +
+                        " child=" + childArrow.name + "/" + whichArg + 
+                        " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark()));
+        }
         if (!isDistribute) {
             var halfMemo = scheme.pushUpHalfMemo[[childArrow.name, whichArg]];
             if (!halfMemo) {

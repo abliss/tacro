@@ -1018,12 +1018,63 @@ thms.defbi2 = saveGoal();
   startWith(thms.mp);
   applyArrow([1,0], thms.bi2, 1);
   thms.mpbir = save();
+
+startNextGoal();
+state.work = applyFact(state.work, [], thms.defbi2, [2]);
+state.work = applyFact(state.work, [], thms.idie, [2]);
+state.work = applyFact(state.work, [], thms.conj, [2]);
+state.work = ground(state.work, id);
+thms.biid = saveGoal();
+
+UNUSABLE_OK=true; //XXX
+Engine.DEBUG(true);
+
+
+startNextGoal();
+state.work = applyFact(state.work, [2],
+                       sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2],
+                       sfbm('[[],[0,[0,0,[0,1,2]],[0,[0,0,1],[0,0,2]]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,1,1],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
+state.work = applyFact(state.work, [2,1,1],
+                       sfbm('[[],[0,[1,0,1],[0,0,1]],[]];["→","↔"]'), [1],{},[]);
+state.work = applyFact(state.work, [2],
+                       sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2],
+                       sfbm('[[],[0,[1,0,1],[0,1,0]],[]];["→","↔"]'), [1],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[0,0,[1,1,2]],[1,[0,0,1],[0,0,2]]],[]]
+
+
+UNUSABLE_OK=false;
+Engine.DEBUG(false);
+
   startWith(thms.defbi1);
 
   applyArrow([1,0], thms.anim1, 0);
   applyArrow([1,1], thms.anim1, 0);
   applyArrow([1], thms.defbi2, 0);
   thms.anbi1 = save();
+
+if (false) {
+    // try anbi1 again with anchor, using new distribute
+    UNUSABLE_OK=true; //XXX
+    var goal = {Core:[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]],
+                Skin:{TermNames:["&rarr;","&harr;","&and;"]},
+                FreeMaps:[[],[],[]]};
+    state.work = startWork(goal);
+    Engine.DEBUG(true);
+    state.work = applyFact(state.work, [2,1,1],
+                           sfbm('[[],[0,0,0],[]];["&harr;"]'), [2,1],{},[[1]]);
+
+
+    checkGoalAndSave(goal);
+    UNUSABLE_OK=false;
+    Engine.DEBUG(false);
+}
 //  scheme.setEquivalenceThm(exports.and, 0, thms.anbi1);
 
   startWith(thms.defbi1);
@@ -1056,12 +1107,6 @@ thms.defbi2 = saveGoal();
   applyArrow([], thms.idie, 0);
   thms.bicom = save();
 
-startNextGoal();
-state.work = applyFact(state.work, [], thms.defbi2, [2]);
-state.work = applyFact(state.work, [], thms.idie, [2]);
-state.work = applyFact(state.work, [], thms.conj, [2]);
-state.work = ground(state.work, id);
-thms.biid = saveGoal();
 
 
   startWith(thms.nn1);

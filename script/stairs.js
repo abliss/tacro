@@ -160,13 +160,17 @@ function setAnchorPath(anchorPath) {
     state.anchorPath = anchorPath;
     if (state.anchorPath == undefined) {
         document.getElementById("anchor").innerText = "anchor";
+        document.body.className = 
+            document.body.className.replace(/enableAllTools /g, "");
     } else {
+        // XXX anchorUsableTools : should only enable usable tools
+        document.body.className = "enableAllTools " + document.body.className;
         document.getElementById("anchor").innerText = "unanchor";
     }
 }
 
 function setWorkPath(wp) {
-    var className = "";
+    var className = state.anchorPath ? "enableAllTools " : ""; // XXX anchorUsableTools
     if (typeof wp == 'undefined') {
         delete state.workPath;
         if (workBox) delete workBox.pathTermArr;
@@ -387,6 +391,12 @@ function addToShooter(factData, land) {
         var tree = this;
         var expTermArr = tree.getTermArr();
         var boxString = JSON.stringify(expTermArr);
+        if (state.anchorPath) { // XXX anchorUsableTools
+            box.deployButtons.forEach(button => {
+                button.className += " matched";
+                button.removeAttribute('disabled');
+            });
+        }
         for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
             var v = usableTools[k];
             var tool = v[0];
