@@ -895,6 +895,28 @@ applyArrow([1,0], thms.ancom, 1);
 applyArrow([1,1], thms.ancom, 0);
 thms.prth = save();
 
+if (true) {
+    // prove prth again with anchor
+    var goal ={Core:[[],[0,[1,[0,0,1],[0,2,3]],[0,[1,0,2],[1,1,3]]],[]],
+         Skin:{TermNames:["&rarr;","&and;"]},
+               FreeMaps:[[],[]]};
+    UNUSABLE_OK=true; //XXX
+        
+    state.work = startWork(goal);
+    state.work = applyFact(state.work, [],
+                           sfbm('[[],[0,[0,0,[0,1,2]],[0,[1,0,1],2]],[]];["→","∧","¬"]'), [2],{},[]);
+    state.work = applyFact(state.work, [2,2,1,1],
+                           sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
+    state.work = applyFact(state.work, [2,2,1,2],
+                           sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,1]]);
+    state.work = applyFact(state.work, [],
+                           sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+    state.work = applyFact(state.work, [],
+                           sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+    state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+    checkGoalAndSave(goal);
+    UNUSABLE_OK=false;
+}
 var landHarr = getLand("../data/land_03_harr.js");
 
 startNextGoal(); // dfbiie
