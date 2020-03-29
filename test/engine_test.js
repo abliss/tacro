@@ -1059,17 +1059,26 @@ Engine.DEBUG(false);
   applyArrow([1], thms.defbi2, 0);
   thms.anbi1 = save();
 
-if (false) {
+if (true) {
     // try anbi1 again with anchor, using new distribute
     UNUSABLE_OK=true; //XXX
     var goal = {Core:[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]],
                 Skin:{TermNames:["&rarr;","&harr;","&and;"]},
                 FreeMaps:[[],[],[]]};
-    state.work = startWork(goal);
-    Engine.DEBUG(true);
-    state.work = applyFact(state.work, [2,1,1],
-                           sfbm('[[],[0,0,0],[]];["&harr;"]'), [2,1],{},[[1]]);
 
+    state.work = startWork(goal);
+
+    state.work = applyFact(state.work, [2],
+                           sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2],{},[]);
+    state.work = applyFact(state.work, [2,1,1,1],
+                           sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
+    state.work = applyFact(state.work, [2],
+                           sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2],{},[]);
+    state.work = applyFact(state.work, [2,1,1],
+                           sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1]]);
+    state.work = applyFact(state.work, [],
+                           sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+    state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
 
     checkGoalAndSave(goal);
     UNUSABLE_OK=false;

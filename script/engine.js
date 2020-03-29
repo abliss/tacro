@@ -298,7 +298,7 @@ Error.stackTraceLimit = Infinity;
                 // really ax-mp
                 if (dstDetacher.fact.Core[Fact.CORE_HYPS].length != 2) {
                     throw new Error("TODO: handle non-axmp detacher here: "
-                                    + JSON.stringify(detacher.fact));
+                                    + JSON.stringify(dstDetacher.fact));
                 }
                 axMp = dstDetacher.fact;
             }
