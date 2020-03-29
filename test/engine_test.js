@@ -785,7 +785,9 @@ if (true) {
     state.work = startWork(goal);
     if (DEBUG) {console.log("# XXXX Fact now: " + JSON.stringify(thms.conj));}
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
+    Engine.DEBUG(true);
     state.work = applyFact(state.work, [2], thms.conj, [2,2], {}, [[1]]);
+    Engine.DEBUG(false);
     state.work = ground(state.work, id);
     checkGoalAndSave(goal);
     if (true) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
@@ -820,8 +822,11 @@ if (true) {
 
     //DEBUG=true;
     state.work = startWork(goal);
+        Engine.DEBUG(true);
     state.work = applyFact(state.work, [2,2],
                            sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧","¬"]'), [2,2],{},[[2,1]]);
+        Engine.DEBUG(false);
+
     state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
     checkGoalAndSave(goal);
     //saveGoal(); // [[],[0,[0,0,1],[0,0,[1,0,1]]],[]]
@@ -832,22 +837,22 @@ applyArrow([], thms.imprt, 0);
 thms.anmp = save();
 
 if (true) {
-    //Prove anmp(?) again using anchor.
+    //Prove anmp(?) again using anchor??
     var goal = {Core:[[],[0,[0,0,[0,1,2]],[0,[1,0,1],2]],[]],
                 Skin:{TermNames:["&rarr;","&and;"]},
                 FreeMaps:[[],[]]};
 
     state.work = startWork(goal);
-    DEBUG=true;
-    Engine.DEBUG(true);
     UNUSABLE_OK=true; //XXX
+    Engine.DEBUG(true);
     state.work = applyFact(state.work, [2,1,1],
                            sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
+    Engine.DEBUG(false);
     checkGoalAndSave(goal);
     UNUSABLE_OK=false;
-    Engine.DEBUG(false);
     DEBUG=false;
-    //saveGoal(); // [[],[0,[0,0,1],[0,0,[1,0,1]]],[]]
+    //er, not clear how to ground out from here
+    
 }
 
 
@@ -859,6 +864,29 @@ applyArrow([1,0], thms.andr, 0);
 applyArrow([1], thms.anmp, 0);
 thms.anim3 = save();
 
+if (true) {
+    //try with anchor
+    var goal ={Core:[[],[0,[1,0,[0,1,2]],[0,1,[1,0,2]]],[]],
+               Skin:{TermNames:["&rarr;","&and;"]},
+               FreeMaps:[[],[]]};
+        
+    state.work = startWork(goal);
+    state.work = applyFact(
+        state.work, [],
+        sfbm('[[],[0,[0,0,[0,1,2]],[0,[1,0,1],2]],[]];["→","∧","¬"]'), [2],{});
+    Engine.DEBUG(true);
+    UNUSABLE_OK=true; //XXX
+    state.work = applyFact(
+        state.work, [2,2,2],
+        sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧","¬"]'), [2,2],{},[[1]]);
+    state.work = applyFact(state.work, [],
+                           sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+    state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+    //saveGoal(); // [[],[0,[1,0,[0,1,2]],[0,1,[1,0,2]]],[]]
+    checkGoalAndSave(goal);
+    UNUSABLE_OK=false;
+    Engine.DEBUG(false);
+}
 startWith(thms.anim3);
 applyArrow([1,1], thms.ancom, 0);
 applyArrow([1,1], thms.anim3, 0);

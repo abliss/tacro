@@ -432,7 +432,7 @@ function addToShooter(factData, land) {
                 "  sfbm('" + JSON.stringify(fact.Core) + ";" +
                 JSON.stringify(fact.Skin.TermNames) +"'), " +
                 JSON.stringify(state.anchorPath ? [2, argNum] : [argNum]) + ",{}," +
-                JSON.stringify([state.anchorPath]) + ");";
+                JSON.stringify(state.anchorPath ? [state.anchorPath] : []) + ");";
             console.log("XXXX trying step:\n  " + dumpStep);
             var newWork = Engine.applyFact(state.work, state.workPath,
                                            fact,

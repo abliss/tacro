@@ -139,7 +139,7 @@ Error.stackTraceLimit = Infinity;
 
         function checkInvariant(pusp) {
             if (DEBUG) {
-                console.log("Check invariant: " + JSON.stringify(zpath(pusp.tool, pusp.toolPath)));
+                console.log("Check invariant: " + JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
                 console.log("  pusp: ", JSON.stringify(pusp));
             }
             if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
@@ -200,29 +200,44 @@ Error.stackTraceLimit = Infinity;
             if (true || DEBUG) checkInvariant(pusp);
         }
 
-        // TODO PICKUP XXX: applies a single pushUp to a PushUpScratchPad and a
-        // work-in-progress. This should perhaps move inside applyFact.
+        // applies a single pushUp to a PushUpScratchPad and a
+        // work-in-progress. This should perhaps move inside applyFact?  At the
+        // beginning and at the end, our invariant holds: The tool's subexp at
+        // toolPath (subexp A) must always equal the goal's subexp at goalPath
+        // (subexp B). this remains true as we travel up the tree, popping off
+        // the end of goalPath.
         function applyPushUpToPusp(pusp, work) {
-            // Invariant: the tool's subexp at toolPath (subexp A) must always equal
-            // the goal's subexp at goalPath (subexp B). this remains true as we
-            // travel up the tree, popping off the end of goalPath.
             if (true || DEBUG) checkInvariant(pusp);
             // Prefix shared by toolPath and toolAnchorPath
             var toolPathPrefix = [];
             if (pusp.toolAnchorPath != undefined) {
-                toolPathPrefix = pusp.toolPath.slice(0, pusp.toolAnchorPath.length);
+                toolPathPrefix = pusp.toolPath.slice(
+                    0, pusp.toolAnchorPath.length);
+                for (var i = 0; i < pusp.toolAnchorPath.length - 1 ; i++) {
+                    if (pusp.toolPath[i] != pusp.toolAnchorPath[i]) {
+                        throw new Error("anchor must share prefix: " +
+                                        JSON.stringify(pusp));
+                    }
+                }
             }
-            pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[1])));
-            pusp.newSteps.push(zpath(pusp.tool, concatArr(toolPathPrefix,[2])));
+            if (pusp.toolPath[pusp.toolPath.length - 1] != this.toolArg) {
+                throw new Error("Unexpected toolArg: " + this.toolArg +
+                                JSON.stringify(pusp));
+            }
+            pusp.newSteps.push(
+                zpath(pusp.tool, concatArr(toolPathPrefix,[1])));
+            pusp.newSteps.push(
+                zpath(pusp.tool, concatArr(toolPathPrefix,[2])));
 
             pusp.goalPath.pop();
             var goalParent = zpath(pusp.goal, pusp.goalPath);
-            var goalN = work.nameTerm(this.goalArrow.name, this.goalArrow.freeMap);
-            var arr1 = [goalN];
-            var arr2 = [goalN];
+            var goalN = work.nameTerm(this.goalArrow.name, 
+                                      this.goalArrow.freeMap);
+            var arr1 = [goalN]; // This one matches the goalExp
+            var arr2 = [goalN]; // This one will replace the goalExp
             for (var i = 1; i < this.goalArrow.arity; i++) {
                 if (i == this.goalArg) {
-                    arr1.push(zpath(pusp.tool, concatArr(toolPathPrefix, [this.toolArg])));
+                    arr1.push(zpath(pusp.tool, pusp.toolPath));
                     arr2.push(zpath(pusp.tool, concatArr(toolPathPrefix, [3 - this.toolArg])));
                 } else {
                     var arg = goalParent[i];
@@ -240,8 +255,8 @@ Error.stackTraceLimit = Infinity;
             var nextTool = [parentArrowN,
                             this.isCovar ? arr2 : arr1,
                             this.isCovar ? arr1 : arr2];
+            var nextToolArg = this.isCovar ? 2 : 1;
             var axMp = this.axMp;
-            var whichArg = this.isCovar ? 2 : 1;
             if (pusp.toolAnchorPath != undefined) {
                 // If there's an anchor, we need to distribute it over the
                 // parentArrow before we can axMp.
@@ -279,19 +294,18 @@ Error.stackTraceLimit = Infinity;
                 var dstDetacher = scheme.queryDetach(
                     [dstPU.parentArrow.name, dstPU.isCovar? [2] : [1]]); //XXX should be??
                 // TODO: should be able to handle an arbitrary dstDetacher here,
-                // e.g. by recursing this whole thing. for now, assume it's really
-                // ax-mp
+                // e.g. by recursing this whole thing. for now, assume it's
+                // really ax-mp
                 if (dstDetacher.fact.Core[Fact.CORE_HYPS].length != 2) {
                     throw new Error("TODO: handle non-axmp detacher here: "
                                     + JSON.stringify(detacher.fact));
                 }
                 axMp = dstDetacher.fact;
-                whichArg = this.isCovar? 1 : 2; // seems legit
             }
             
             pusp.newSteps.push(nameDep(work, axMp));
             pusp.tool = nextTool;
-            pusp.toolPath = concatArr(toolPathPrefix, [whichArg]);
+            pusp.toolPath = concatArr(toolPathPrefix, [nextToolArg]);
 
             if (true || DEBUG) checkInvariant(pusp);
         }
@@ -907,12 +921,11 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         pusp.toolAnchorPath = factAntecedentPath;
         pusp.goalAnchorPath = anchorPath;
         // invariant: subexp A == subexp B
-        // TODO PICKUP will need to pass anchor info to getPushUps
         var pushUps = getPushUps(work, workPath,
-                                 fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[0],
+                                 fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[factPath.length - 1],
                                  pusp.goalAnchorPath);
         // Now apply the pushups from the bottom up, and finally detach.
-        pushUps.pushUps.forEach(function(pu) {
+        pushUps.pushUps.forEach(function(pu, index) {
             pu.applyToPusp(pusp, work);
         })
         pushUps.detacher.detach(pusp, work);
