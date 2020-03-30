@@ -921,8 +921,11 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         pusp.toolAnchorPath = factAntecedentPath;
         pusp.goalAnchorPath = anchorPath;
         // invariant: subexp A == subexp B
+        var toolOp = work.Skin.TermNames[
+            (zpath(pusp.tool,
+                   factPath.slice(0, factPath.length - 1)))[0]];
         var pushUps = getPushUps(work, workPath,
-                                 fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]], factPath[factPath.length - 1],
+                                 toolOp, factPath[factPath.length - 1],
                                  pusp.goalAnchorPath);
         // Now apply the pushups from the bottom up, and finally detach.
         pushUps.pushUps.forEach(function(pu, index) {
