@@ -1059,7 +1059,7 @@ Engine.DEBUG(false);
   applyArrow([1], thms.defbi2, 0);
   thms.anbi1 = save();
 
-if (true) {
+if (false) {
     // try anbi1 again with anchor, using new distribute
     UNUSABLE_OK=true; //XXX
     var goal = {Core:[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]],

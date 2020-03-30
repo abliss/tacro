@@ -931,7 +931,9 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         pushUps.pushUps.forEach(function(pu, index) {
             pu.applyToPusp(pusp, work);
         })
-        pushUps.detacher.detach(pusp, work);
+        var detachment = pushUps.detacher.detach(pusp.tool, work);
+        pusp.newSteps.push.apply(pusp.newSteps, detachment.newSteps);
+        work.Core[Fact.CORE_HYPS][0] = detachment.result;
         // Now we have a complete pusp, so apply it to the workspace.
 
         // don't delete any steps
@@ -1171,9 +1173,9 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                 fact: fact,
                 op: rarr,
                 argNum: 2,
-                detach: function(pusp, work) {
-                    pusp.newSteps.push(nameDep(work, this.fact));
-                    work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
+                detach: function(tool, work) {
+                    return {newSteps: [nameDep(work, this.fact)],
+                            result: tool[1]};
                 }
             };
             if (!scheme.toolsSeen[rarr]) {
@@ -1191,13 +1193,13 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                     fact: fact,
                     op: harr,
                     argNum: 2,
-                    detach: function(pusp, work) {
-                        pusp.newSteps.push(pusp.tool[1]);
-                        pusp.newSteps.push(pusp.tool[2]);
-                        pusp.newSteps.push(nameDep(work, this.fact));
-                        pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-                        pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-                        work.Core[Fact.CORE_HYPS][0] = pusp.tool[1];
+                    detach: function(tool, work) {
+                        return {newSteps: [tool[1],
+                                           tool[2],
+                                           nameDep(work, this.fact),
+                                           nameDep(work, rarrAxmp.fact),
+                                           nameDep(work, rarrAxmp.fact)],
+                                result: tool[1]};
                     }
                 }
                 if (!scheme.toolsSeen[harr]) {
@@ -1216,13 +1218,13 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                     fact: fact,
                     op: harr,
                     argNum: 1,
-                    detach: function(pusp, work) {
-                        pusp.newSteps.push(pusp.tool[1]);
-                        pusp.newSteps.push(pusp.tool[2]);
-                        pusp.newSteps.push(nameDep(work, this.fact));
-                        pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-                        pusp.newSteps.push(nameDep(work, rarrAxmp.fact));
-                        work.Core[Fact.CORE_HYPS][0] = pusp.tool[2];
+                    detach: function(tool, work) {
+                        return {newSteps: [tool[1],
+                                           tool[2],
+                                           nameDep(work, this.fact),
+                                           nameDep(work, rarrAxmp.fact),
+                                           nameDep(work, rarrAxmp.fact)],
+                                result: tool[2]};
                     }
                 }
                 if (!scheme.toolsSeen[harr]) {
@@ -1255,8 +1257,8 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         }
         if (detacher.fact.Core[Fact.CORE_HYPS].length == 0) {
             // TODO: right now this only works with ->/axmp, but it should work
-            // with anything that can be detached. Detacher.detach() should
-            // return pusp.tool[1] instead of putting it directly into the hyps.
+            // with anything that can be detached. Detacher.detach() now returns
+            // pusp.tool[1] instead of putting it directly into the hyps.
             return;
         }
 
