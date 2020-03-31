@@ -785,9 +785,7 @@ if (true) {
     state.work = startWork(goal);
     if (DEBUG) {console.log("# XXXX Fact now: " + JSON.stringify(thms.conj));}
     if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
-    Engine.DEBUG(true);
     state.work = applyFact(state.work, [2], thms.conj, [2,2], {}, [[1]]);
-    Engine.DEBUG(false);
     state.work = ground(state.work, id);
     checkGoalAndSave(goal);
     if (true) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
@@ -822,10 +820,8 @@ if (true) {
 
     //DEBUG=true;
     state.work = startWork(goal);
-        Engine.DEBUG(true);
     state.work = applyFact(state.work, [2,2],
                            sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧","¬"]'), [2,2],{},[[2,1]]);
-        Engine.DEBUG(false);
 
     state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
     checkGoalAndSave(goal);
@@ -844,10 +840,8 @@ if (true) {
 
     state.work = startWork(goal);
     UNUSABLE_OK=true; //XXX
-    Engine.DEBUG(true);
     state.work = applyFact(state.work, [2,1,1],
                            sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
-    Engine.DEBUG(false);
     checkGoalAndSave(goal);
     UNUSABLE_OK=false;
     DEBUG=false;
@@ -874,7 +868,6 @@ if (true) {
     state.work = applyFact(
         state.work, [],
         sfbm('[[],[0,[0,0,[0,1,2]],[0,[1,0,1],2]],[]];["→","∧","¬"]'), [2],{});
-    Engine.DEBUG(true);
     UNUSABLE_OK=true; //XXX
     state.work = applyFact(
         state.work, [2,2,2],
@@ -885,7 +878,6 @@ if (true) {
     //saveGoal(); // [[],[0,[1,0,[0,1,2]],[0,1,[1,0,2]]],[]]
     checkGoalAndSave(goal);
     UNUSABLE_OK=false;
-    Engine.DEBUG(false);
 }
 startWith(thms.anim3);
 applyArrow([1,1], thms.ancom, 0);
@@ -1027,7 +1019,6 @@ state.work = ground(state.work, id);
 thms.biid = saveGoal();
 
 UNUSABLE_OK=true; //XXX
-Engine.DEBUG(true);
 
 
 startNextGoal();
@@ -1050,16 +1041,15 @@ saveGoal(); // [[],[0,[0,0,[1,1,2]],[1,[0,0,1],[0,0,2]]],[]]
 
 
 UNUSABLE_OK=false;
-Engine.DEBUG(false);
 
-  startWith(thms.defbi1);
+startWith(thms.defbi1);
 
   applyArrow([1,0], thms.anim1, 0);
   applyArrow([1,1], thms.anim1, 0);
   applyArrow([1], thms.defbi2, 0);
   thms.anbi1 = save();
 
-if (false) {
+if (true) {
     // try anbi1 again with anchor, using new distribute
     UNUSABLE_OK=true; //XXX
     var goal = {Core:[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]],
@@ -1072,10 +1062,12 @@ if (false) {
                            sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2],{},[]);
     state.work = applyFact(state.work, [2,1,1,1],
                            sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
+    state.work.verify();
     state.work = applyFact(state.work, [2],
                            sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2],{},[]);
     state.work = applyFact(state.work, [2,1,1],
                            sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1]]);
+
     state.work = applyFact(state.work, [],
                            sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
     state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));

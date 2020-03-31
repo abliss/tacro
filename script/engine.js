@@ -50,7 +50,7 @@ Error.stackTraceLimit = Infinity;
                [A,[T,a,b],
                   [P,[G, ..., a, ... ],
                      [G, ..., b, ... ]]]
-        where A is a detachable arrow having an ax-mp equivalent (usually, -> or <->) exposed through the pushp
+        where A is a detachable arrow having an ax-mp equivalent (usually, -> or <->) exposed through the pushup
         and P is some "parent arrow", often the same as T (but not if crossing a kind boundary, e.g. T is = and G is < and P is <->)
         and g tells which arg of G changes.
         The above example is covariant; in a contravariant example, a and b would
@@ -189,14 +189,17 @@ Error.stackTraceLimit = Infinity;
             if (pusp.toolPath.length != 2 || pusp.toolPath[0] != 2) {
                 throw new Error("TODO: Revisit assumption in next zpath");
             }
-            pusp.tool = [parentArrowN, 
-                         [goalParent[0],
-                          toolAnchor,
-                          zpath(pusp.tool, [2, 3-pusp.toolPath[1]])],
-                         clone(zpath(pusp.goal, pusp.goalPath))];
+            var toolArg = pusp.toolPath[1];
+            var goal = clone(zpath(pusp.goal, pusp.goalPath));
+            var other = [goalParent[0],
+                         toolAnchor,
+                         zpath(pusp.tool, [2, 3-toolArg])];
+            pusp.tool = [parentArrowN, null, null];
+            pusp.tool[toolArg] = goal;
+            pusp.tool[3-toolArg] = other;
             pusp.goalAnchorPath = undefined;
             pusp.toolAnchorPath = undefined;
-            pusp.toolPath = [2]; //XXX should be ???
+            pusp.toolPath = [toolArg];
             if (true || DEBUG) checkInvariant(pusp);
         }
 
@@ -268,42 +271,42 @@ Error.stackTraceLimit = Infinity;
                 }
                 var toolAnchor = zpath(pusp.tool, pusp.toolAnchorPath);
                 var dstGoalOp = work.Skin.TermNames[pusp.tool[0]];
-                // If the anchor is the antecedent, then the thing that changes in
-                // the goal is the consequent.
+                // If the anchor is the antecedent, then the thing that changes
+                // in the goal is the consequent.
                 var dstGoalArg = 3 - pusp.toolAnchorPath[0];
-                var dstToolOp = this.parentArrow.name;
+                var dstToolOp = this.axMp.Skin.TermNames[0]; // XXX should be?
                 var dstToolArg = 2; // XXX Should be ?? 3-pusp.tap[0]
                 var dstPU = scheme.queryPushUp([dstGoalOp, dstGoalArg, dstToolOp, dstToolArg]);
                 if (!dstPU.isCovar) {
                     console.warn("Non-covar dstPU probably won't work.");
                 }
                 // TODO: first step should be ???
-                pusp.newSteps.push(
+                var step1 = 
                     [parentArrowN,
                      zpath(pusp.tool, concatArr(toolPathPrefix,[1])),
-                     zpath(pusp.tool, concatArr(toolPathPrefix,[2]))]);
+                     zpath(pusp.tool, concatArr(toolPathPrefix,[2]))];
+                pusp.newSteps.push(step1);
                 pusp.newSteps.push(nextTool);
                 pusp.newSteps.push(toolAnchor);
                 pusp.newSteps.push(nameDep(work, dstPU.fact));
                 pusp.newSteps.push(nameDep(work, dstPU.axMp));
                 var dstParentArrowN = work.nameTerm(dstPU.parentArrow.name,
                                                     dstPU.parentArrow.freeMap);
-                nextTool = [pusp.tool[0], // XXX Should be??
+                var newNextTool = [pusp.tool[0], // XXX Should be??
                             dstPU.isCovar ? toolAnchor : nextTool,
                             dstPU.isCovar ? nextTool : toolAnchor];
                 var dstDetacher = scheme.queryDetach(
                     [dstPU.parentArrow.name, dstPU.isCovar? [2] : [1]]); //XXX should be??
-                // TODO: should be able to handle an arbitrary dstDetacher here,
-                // e.g. by recursing this whole thing. for now, assume it's
-                // really ax-mp
-                if (dstDetacher.fact.Core[Fact.CORE_HYPS].length != 2) {
-                    throw new Error("TODO: handle non-axmp detacher here: "
-                                    + JSON.stringify(dstDetacher.fact));
-                }
-                axMp = dstDetacher.fact;
+                var topOfStack = [dstParentArrowN, // TODO: should be ?
+                                  [pusp.tool[0],   // TODO: should be ?
+                                   toolAnchor, step1],
+                                  newNextTool];
+                var detached = dstDetacher.detach(topOfStack, work);
+                pusp.newSteps.push.apply(pusp.newSteps, detached.newSteps);
+                nextTool = newNextTool;
+            } else {
+                pusp.newSteps.push(nameDep(work, axMp));
             }
-            
-            pusp.newSteps.push(nameDep(work, axMp));
             pusp.tool = nextTool;
             pusp.toolPath = concatArr(toolPathPrefix, [nextToolArg]);
 
@@ -731,12 +734,16 @@ Error.stackTraceLimit = Infinity;
             var pu;
             if ((goalAnchorPath != undefined) && (workI == goalAnchorPath.length - 1)) {
                 
-                // Now on the stack: A ~ (B > C)
                 // Work has: A ~ B
+                // Now on the stack: A ~ (C > B) if myToolArg is  2, so
+                // Distribute to: (A ~ C) > (A ~ B) and resume pushing
+                // if myToolArg is 1,
+                // Now on the stack: A ~ (B > C)
                 // Distribute to: (A ~ B) > (A ~ C) and resume pushing
                 pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg);
                 anchorArrow = goalOp;
-                myToolArg = 2;
+                console.log("XXXX myToolArg="+myToolArg+" i="+pu.isCovar);
+                myToolArg = pu.isCovar ? myToolArg : 3 - myToolArg;
             } else {
                 pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
                 myToolArg = (pu.isCovar ? 2 : 1);
@@ -1401,9 +1408,10 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             }
         }
         for (var i = 1; i <= 2; i++) {
-            var pushUp = new PushUp(detacher.fact, childArrow, whichArg,
-                                    i, (i == 2 ? isCov : !isCov),
-                                    parentArrow, grease, fact, isDistribute);
+            var pushUp = new PushUp(
+                detacher.fact, childArrow, whichArg, i,
+                (isDistribute || i == 2) ? isCov : !isCov,
+                parentArrow, grease, fact, isDistribute);
             if (isDistribute) {
                 scheme.distributeMemo[[childArrow.name, whichArg, anteArrow, i]] = pushUp;
             } else {
