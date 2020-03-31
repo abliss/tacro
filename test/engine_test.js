@@ -1042,6 +1042,14 @@ saveGoal(); // [[],[0,[0,0,[1,1,2]],[1,[0,0,1],[0,0,2]]],[]]
 
 UNUSABLE_OK=false;
 
+
+  startWith(thms.defbi1);
+  applyArrow([1,0], thms.con3, 0);
+  applyArrow([1,1], thms.con3, 0);
+  applyArrow([1], thms.defbi2, 0);
+  thms.notbi = save();
+//  scheme.setEquivalenceThm(exports.not, 0, thms.notbi);
+
 startWith(thms.defbi1);
 
   applyArrow([1,0], thms.anim1, 0);
@@ -1050,7 +1058,7 @@ startWith(thms.defbi1);
   thms.anbi1 = save();
 
 if (true) {
-    // try anbi1 again with anchor, using new distribute
+    // try anbi1 again with anchor, using new distribute. begs the question.
     UNUSABLE_OK=true; //XXX
     var goal = {Core:[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]],
                 Skin:{TermNames:["&rarr;","&harr;","&and;"]},
@@ -1084,13 +1092,6 @@ if (true) {
   applyArrow([1], thms.defbi2, 0);
   thms.anbi2 = save();
 //  scheme.setEquivalenceThm(exports.and, 1, thms.anbi2);
-
-  startWith(thms.defbi1);
-  applyArrow([1,0], thms.con3, 0);
-  applyArrow([1,1], thms.con3, 0);
-  applyArrow([1], thms.defbi2, 0);
-  thms.notbi = save();
-//  scheme.setEquivalenceThm(exports.not, 0, thms.notbi);
 
   // Level 5
 
