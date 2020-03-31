@@ -1049,7 +1049,6 @@ UNUSABLE_OK=false;
   applyArrow([1], thms.defbi2, 0);
   thms.notbi = save();
 //  scheme.setEquivalenceThm(exports.not, 0, thms.notbi);
-
 startWith(thms.defbi1);
 
   applyArrow([1,0], thms.anim1, 0);
@@ -1093,7 +1092,8 @@ if (true) {
   thms.anbi2 = save();
 //  scheme.setEquivalenceThm(exports.and, 1, thms.anbi2);
 
-  // Level 5
+
+// Level 5
 
   startWith(thms.bi1);
   applyArrow([], thms.ancr, 0);
@@ -1222,6 +1222,12 @@ applyArrow([],"harr_rarr_A_rarr_B_C_rarr_and_A_B_C",0)
 //saveAs("rarr_and_harr_A_B_harr_A_C_harr_B_C") //undefined
 save();
 
+startWith("harr_harr_A_B_and_rarr_A_B_rarr_B_A")
+applyArrow([1,0],"harr_rarr_A_B_rarr_not_B_not_A",0)
+applyArrow([1,1],"harr_rarr_A_B_rarr_not_B_not_A",0)
+applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
+//saveAs("harr_harr_A_B_harr_not_B_not_A") //undefined
+save();
 
 var landOr = getLand("../data/land_04_or.js");
 
@@ -1371,12 +1377,6 @@ applyArrow([],"rarr_rarr_rarr_A_A_B_B",0)
 save();
 
 
-startWith("harr_harr_A_B_and_rarr_A_B_rarr_B_A")
-applyArrow([1,0],"harr_rarr_A_B_rarr_not_B_not_A",0)
-applyArrow([1,1],"harr_rarr_A_B_rarr_not_B_not_A",0)
-applyArrow([1],"harr_harr_A_B_and_rarr_A_B_rarr_B_A",1)
-//saveAs("harr_harr_A_B_harr_not_B_not_A") //undefined
-save();
 
 
 startWith("rarr_forall_z_harr_A_B_harr_forall_z_A_forall_z_B")
