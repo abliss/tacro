@@ -1407,6 +1407,17 @@ applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
 //saveAs("rarr_rarr_forall_z_rarr_A_A_B_B") //undefined
 save();
 
+startNextGoal();
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [2],{},[]);
+state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
+saveGoal(); // [[],[0,0,[1,[2,1,[2,2,[0,3,[3,4,4]]]],0]],[]]
+
+
 var landExist = getLand("../data/land_06_exist.js");
 startNextGoal();
 state.work = ground(state.work, thms.biid);
