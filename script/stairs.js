@@ -357,10 +357,11 @@ function addToShooter(factData, land) {
             box.className += " shooter";
             box.onclick = function() {
                 var varMap = box.tree.getVarMap(state.work);
-                var newWork = Engine.applyInference(state.work, fact, varMap);
                 var dumpStep = "state.work = Engine.applyInference(state.work, " +
                     "    sfbm('" + JSON.stringify(fact.Core) + ";" +
                     JSON.stringify(fact.Skin.TermNames) +"'));";
+                console.log("XXXX trying step:\n  " + dumpStep);
+                var newWork = Engine.applyInference(state.work, fact, varMap);
                 message("");
                 state.url = "";
                 setWorkPath([]);

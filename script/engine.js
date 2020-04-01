@@ -280,11 +280,7 @@ Error.stackTraceLimit = Infinity;
                 if (!dstPU.isCovar) {
                     console.warn("Non-covar dstPU probably won't work.");
                 }
-                // TODO: first step should be ???
-                var step1 = 
-                    [parentArrowN,
-                     zpath(pusp.tool, concatArr(toolPathPrefix,[1])),
-                     zpath(pusp.tool, concatArr(toolPathPrefix,[2]))];
+                var step1 = zpath(pusp.tool, toolPathPrefix);
                 pusp.newSteps.push(step1);
                 pusp.newSteps.push(nextTool);
                 pusp.newSteps.push(toolAnchor);
@@ -881,7 +877,6 @@ Error.stackTraceLimit = Infinity;
             factAntecedentPath = [3 - factPath[0]];
             optVarMap = getMandHyps(work, anchorPath, fact, factAntecedentPath,
                                     optVarMap);
-            // PICKUP: augment PushUpScratchPad and getPushUps with anchor logic
         }
         /**
          * XXX Worked example of an anchor:

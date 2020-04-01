@@ -2343,6 +2343,33 @@ state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
 thms.zeroadd = saveGoal(); // [[],[0,[1,[2],0],0],[]]
 */
 
+if (true) {
+    // 0plusa.1 with anchors
+    UNUSABLE_OK=true; //XXX
+
+    var goal =         {"Core":[[],[0,0,[1,
+                          [2,1,[2,2,[0,[3,3,4],[4,
+                                                [3,[5,[6],3],3],
+                                                [3,[5,[6],4],4]]]]],
+                          0]],[]],
+                        "Skin":{"TermNames":["&rarr;","&and;","&forall;","&equals;","&harr;","&plus;","&Oslash;"]},         
+                        "FreeMaps":[[],[],[[]],[],[],[],[]]};
+    state.work = startWork(goal);
+    state.work = applyFact(state.work, [2,1,2,2,2,1,1,2],
+                           sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,1,2,2,1]]);
+    state.work = applyFact(state.work, [2,1,2,2,2,1,2],
+                           sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,1,2,2,1]]);
+    state.work = applyFact(state.work, [],
+                           sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [2],{},[]);
+    state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+    state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+    state.work = applyFact(state.work, [],
+                           sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+    state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["&harr;"]'));
+    checkGoalAndSave(goal);
+    UNUSABLE_OK=false;
+}
+
 console.log("proved " + proofCtx.length() + " thms.");
 
 // ==== Verify ====
