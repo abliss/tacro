@@ -738,7 +738,6 @@ Error.stackTraceLimit = Infinity;
                 // Distribute to: (A ~ B) > (A ~ C) and resume pushing
                 pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg);
                 anchorArrow = goalOp;
-                console.log("XXXX myToolArg="+myToolArg+" i="+pu.isCovar);
                 myToolArg = pu.isCovar ? myToolArg : 3 - myToolArg;
             } else {
                 pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
@@ -1341,7 +1340,9 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                     return;
                 }
                 isDistribute = true;
-                console.log("Discovered distribute? " + JSON.stringify(fact));
+                if (DEBUG){
+                    console.log("Discovered distribute? " + JSON.stringify(fact));
+                }
                 anteArrow = terms[stmt[1][2][0]];
                 anteArg1 = 1;
                 anteArg2 = 2;
@@ -1390,7 +1391,7 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                 }
             }
         }
-        if (true) {
+        if (DEBUG) {
             console.log("Discovered pushup: " + JSON.stringify([childArrow.name, whichArg, anteArrow, "*"]) +
                         " child=" + childArrow.name + "/" + whichArg + 
                         " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark()));
