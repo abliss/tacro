@@ -2595,7 +2595,52 @@ state.work = applyFact(state.work, [2],
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
 saveGoal(); // [[],[0,[1,0,1],[1,1,0]],[]]
 
-
+startNextGoal();
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,[2,0,[0,[3,0,1],[0,2,3]]],[2,0,2]],3],[[1,0],[3,0]]];["→","∧","∀","="]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2,2,1,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1,2,1]]);
+state.work = applyFact(state.work, [1,2,2,2,2,2,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1,2,1]]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,0,[1,[2,1,[0,[3,1,2],[0,3,3]]],0]],[]];["→","∧","∀","="]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,[2,0,[0,[3,0,[4]],1]],[2,2,[0,[2,0,[0,[3,0,2],1]],[2,0,[0,[3,0,[5,2]],1]]]]],[2,0,1]],[[1,2]]];["→","∧","∀","=","Ø","§"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2,1,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1,2,1]]);
+state.work = applyFact(state.work, [1,2,2,2,2,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1,2,1]]);
+state.work = applyFact(state.work, [2,2,1,2,2,1,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,1,2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,2,1,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,2,2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,2,2,2,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,2,2,1]]);
+state.work = applyFact(state.work, [2,2,1,2,2,2,2,2],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,1,2,1]]);
+state.work = applyFact(state.work, [1],
+                       sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","="]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,1],
+                       sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","="]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,2],
+                       sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","="]'), [1],{},[]);
+state.work = applyFact(state.work, [1,1],
+                       sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
+state.work = applyFact(state.work, [1,2,2],
+                       sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
+state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,2],
+                       sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2],
+                       sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
+state.work = applyFact(state.work, [2],
+                       sfbm('[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]];["→","=","§"]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]]
 
 // next up: addass, addcan, a1suc,
 // df-le, leid, leeq*, letrans, zerole, leantisym, leor, lesucc, leadd*, sind,
