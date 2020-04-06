@@ -2311,173 +2311,115 @@ state.work = applyFact(state.work, [],
                        sfbm('[[],[0,[1,0,1],[0,[1,2,3],[1,[2,0,2],[2,1,3]]]],[]];["&rarr;","&equals;","&plus;"]'),
                        [2]);
 state.work = ground(state.work, "equals_A_A");
-saveGoal();
+saveGoal(); // [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]],
+
+if (true) {
+    // some ancient approach to addass inherited from orcat
+    // NOTE: can't stop here or plus infers binding
+    //generify()
+    //saveAs("forall_z_rarr_equals_z_a_equals_plus_Oslash_z_plus_Oslash_a") //undefined
+
+    startWith("equals_a_a")
+    applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
+    applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+    applyArrow([1],"rarr_harr_A_B_rarr_B_A",0)
+    applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_rarr_A_B_rarr_A_C",0)
+    saveAs("rarr_rarr_equals_a_Oslash_equals_plus_Oslash_Oslash_a_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
+
+    startWith("rarr_rarr_equals_a_Oslash_equals_plus_Oslash_Oslash_a_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
+    applyArrow([0,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
+    applyArrow([0,0],"rarr_harr_A_B_rarr_B_A",0)
+    applyArrow([0],"rarr_A_rarr_rarr_A_B_B",1)
+    saveAs("rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
 
 
-// NOTE: can't stop here or plus infers binding
-//generify()
-//saveAs("forall_z_rarr_equals_z_a_equals_plus_Oslash_z_plus_Oslash_a") //undefined
-
-startWith("equals_a_a")
-applyArrow([],"rarr_equals_a_b_rarr_equals_c_d_equals_plus_a_c_plus_b_d",0)
-applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
-applyArrow([1],"rarr_harr_A_B_rarr_B_A",0)
-applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_rarr_A_B_rarr_A_C",0)
-saveAs("rarr_rarr_equals_a_Oslash_equals_plus_Oslash_Oslash_a_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
-
-startWith("rarr_rarr_equals_a_Oslash_equals_plus_Oslash_Oslash_a_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
-applyArrow([0,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
-applyArrow([0,0],"rarr_harr_A_B_rarr_B_A",0)
-applyArrow([0],"rarr_A_rarr_rarr_A_B_B",1)
-saveAs("rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a") //undefined
+    startWith("equals_plus_a_Oslash_a")
+    applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a",0)
+    generify()
+    applyArrow([],"_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A",0)
+    var tmp = saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
 
 
-startWith("equals_plus_a_Oslash_a")
-applyArrow([],"rarr_equals_plus_Oslash_Oslash_Oslash_rarr_equals_a_Oslash_equals_plus_Oslash_a_a",0)
-generify()
-applyArrow([],"_dv_A_y___rarr_forall_z_rarr_equals_z_Oslash_A_rarr_forall_y_rarr_forall_z_rarr_equals_z_y_A_forall_z_rarr_equals_z_sect_y_A_forall_z_A",0)
-var tmp = saveAs("rarr_forall_z_rarr_forall_y_rarr_equals_y_z_equals_plus_Oslash_y_y_forall_y_rarr_equals_y_sect_z_equals_plus_Oslash_y_y_forall_y_equals_plus_Oslash_y_y") //undefined
+    startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+    applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+    applyArrow([1],"rarr_harr_A_B_rarr_B_A",0)
+    applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+    saveAs("rarr_equals_plus_Oslash_sect_a_b_rarr_equals_c_sect_a_equals_plus_Oslash_c_b") //undefined
+
+    startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+    applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
+    applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
+    applyArrow([1,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
+    applyArrow([1,0],"rarr_harr_A_B_harr_harr_C_A_harr_C_B",0)
+    applyArrow([1,0],"rarr_harr_A_B_rarr_A_B",0)
+    applyArrow([1],"harr_and_A_B_and_B_A",0)
+    applyArrow([1],"rarr_and_A_rarr_A_B_B",0)
+    saveAs("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b") //undefined
+
+    startWith("rarr_equals_a_b_equals_sect_a_sect_b")
+    applyArrow([1],"rarr_equals_a_b_rarr_equals_a_c_equals_c_b",0)
+    applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
+    applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+    saveAs("rarr_equals_a_sect_plus_Oslash_b_rarr_equals_plus_Oslash_b_b_equals_a_sect_b") //undefined
+
+    startWith("equals_plus_a_sect_b_sect_plus_a_b")
+    applyArrow([],"rarr_equals_a_sect_plus_Oslash_b_rarr_equals_plus_Oslash_b_b_equals_a_sect_b",0)
+    saveAs("rarr_equals_plus_Oslash_a_a_equals_plus_Oslash_sect_a_sect_a") //undefined
+
+    startWith("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b")
+    applyArrow([1],"rarr_harr_A_B_rarr_A_B",0)
+    applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
+    saveAs("rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b") //undefined
 
 
-startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
-applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
-applyArrow([1],"rarr_harr_A_B_rarr_B_A",0)
-applyArrow([],"rarr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
-saveAs("rarr_equals_plus_Oslash_sect_a_b_rarr_equals_c_sect_a_equals_plus_Oslash_c_b") //undefined
-
-startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
-applyArrow([1],"rarr_equals_a_b_harr_equals_a_c_equals_b_c",0)
-applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
-applyArrow([1,0],"rarr_equals_a_b_harr_equals_c_a_equals_c_b",0)
-applyArrow([1,0],"rarr_harr_A_B_harr_harr_C_A_harr_C_B",0)
-applyArrow([1,0],"rarr_harr_A_B_rarr_A_B",0)
-applyArrow([1],"harr_and_A_B_and_B_A",0)
-applyArrow([1],"rarr_and_A_rarr_A_B_B",0)
-saveAs("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b") //undefined
-
-startWith("rarr_equals_a_b_equals_sect_a_sect_b")
-applyArrow([1],"rarr_equals_a_b_rarr_equals_a_c_equals_c_b",0)
-applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
-applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
-saveAs("rarr_equals_a_sect_plus_Oslash_b_rarr_equals_plus_Oslash_b_b_equals_a_sect_b") //undefined
-
-startWith("equals_plus_a_sect_b_sect_plus_a_b")
-applyArrow([],"rarr_equals_a_sect_plus_Oslash_b_rarr_equals_plus_Oslash_b_b_equals_a_sect_b",0)
-saveAs("rarr_equals_plus_Oslash_a_a_equals_plus_Oslash_sect_a_sect_a") //undefined
-
-startWith("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b")
-applyArrow([1],"rarr_harr_A_B_rarr_A_B",0)
-applyArrow([],"harr_rarr_A_rarr_B_C_rarr_B_rarr_A_C",0)
-saveAs("rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b") //undefined
-
-
-startWith("rarr_equals_plus_Oslash_a_a_equals_plus_Oslash_sect_a_sect_a")
-applyArrow([1],"rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b",0)
-applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
-generify()
-applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
-applyArrow([0],"_dv_A_z___rarr_A_forall_z_A",1)
-saveAs("_dv_a_z___rarr_equals_plus_Oslash_a_a_forall_z_rarr_equals_z_sect_a_equals_plus_Oslash_z_z") //undefined
+    startWith("rarr_equals_plus_Oslash_a_a_equals_plus_Oslash_sect_a_sect_a")
+    applyArrow([1],"rarr_equals_plus_Oslash_a_a_rarr_equals_a_b_equals_plus_Oslash_b_b",0)
+    applyArrow([1,0],"harr_equals_a_b_equals_b_a",0)
+    generify()
+    applyArrow([],"rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B",0)
+    applyArrow([0],"_dv_A_z___rarr_A_forall_z_A",1)
+    saveAs("_dv_a_z___rarr_equals_plus_Oslash_a_a_forall_z_rarr_equals_z_sect_a_equals_plus_Oslash_z_z") //undefined
 
 
 
-startWith("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b")
-generify()
-generify()
-applyArrow([],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B",0)
-saveAs("harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y") //undefined
+    startWith("rarr_equals_a_b_harr_equals_plus_Oslash_a_a_equals_plus_Oslash_b_b")
+    generify()
+    generify()
+    applyArrow([],"_dv_A_y_B_z___rarr_forall_z_forall_y_rarr_equals_z_y_harr_A_B_harr_exist_z_A_exist_y_B",0)
+    saveAs("harr_exist_z_equals_plus_Oslash_z_z_exist_y_equals_plus_Oslash_y_y") //undefined
 
 
-startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
-applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
-applyArrow([1,0],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
-applyArrow([1,1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
-applyArrow([1],"rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d",0)
-generify()
-generify()
-applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
-saveAs("rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A") //undefined
+    startWith("rarr_equals_a_b_equals_plus_c_a_plus_c_b")
+    applyArrow([],"rarr_rarr_A_B_rarr_A_and_A_B",0)
+    applyArrow([1,0],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
+    applyArrow([1,1],"rarr_equals_a_b_equals_plus_c_a_plus_c_b",0)
+    applyArrow([1],"rarr_and_equals_a_b_equals_c_d_harr_equals_a_c_equals_b_d",0)
+    generify()
+    generify()
+    applyArrow([],"rarr_A_rarr_rarr_A_B_B",0)
+    saveAs("rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A") //undefined
 
-startWith("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E")
+    startWith("_dv_A_z_B_y_C_y_D_y_E_y_a_y___rarr_forall_z_forall_y_rarr_equals_y_Oslash_harr_A_B_rarr_forall_z_forall_y_rarr_equals_y_z_harr_A_C_rarr_forall_z_forall_y_rarr_equals_y_sect_z_harr_A_D_rarr_forall_z_forall_y_rarr_equals_y_a_harr_A_E_rarr_B_rarr_forall_z_rarr_C_D_E")
 
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
-applyArrow([0,0],"equals_plus_a_Oslash_a",0)
-applyArrow([0,1,1],"equals_plus_a_Oslash_a",0)
-addSpecify([1,2], "&plus;", 2, []);
-applyArrow([],"rarr_rarr_equals_a_a_A_A",0)
-applyArrow([0,1,1,0],"equals_plus_a_sect_b_sect_plus_a_b",0)
-applyArrow([0,1,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
-applyArrow([0,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
-applyArrow([0,1,1],"rarr_equals_a_b_equals_sect_a_sect_b",1)
-applyArrow([],"rarr_rarr_forall_z_rarr_A_A_B_B",0)
-saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
+    applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+    applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+    applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+    applyArrow([],"rarr_rarr_forall_z_forall_y_rarr_equals_a_b_harr_equals_plus_plus_c_d_a_plus_c_plus_d_a_equals_plus_plus_c_d_b_plus_c_plus_d_b_A_A",0)
+    applyArrow([0,0],"equals_plus_a_Oslash_a",0)
+    applyArrow([0,1,1],"equals_plus_a_Oslash_a",0)
+    addSpecify([1,2], "&plus;", 2, []);
+    applyArrow([],"rarr_rarr_equals_a_a_A_A",0)
+    applyArrow([0,1,1,0],"equals_plus_a_sect_b_sect_plus_a_b",0)
+    applyArrow([0,1,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
+    applyArrow([0,1,1,1],"equals_plus_a_sect_b_sect_plus_a_b",0)
+    applyArrow([0,1,1],"rarr_equals_a_b_equals_sect_a_sect_b",1)
+    applyArrow([],"rarr_rarr_forall_z_rarr_A_A_B_B",0)
+    saveAs("equals_plus_plus_a_b_c_plus_a_plus_b_c") //undefined
 
-  //
-  // ==== END import from orcat_test.js ====
-  //
-
-// Now let's redo goals the tacro way.
-/*
- startNextGoal();
-state.work = applyFact(state.work, [2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [2]);
-state.work = applyFact(state.work, [1,2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [2]);
-state.work = applyFact(state.work, [1,1],
-  sfbm('[[],[0,[1,0,1,2],2],[[2,0]]];["=","∫∫"]'), [2]);
-state.work = applyFact(state.work, [1],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]];["=","∫∫","+"]'), [2]);
-state.work = applyFact(state.work, [],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[3,0,1,2],[3,0,1,3]]],[]];["↔","∫","=","∫∫"]'), [2]);
-state.work = applyFact(state.work, [],
-  sfbm('[[],[0,[1,[2,0,[3],1],[4,2,[0,[2,0,2,1],[2,0,[5,2],1]]]],[2,0,3,1]],[[1,2]]];["→","∧","∫","Ø","∀","§"]'), [2]);
-state.work = applyFact(state.work, [1],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[3,0,1,2],[3,0,1,3]]],[]];["↔","∫","=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,2],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[3,0,1,2],[3,0,1,3]]],[]];["↔","∫","=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,1],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[3,0,1,2],[3,0,1,3]]],[]];["↔","∫","=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [1,2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,1,2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,2,2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [1,1],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]];["=","∫∫","+"]'), [1]);
-state.work = applyFact(state.work, [2,2,1,1],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]];["=","∫∫","+"]'), [1]);
-state.work = applyFact(state.work, [2,2,2,1],
-  sfbm('[[],[0,[1,0,1,[2,2,3]],[2,[1,0,1,2],[1,0,1,3]]],[]];["=","∫∫","+"]'), [1]);
-state.work = applyFact(state.work, [1,1,1],
-  sfbm('[[],[0,[1,0,1,2],2],[[2,0]]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [1,1,2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,1,1,1],
-  sfbm('[[],[0,[1,0,1,2],2],[[2,0]]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,1,1,2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,2,1,1],
-  sfbm('[[],[0,[1,0,1,2],2],[[2,0]]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [2,2,2,1,2],
-  sfbm('[[],[0,[1,0,1,0],1],[]];["=","∫∫"]'), [1]);
-state.work = applyFact(state.work, [1,1],
-  sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1]);
-state.work = applyFact(state.work, [1],
-  sfbm('[[],[0,[0,[1,0,0],1],1],[]];["→","="]'), [2]);
-state.work = applyFact(state.work, [],
-  sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
-state.work = applyFact(state.work, [2,1],
-  sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1]);
-state.work = applyFact(state.work, [2],
-  sfbm('[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]];["→","=","§"]'), [2]);
-state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
-thms.zeroadd = saveGoal(); // [[],[0,[1,[2],0],0],[]]
-*/
+    //
+    // ==== END import from orcat_test.js ====
+    //
+}
 
 if (true) {
     // 0plusa.1 with anchors
@@ -2507,13 +2449,22 @@ if (true) {
 }
 
 
-UNUSABLE_OK=true;;
+UNUSABLE_OK=true;
+
+startNextGoal();
+state.work = applyFact(state.work, [1],
+                       sfbm('[[],[0,[1,0,1],[0,[1,2,3],[1,[2,0,2],[2,1,3]]]],[]];["→","=","+"]'), [1],{},[]);
+state.work = applyFact(state.work, [1],
+                       sfbm('[[],[0,[0,[1,0,0],1],1],[]];["→","="]'), [1],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]]state.work = applyFact(state.work, [],
+
+startNextGoal(); 
+state.goal++; // skip sbblus
+
 // zeroplus with no lemma, using anchors
 
-var goal = {Core:[[],[0,[1,[2],0],0],[]],
-            Skin:{TermNames:["&equals;","&plus;","&Oslash;"]},
-            FreeMaps:[[],[],[]]};
-state.work = startWork(goal);
+startNextGoal();
 
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[1,[2,0,[0,[3,0,1],[0,2,3]]],[2,0,2]],3],[[1,0],[3,0]]];["→","∧","∀","="]'), [2],{},[]);
@@ -2553,8 +2504,113 @@ state.work = applyFact(state.work, [2,1],
 state.work = applyFact(state.work, [2],
   sfbm('[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]];["→","=","§"]'), [2],{},[]);
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
-//saveGoal(); // [[],[0,[1,[2],0],0],[]]
-    checkGoalAndSave(goal);
+saveGoal(); // [[],[0,[1,[2],0],0],[]]
+    //checkGoalAndSave(goal);
+
+//addcom with anchored in-place double induction
+startNextGoal();
+
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,[0,[3,0,1],[0,2,3]]],[2,0,2]],3],[[1,0],[3,0]]];["→","∧","∀","="]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2,2,1,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1,2,1]]);
+state.work = applyFact(state.work, [1,2,2,2,2,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1,2,1]]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[2,1,[0,[3,1,2],[0,3,3]]],0]],[]];["→","∧","∀","="]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,[0,[3,0,[4]],1]],[2,2,[0,[2,0,[0,[3,0,2],1]],[2,0,[0,[3,0,[5,2]],1]]]]],[2,0,1]],[[1,2]]];["→","∧","∀","=","Ø","§"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2,1,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1,2,1]]);
+state.work = applyFact(state.work, [1,2,2,2,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1,2,1]]);
+state.work = applyFact(state.work, [2,2,1,2,2,1,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,1,2,1]]);
+state.work = applyFact(state.work, [2,2,1,2,2,2,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,1,2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,2,1,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,2,2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,2,2,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,2,2,1]]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","=","∃","∧"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","=","∃","∧"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","=","∃","∧"]'), [1],{},[]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,[2],0],0],[]];["=","+","Ø","§","→","∀","∧","↔"]'), [1],{},[]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
+state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1]]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,[0,[3,0,1],[0,2,3]]],[2,0,2]],3],[[1,0],[3,0]]];["→","∧","∀","="]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1,2,1]]);
+state.work = applyFact(state.work, [1,2,2,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[1,2,1]]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,0,[1,[2,1,[0,[3,1,2],[0,3,3]]],0]],[]];["→","∧","∀","="]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,[0,[3,0,[4]],1]],[2,2,[0,[2,0,[0,[3,0,2],1]],[2,0,[0,[3,0,[5,2]],1]]]]],[2,0,1]],[[1,2]]];["→","∧","∀","=","Ø","§"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1,2,1]]);
+state.work = applyFact(state.work, [1,2,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1,2,1]]);
+state.work = applyFact(state.work, [2,2,1,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,1,2,1]]);
+state.work = applyFact(state.work, [2,2,1,2,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,1,2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,2,2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,2,2,1,2],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,2,2,1]]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","=","∃","∧"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,1],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","=","∃","∧"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,2],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","=","∃","∧"]'), [1],{},[]);
+state.work = applyFact(state.work, [1,1],
+  sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
+state.work = applyFact(state.work, [1,2,1],
+  sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
+state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = applyFact(state.work, [2,2,1],
+  sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,1],
+  sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]];["→","=","§"]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[1,1,0]],[]]
+
+
+
+// next up: addass, addcan, a1suc,
+// df-le, leid, leeq*, letrans, zerole, leantisym, leor, lesucc, leadd*, sind,
+// mulzero, mul1, mulcom, mulass, distribute, mulcan, lemul2, 
+// df-divides, df-prime, df-relprim, relprimex
+// df-mod,
+// df-op, opth, df-head, df-tail
+// df-eu,
+// df-fun,
+// df-min,
+// df-lincom, df-gcd,
+// df-div
+// df-beta, beta, recursive
+// df-exp
+
 
 
 console.log("proved " + proofCtx.length() + " thms.");
