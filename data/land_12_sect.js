@@ -16,6 +16,9 @@
          FreeMaps:[[],[[]],[],[],[]]},
     ],
     goals:[
+        {Core:[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]],
+         Skin:{TermNames:["&harr;","&equals;","&sect;"]},
+         FreeMaps:[[],[],[]]},
         {Core:[[],[0,[1,0,1,[2,2]],[2,[1,0,1,2]]],[]],
          Skin:{Name: "sbbsuc", 
                TermNames:["&equals;", "&int;&int;", "&sect;"]},
