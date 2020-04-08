@@ -2642,6 +2642,12 @@ state.work = applyFact(state.work, [2],
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
 saveGoal(); // [[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]]
 
+/*
+function p() { 
+jq -c '{Core, Skin:.Skin | {Name,TermNames}, FreeMaps}' | sed 's/"<->"/"\&harr;"/; s/"="/"\&equals;"/; s/"+"/"\&plus;"/; s/"0"/"\&Oslash;"/; s/"->"/"\&rarr;"/; s/"S"/"\&sect;"/; s/"E."/"\&exist;"/; s/"A."/"\&forall;"/; s/"<="/"\&le;"/; s/"-."/"\&not;"/; s@"/\\\\"@"\&and;"@; s@"\\\\/"@"\&or;"@'
+}
+
+*/
 // next up: addass, addcan, a1suc,
 // df-le, leid, leeq*, letrans, zerole, leantisym, leor, lesucc, leadd*, sind,
 // mulzero, mul1, mulcom, mulass, distribute, mulcan, lemul2, 
