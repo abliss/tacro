@@ -2725,8 +2725,44 @@ state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"
 state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["&harr;"]'));
 saveGoal(); // [[],[0,[1,0],[2,0,[1,[3]]]],[]]
-//XX
 
+startNextGoal();
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤","→","∀"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2],
+                       sfbm('[[],[0,[1,[2],0],0],[]];["=","+","Ø"]'), [2],{},[]);
+state.work = applyFact(state.work, [2],
+                       sfbm('[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]];["→","=","+"]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1],0],[]]
+
+startNextGoal();
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤","→","∀"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2],
+                       sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [2],{},[]);
+state.work = applyFact(state.work, [2],
+                       sfbm('[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]];["→","=","+"]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,0,0],[]]
+
+startNextGoal();
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤","→","∀"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2],
+                       sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤","→","∀"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,1,2,1,1],
+                       sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["&harr;"]'));
+saveGoal(); // [[],[0,0,0],[]]
+
+//X
 /*
 function p() { 
 jq -c '{Core, Skin:.Skin | {Name,TermNames}, FreeMaps}' | sed 's/"<->"/"\&harr;"/; s/"="/"\&equals;"/; s/"+"/"\&plus;"/; s/"0"/"\&Oslash;"/; s/"->"/"\&rarr;"/; s/"S"/"\&sect;"/; s/"E."/"\&exist;"/; s/"A."/"\&forall;"/; s/"<="/"\&le;"/; s/"-."/"\&not;"/; s@"/\\\\"@"\&and;"@; s@"\\\\/"@"\&or;"@'
