@@ -1,7 +1,7 @@
 (function(module) {
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
-    var OFFLINE = true;
+    var OFFLINE = false;
     var FB_URL = "https://tacro.firebaseio.com/tacroV001";
     var nextTick;
     var offlineEnabled = false;
