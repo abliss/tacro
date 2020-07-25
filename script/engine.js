@@ -280,6 +280,9 @@ Error.stackTraceLimit = Infinity;
                 if (!dstPU.isCovar) {
                     console.warn("Non-covar dstPU probably won't work.");
                 }
+                if (dstPU.grease) {
+                    throw new Error("TODO handle greased dstPU");
+                }
                 var step1 = zpath(pusp.tool, toolPathPrefix);
                 pusp.newSteps.push(step1);
                 pusp.newSteps.push(nextTool);
@@ -737,10 +740,17 @@ Error.stackTraceLimit = Infinity;
                 // Now on the stack: A ~ (B > C)
                 // Distribute to: (A ~ B) > (A ~ C) and resume pushing
                 pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg);
+                if (pu.grease) {
+                    throw new Error("TODO: handle greased distribute");
+                }
                 anchorArrow = goalOp;
                 myToolArg = pu.isCovar ? myToolArg : 3 - myToolArg;
             } else {
                 pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
+                if (DEBUG && (JSON.stringify([goalOp, goalArg, myToolOp, myToolArg]) ==
+                              '["&exist;",2,"&harr;",1]')) {
+                    console.log("XXXX Found distribute: " + (pu.grease ? 1 : 0));
+                }
                 myToolArg = (pu.isCovar ? 2 : 1);
             }
             pushUps.push(pu);
@@ -1404,6 +1414,13 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             }
         }
         for (var i = 1; i <= 2; i++) {
+            if (JSON.stringify([childArrow.name, whichArg, anteArrow, i]) ==
+                '["&exist;",2,"&harr;",1]') {
+                console.log("Discovered pushup: " + JSON.stringify([childArrow.name, whichArg, anteArrow, "*"]) +
+                        " child=" + childArrow.name + "/" + whichArg + 
+                            " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark())
+                           + " grease=" + grease);
+            }
             var pushUp = new PushUp(
                 detacher.fact, childArrow, whichArg, i,
                 (isDistribute || i == 2) ? isCov : !isCov,
