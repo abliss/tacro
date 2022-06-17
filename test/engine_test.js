@@ -2758,13 +2758,22 @@ state.work = applyFact(state.work, [2,2],
 
 state.work = applyFact(state.work, [2,1,2,1,1],
                        sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
-
-state.work.verify();
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
-state.work.verify();
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["&harr;"]'));
-saveGoal(); // [[],[0,0,0],[]]
+saveGoal(); // [[],[0,[1,0,1],[2,[3,0,2],[3,1,2]]],[]]
+
+startNextGoal();
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,1,2],
+                       sfbm('[[],[0,[1,0,1],[2,[1,2,0],[1,2,1]]],[]];["→","=","↔"]'), [2,1],{},[[1]]);
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤"]'), [1],{},[]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
+saveGoal(); // [[],[0,[1,0,1],[2,[3,2,0],[3,2,1]]],[]]
 
 //X
 /*
