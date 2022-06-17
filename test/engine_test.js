@@ -2841,6 +2841,17 @@ state.work = applyFact(state.work, [2],
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
 saveGoal(); // [[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]]
 
+startNextGoal();
+state.work = applyFact(state.work, [2,1],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["=","+"]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["=","+"]'), [1],{},[]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]];["↔","≤","+","∃","=","→","∀"]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
+saveGoal(); // [[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]]
+
+
 //X
 /*
 function p() { 
