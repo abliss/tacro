@@ -2755,10 +2755,10 @@ state.work = applyFact(state.work, [2,1],
                        sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤","→","∀"]'), [2],{},[]);
 state.work = applyFact(state.work, [2,2],
                        sfbm('[[],[0,[1,0,[2,[3,1,0],2]],[4,1,2]],[[1,0],[2,0]]];["↔","∃","=","+","≤","→","∀"]'), [2],{},[]);
-Engine.DEBUG(true);
+
 state.work = applyFact(state.work, [2,1,2,1,1],
                        sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1]]);
-console.log("XXXX work now: " + JSON.stringify(state.work));
+
 state.work.verify();
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);

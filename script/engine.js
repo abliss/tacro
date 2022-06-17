@@ -40,6 +40,7 @@ Error.stackTraceLimit = Infinity;
         greaseMemo : {},
         distributeMemo: {},
         toolsSeen: {},
+        factsByMark:{},
         halfQueryPushUp: function(goalOp, goalArgNum) {
             var r = this.pushUpHalfMemo[[goalOp, goalArgNum]];
             return r || {};
@@ -55,6 +56,7 @@ Error.stackTraceLimit = Infinity;
         and g tells which arg of G changes.
         The above example is covariant; in a contravariant example, a and b would
         switch order in the consequent.
+        It's also possible that [T,a,b] is actually [Forall,x, [T,a,b]] if there is a known ax-gen to "grease" the wheels.
         */
         queryPushUp:  function(query) { // [goalOp, goalArgNum, toolOp, toolArgNum]
             var pushUp = this.pushUpMemo[query];
@@ -84,7 +86,7 @@ Error.stackTraceLimit = Infinity;
          * @param gOp: which op maps to G
          * @param gArg: which arg of G varies in the consequent
          * @param uOp: which op maps to U
-         * @param uArg: ???
+         * @param uArg: ignored???
          *
          *  TODO: support more than binary? Support mutated G in output?
          */
@@ -120,9 +122,9 @@ Error.stackTraceLimit = Infinity;
     // isCovar tells whether the tool args will be reversed in order.
     // An optional greasing function is allowed.
     // fact's root arg must be detachable by the provided axMp.
-    function PushUp(axMp, goalArrow, goalArg, toolArg,
+    function PushUp(detacher, goalArrow, goalArg, toolArg,
                     isCovar, parentArrow, grease, fact, isDistribute) {
-        this.axMp = axMp;
+        this.axMp = detacher.fact;
         this.goalArrow = goalArrow;
         this.goalArg = goalArg;
         this.toolArg = toolArg;
@@ -131,10 +133,20 @@ Error.stackTraceLimit = Infinity;
         this.grease = grease;
         this.fact = fact;
         this.isDistribute = isDistribute||false;
+
         if (isDistribute) {
             this.applyToPusp = applyDistributeToPusp;
         } else {
             this.applyToPusp = applyPushUpToPusp;
+        }
+
+
+        function assertEqual(msgTag, thing1, thing2) {
+            if (JSON.stringify(thing1) !== JSON.stringify(thing2)) {
+                throw new Error("Assertion error: " + msgTag +
+                                "\nWant:  " + JSON.stringify(thing1) +
+                                "\nHave:  " + JSON.stringify(thing2));
+            }
         }
 
         function checkInvariant(pusp) {
@@ -176,11 +188,21 @@ Error.stackTraceLimit = Infinity;
                 (pusp.toolAnchorPath[0] != 1)) {
                 throw new Error("Fancy tool anchor not implemented");
             }
-            pusp.newSteps.push(zpath(pusp.tool, [1]));
-            pusp.newSteps.push(zpath(pusp.tool, [2,1]));
-            pusp.newSteps.push(zpath(pusp.tool, [2,2]));
-            pusp.newSteps.push(nameDep(work, this.fact));
-            pusp.newSteps.push(nameDep(work, this.axMp));
+
+            var varMap = {0:zpath(pusp.tool, [1]),
+                          1:zpath(pusp.tool, [2,1]),
+                          2:zpath(pusp.tool, [2,2])};
+
+            pusp.pushNewSteps("dist:", [
+                varMap[0],
+                varMap[1],
+                varMap[2],
+                nameDep(work, this.fact),
+                nameDep(work, this.axMp)]);
+            var subbed = globalSub(this.fact, varMap, work);
+            var popped = pusp.stack.pop();
+            assertEqual("stack dist", subbed[1], popped);
+            pusp.stack.push(subbed[2]);
 
             pusp.goalPath.pop();
             var goalParent = zpath(pusp.goal, pusp.goalPath);
@@ -211,26 +233,20 @@ Error.stackTraceLimit = Infinity;
         // the end of goalPath.
         function applyPushUpToPusp(pusp, work) {
             if (true || DEBUG) checkInvariant(pusp);
-            // Prefix shared by toolPath and toolAnchorPath
+            // Prefix of toolPath the length of toolAnchorPath.  Points to the
+            // "useful" part of the tool, i.e. the unanchored part.
             var toolPathPrefix = [];
             if (pusp.toolAnchorPath != undefined) {
                 toolPathPrefix = pusp.toolPath.slice(
                     0, pusp.toolAnchorPath.length);
-                for (var i = 0; i < pusp.toolAnchorPath.length - 1 ; i++) {
-                    if (pusp.toolPath[i] != pusp.toolAnchorPath[i]) {
-                        throw new Error("anchor must share prefix: " +
-                                        JSON.stringify(pusp));
-                    }
-                }
             }
             if (pusp.toolPath[pusp.toolPath.length - 1] != this.toolArg) {
                 throw new Error("Unexpected toolArg: " + this.toolArg +
                                 JSON.stringify(pusp));
             }
-            pusp.newSteps.push(
-                zpath(pusp.tool, concatArr(toolPathPrefix,[1])));
-            pusp.newSteps.push(
-                zpath(pusp.tool, concatArr(toolPathPrefix,[2])));
+            var toolMandHyps = [
+                zpath(pusp.tool, concatArr(toolPathPrefix,[1])),
+                zpath(pusp.tool, concatArr(toolPathPrefix,[2]))];
 
             pusp.goalPath.pop();
             var goalParent = zpath(pusp.goal, pusp.goalPath);
@@ -244,15 +260,36 @@ Error.stackTraceLimit = Infinity;
                     arr2.push(zpath(pusp.tool, concatArr(toolPathPrefix, [3 - this.toolArg])));
                 } else {
                     var arg = goalParent[i];
-                    pusp.newSteps.push(arg);
+                    toolMandHyps.push(arg);
                     arr1.push(arg);
                     arr2.push(arg);
                 }
             }
+            pusp.pushNewSteps("tool mandhyps:", toolMandHyps);
+
+
+
+            var greaseResult;
             if (this.grease) {
-                this.grease(pusp, work);
+                greaseResult = this.grease(pusp, work);
             }
-            pusp.newSteps.push(nameDep(work, this.fact));
+            pusp.pushNewSteps("pufact:", [nameDep(work, this.fact)]);
+            if (true) {
+                // TODO: should be more principled about this rather than
+                // grovel about in newsteps for the mandhyps I just put
+                // there. But it's tough to track them across a greasing,
+                // so this will do for now.
+                var numMandHyps = 0;
+                var firstMandHyp = pusp.newSteps.length-1;
+                var factStmt = this.fact.Core[Fact.CORE_STMT];
+                eachVarOnce([factStmt], function() {numMandHyps++; firstMandHyp--});
+                var varMap = {};
+                for (var i = 0; i < numMandHyps; i++) {
+                    varMap[i] = pusp.newSteps[firstMandHyp + i];
+                }
+                pusp.stack.push(globalSub(this.fact, varMap, work));
+                if (DEBUG) console.log("  pusp: ", JSON.stringify(pusp));
+            }
             var parentArrowN = work.nameTerm(this.parentArrow.name,
                                              this.parentArrow.freeMap);
             var nextTool = [parentArrowN,
@@ -277,18 +314,24 @@ Error.stackTraceLimit = Infinity;
                 var dstToolOp = this.axMp.Skin.TermNames[0]; // XXX should be?
                 var dstToolArg = 2; // XXX Should be ?? 3-pusp.tap[0]
                 var dstPU = scheme.queryPushUp([dstGoalOp, dstGoalArg, dstToolOp, dstToolArg]);
-                if (!dstPU.isCovar) {
-                    console.warn("Non-covar dstPU probably won't work.");
-                }
-                if (dstPU.grease) {
-                    throw new Error("TODO handle greased dstPU");
-                }
+                if (dstGoalArg != 2) console.warn("pusp.tap[0] != 1");
+                if (!dstPU.isCovar) console.warn("Non-covar dstPU");
+                if (dstPU.grease) throw new Error("TODO handle");
                 var step1 = zpath(pusp.tool, toolPathPrefix);
-                pusp.newSteps.push(step1);
-                pusp.newSteps.push(nextTool);
-                pusp.newSteps.push(toolAnchor);
-                pusp.newSteps.push(nameDep(work, dstPU.fact));
-                pusp.newSteps.push(nameDep(work, dstPU.axMp));
+                if (greaseResult) {
+                    step1 = [greaseResult.opNum, greaseResult.bindingVar, step1];
+                }
+                pusp.pushNewSteps("dstPU:", [
+                    step1,
+                    nextTool,
+                    toolAnchor,
+                    nameDep(work, dstPU.fact),
+                    nameDep(work, dstPU.axMp)]);
+                var subbed = globalSub(dstPU.fact, {0:step1, 1:nextTool ,2:toolAnchor}, work);
+                var popped = pusp.stack.pop();
+                assertEqual("stack dstPU", subbed[1], popped);
+                pusp.stack.push(subbed[2]);
+                if (DEBUG) console.log("  pusp: ", JSON.stringify(pusp));
                 var dstParentArrowN = work.nameTerm(dstPU.parentArrow.name,
                                                     dstPU.parentArrow.freeMap);
                 var newNextTool = [pusp.tool[0], // XXX Should be??
@@ -300,11 +343,21 @@ Error.stackTraceLimit = Infinity;
                                   [pusp.tool[0],   // TODO: should be ?
                                    toolAnchor, step1],
                                   newNextTool];
+                assertEqual("dst detach", topOfStack, pusp.stack.pop());
                 var detached = dstDetacher.detach(topOfStack, work);
-                pusp.newSteps.push.apply(pusp.newSteps, detached.newSteps);
+                pusp.pushNewSteps("detached:", detached.newSteps);
+                var popped = pusp.stack.pop();
+                assertEqual("dst detached", detached.result, popped);
+                pusp.stack.push(detached.nowOnStack);
                 nextTool = newNextTool;
             } else {
-                pusp.newSteps.push(nameDep(work, axMp));
+                pusp.pushNewSteps("axmp:", [nameDep(work, axMp)]);
+                var top = pusp.stack.pop();
+                var popped = pusp.stack.pop();
+                // TODO: PICKUP: use detacher intrface instead
+                if (DEBUG) console.log("  work: ", JSON.stringify(work));
+                assertEqual("axmp", top[3-detacher.argNum], popped);
+                pusp.stack.push(top[detacher.argNum]);
             }
             pusp.tool = nextTool;
             pusp.toolPath = concatArr(toolPathPrefix, [nextToolArg]);
@@ -914,18 +967,27 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         // If that didn't throw, we can start mutating
         // PushUpScratchPad
         var pusp = {};
-
         pusp.newSteps = [];
+        pusp.stack = []; // Only used for assertions
+        pusp.pushNewSteps = function(debugTag, steps) {
+            pusp.newSteps.push.apply(pusp.newSteps, steps);
+            if (DEBUG) {
+                console.log("Adding new steps " + debugTag + JSON.stringify(steps));
+            }
+        };
+
         if (DEBUG) console.log("Vars from " + JSON.stringify(fact));
         eachVarOnce([fact.Core[Fact.CORE_STMT]], function(v) {
-            pusp.newSteps.push(varMap[v]);
+            pusp.pushNewSteps("vars:",[varMap[v]]);
         });
-        pusp.newSteps.push(nameDep(work, fact));
+        pusp.pushNewSteps("fact:", [nameDep(work, fact)]);
+
         // Now on the proof stack: an instance of fact, with factPath equalling
         // a subexp of work.
 
         // #. invoke sequence of pushup theorems, ensuring presence in Deps
         pusp.tool = globalSub(fact, varMap, work);       // what's on the stack
+        pusp.stack.push(pusp.tool);
         pusp.toolPath = clone(factPath);                 // path to subexp A
         pusp.goal = clone(work.Core[Fact.CORE_HYPS][0]); // what to prove
         pusp.goalPath = clone(workPath);                 // path to subexp B
@@ -943,7 +1005,7 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             pu.applyToPusp(pusp, work);
         })
         var detachment = pushUps.detacher.detach(pusp.tool, work);
-        pusp.newSteps.push.apply(pusp.newSteps, detachment.newSteps);
+        pusp.pushNewSteps("detachment1:", detachment.newSteps);
         work.Core[Fact.CORE_HYPS][0] = detachment.result;
         // Now we have a complete pusp, so apply it to the workspace.
 
@@ -1173,6 +1235,7 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
     // tool, we'll return that operator. Otherwise, nothing will be returned.
     function onAddFact(fact) {
         allKnownFacts.push(fact);
+        scheme.factsByMark[fact.getMark()] = fact;
         var coreStr = JSON.stringify(fact.Core);
         var rarr, harr, rarr, rarrAxmp;
         // First, detect detachment theorems
@@ -1186,7 +1249,9 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                 argNum: 2,
                 detach: function(tool, work) {
                     return {newSteps: [nameDep(work, this.fact)],
-                            result: tool[1]};
+                            result: tool[1],
+                            nowOnStack: tool[2]
+                           };
                 }
             };
             if (!scheme.toolsSeen[rarr]) {
@@ -1210,7 +1275,8 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                                            nameDep(work, this.fact),
                                            nameDep(work, rarrAxmp.fact),
                                            nameDep(work, rarrAxmp.fact)],
-                                result: tool[1]};
+                                result: tool[1],
+                                nowOnStack: tool[2]};
                     }
                 }
                 if (!scheme.toolsSeen[harr]) {
@@ -1235,7 +1301,8 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                                            nameDep(work, this.fact),
                                            nameDep(work, rarrAxmp.fact),
                                            nameDep(work, rarrAxmp.fact)],
-                                result: tool[2]};
+                                result: tool[2],
+                                nowOnStack: tool[1]};
                     }
                 }
                 if (!scheme.toolsSeen[harr]) {
@@ -1326,6 +1393,8 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                 }
 
                 grease = function(pusp, work) {
+                    var greaseOp = terms[stmt[1][0]];
+
                     // Assume the greased pushup is:
                     // (1. x (a 2> b)) 3> ((4. ... a ...) 5> (4. ... b ...))
                     // currently, (a 2> b) is on the proofstack.
@@ -1336,8 +1405,63 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                     // need to scan back past all childArity args and a, b
                     var insertIndex = arr.length - (childArity - 2) - 1;
                     // insert the greaser step here, with x for its mandhyp
-                    arr.splice(insertIndex, 0, x, nameDep(work, greaser.fact), x);
+                    var greaseDep = nameDep(work, greaser.fact);
+                    var stepsToInsert = [x, greaseDep];
+                    var opNum = work.nameTerm(greaseOp,
+                                              fact.FreeMaps[stmt[1][0]]);
+                    pusp.stack.push([opNum, x, pusp.stack.pop()]);
+                    if (pusp.toolAnchorPath != undefined) {
+                        // grease must be distributed
+                        // TODO: this is super fragile
+                        var rarr = work.Skin.TermNames[pusp.tool[0]];
+                        var axmp = nameDep(work, scheme.detachMemo[[rarr, [2]]].fact);
+                        var mark = '[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];' +
+                            JSON.stringify([rarr, greaseOp]);
+                        var dist = scheme.factsByMark[mark];
+                        if (!dist) throw new Error("No dist by mark " + mark);
+                        var top = pusp.stack.pop();
+                        stepsToInsert.push(
+                            x,
+                            top[2][1],
+                            top[2][2],
+                            nameDep(work, dist),
+                            axmp);
+                        mark = '[[],[0,0,[1,1,0]],[[0,1]]];' + JSON.stringify([rarr, greaseOp]);
+                        var drop = scheme.factsByMark[mark];
+                        if (!drop) throw new Error("No drop by mark " + mark);
+                        eachFreeVar([top[2][1]], work.FreeMaps,
+                                    function(newV, bound) {
+                                        // TODO: what is bound?
+                                        work.ensureFree(newV,x);
+                                    });
+                        // TODO: check anchor for freeness constraint
+                        stepsToInsert.push(
+                            top[2][1],
+                            x,
+                            nameDep(work, drop));
+
+                        mark = '[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];' + JSON.stringify([rarr]);
+                        var syl = scheme.factsByMark[mark];
+                        if (!drop) throw new Error("No syl by mark " + mark);
+                        stepsToInsert.push(
+                            top[2][1],
+                            [opNum, x, top[2][1]],
+                            [opNum, x, top[2][2]],
+                            nameDep(work, syl),
+                            axmp, axmp
+                        );
+                        pusp.stack.push([pusp.tool[0],
+                                         top[2][1],
+                                         [top[0], top[1], top[2][2]]]);
+                    }
+                    stepsToInsert.push(x);
+                    stepsToInsert.unshift(insertIndex, 0);
+                    arr.splice.apply(arr,stepsToInsert);
+
+                    if (DEBUG) console.log("adding grease step " + greaseDep + " at " + insertIndex + "; pusp now:" + JSON.stringify(pusp));
+                    return {opNum: opNum, bindingVar: x};
                 };
+                grease.greasedArgOfChild = greasedArgOfChild;
             } else {
                 // this is a Distribute, which can be used as the PushUp that detaches an anchor.
                 // TODO: unify Distribute with Grease? is
@@ -1415,14 +1539,14 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         }
         for (var i = 1; i <= 2; i++) {
             if (JSON.stringify([childArrow.name, whichArg, anteArrow, i]) ==
-                '["&exist;",2,"&harr;",1]') {
+                '["&forall;",2,"&rarr;",1]XXX') {
                 console.log("Discovered pushup: " + JSON.stringify([childArrow.name, whichArg, anteArrow, "*"]) +
                         " child=" + childArrow.name + "/" + whichArg + 
                             " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark())
                            + " grease=" + grease);
             }
             var pushUp = new PushUp(
-                detacher.fact, childArrow, whichArg, i,
+                detacher, childArrow, whichArg, i,
                 (isDistribute || i == 2) ? isCov : !isCov,
                 parentArrow, grease, fact, isDistribute);
             if (isDistribute) {
