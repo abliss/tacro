@@ -57,7 +57,7 @@ function applyFact(work, workPath, fact, factPath, optVarMap, optAnchors) {
         var usable = Engine.getUsableTools(work, workPath);
         var toolOp = fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]];
         if (!usable[[toolOp, factPath[0]]]) {
-            throw new Error("Unusable tool!" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
+            throw new Error("Unusable tool! did you forget to enable anchors?" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
         }
     }
     var newFact = Engine.applyFact(work, workPath, fact, factPath, optVarMap, optAnchors);
@@ -2233,6 +2233,19 @@ var landOslash = getLand("../data/land_11_Oslash.js");
 // No goals. :(
 
 var landSect = getLand("../data/land_12_sect.js");
+
+startNextGoal();
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,[1,[0,0,1],[0,1,0]],[2,0,1]],[]];["→","∧","↔"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2],
+                       sfbm('[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]];["→","=","§"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,1],
+                       sfbm('[[],[0,[1,[2,0],[2,1]],[1,0,1]],[]];["→","=","§"]'), [1],{},[]);
+state.work = applyFact(state.work, [],
+                       sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+saveGoal(); // [[],[0,[1,0,1],[1,[2,0],[2,1]]],[]]
+
 var oldFinds = {Core:[[],[0,[1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],[0,[1,0,[1,1,[0,[2,1,0],[4,2,4]]]],[0,[1,0,[1,1,[0,[2,1,[5,0]],[4,2,5]]]],[0,[1,0,[1,1,[0,[2,1,6],[4,2,7]]]],[0,3,[0,[1,0,[0,4,5]],7]]]]]],[[2,0],[3,1],[4,1],[5,1],[6,1],[7,1]]],
                 Skin:{TermNames:["&rarr;","&forall;","&equals;","&Oslash;","&harr;","&sect;","&and;","&exist;"]},
                 FreeMaps:[[],[[]],[],[],[],[],[],[[]]]};
@@ -2303,6 +2316,55 @@ checkGoalAndSave(goal);
 //saveGoal(); // [[],[0,[1,[2,0,[0,[3,0,[4]],1]],[2,2,[0,[2,0,[0,[3,0,2],1]],[2,0,[0,[3,0,[5,2]],1]]]]],[2,0,1]],[[1,2]]]
 
 
+// Enable anchors for lefoo
+UNUSABLE_OK=true;
+goal = {Core:[[],[0,[1,[2,0,[3]]],[4,1,[2,0,[5,1]]]],[[0,1]]],
+         Skin:{TermNames:["&rarr;","&not;","&equals;","&Oslash;","&exist;","&sect;"]},
+        FreeMaps:[[],[],[],[],[[]],[]]};
+state.work = startWork(goal);
+
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]];["↔","∀","→","="]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2,1,1,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,2],{},[[2,1]]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,[0,[3,0,[4]],1]],[2,2,[0,[2,0,[0,[3,0,2],1]],[2,0,[0,[3,0,[5,2]],1]]]]],[2,0,1]],[[1,2]]];["→","∧","∀","=","Ø","§"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2,1,1,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[1,2,1]]);
+state.work = applyFact(state.work, [2,2,2,2,2,2,2,1],
+  sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,2,2,1]]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,[1,0],[0,0,1]],[]];["→","¬"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2,2],
+  sfbm('[[],[0,0,[1,[1,0]]],[]];["→","¬"]'), [2],{},[]);
+state.work = applyFact(state.work, [1,2],
+  sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2,2,2],
+  sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2,2,2],
+  sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2],
+  sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
+state.work = applyFact(state.work, [1],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2],{},[]);
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
+state.work = applyFact(state.work, [2,2,2],
+  sfbm('[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]];["↔","=","§"]'), [2],{},[]);
+state.work = applyFact(state.work, [2,2,2],
+  sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","="]'), [1],{},[]);
+state.work = applyFact(state.work, [2],
+  sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2],{},[]);
+state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = applyFact(state.work, [],
+  sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [2],{},[]);
+state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
+checkGoalAndSave(goal); // [[],[0,[1,[2,0,[3]]],[4,1,[2,0,[5,1]]]],[[0,1]]]
+UNUSABLE_OK=false; //redisable anchors
 var landPlus = getLand("../data/land_13_plus.js");
 
 startNextGoal();

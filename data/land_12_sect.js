@@ -53,5 +53,9 @@
         Skin:{TermNames:["&rarr;","&and;","&forall;","&equals;","&Oslash;","&sect;"]},
         FreeMaps:[[],[],[[]],[],[],[]]},
 
+        //lefoo
+        {Core:[[],[0,[1,[2,0,[3]]],[4,1,[2,0,[5,1]]]],[[0,1]]],
+         Skin:{TermNames:["&rarr;","&not;","&equals;","&Oslash;","&exist;","&sect;"]},
+         FreeMaps:[[],[],[],[],[[]],[]]},
     ],
 })
