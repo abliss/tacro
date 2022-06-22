@@ -80,18 +80,19 @@ Error.stackTraceLimit = Infinity;
         /*
          * Queries for a known distribution theorem of this form:
          * [A, [G,a,[U,b,c]],
-         *     [U,[G,a,b],[G,a,c]]]
+         *     [U,[D,a,b],[D,a,c]]]
          * where A is a detachable arrow (typically, -> detached with axMp)
          *
          * @param gOp: which op maps to G
          * @param gArg: which arg of G varies in the consequent
          * @param uOp: which op maps to U
-         * @param uArg: ignored???
+         * @param uArg: 1 if [U,[D,a,b],[D,a,c]]], 2 if [U,[D,a,c],[D,a,b]]] TODO???
+         * @param dOp: which op maps to D
          *
          *  TODO: support more than binary? Support mutated G in output?
          */
-        queryDistribute: function(gOp, gArg, uOp, uArg) {
-            var key = [gOp, gArg, uOp, uArg];
+        queryDistribute: function(gOp, gArg, uOp, uArg, dOp) {
+            var key = [gOp, gArg, uOp, uArg, dOp];
             var ret = this.distributeMemo[key];
             if (!ret) {
                 throw new Error("No distribute for " + JSON.stringify(key));
@@ -123,7 +124,7 @@ Error.stackTraceLimit = Infinity;
     // An optional greasing function is allowed.
     // fact's root arg must be detachable by the provided axMp.
     function PushUp(detacher, goalArrow, goalArg, toolArg,
-                    isCovar, parentArrow, grease, fact, isDistribute) {
+                    isCovar, parentArrow, grease, fact, distributeArrow) {
         this.axMp = detacher.fact;
         this.goalArrow = goalArrow;
         this.goalArg = goalArg;
@@ -132,9 +133,9 @@ Error.stackTraceLimit = Infinity;
         this.parentArrow = parentArrow;
         this.grease = grease;
         this.fact = fact;
-        this.isDistribute = isDistribute||false;
+        this.distributeArrow = distributeArrow;
 
-        if (isDistribute) {
+        if (distributeArrow) {
             this.applyToPusp = applyDistributeToPusp;
         } else {
             this.applyToPusp = applyPushUpToPusp;
@@ -192,7 +193,7 @@ Error.stackTraceLimit = Infinity;
             var varMap = {0:zpath(pusp.tool, [1]),
                           1:zpath(pusp.tool, [2,1]),
                           2:zpath(pusp.tool, [2,2])};
-
+            if (DEBUG) console.log("using dist fact:" + this.fact.getMark());
             pusp.pushNewSteps("dist:", [
                 varMap[0],
                 varMap[1],
@@ -787,12 +788,12 @@ Error.stackTraceLimit = Infinity;
             if ((goalAnchorPath != undefined) && (workI == goalAnchorPath.length - 1)) {
                 
                 // Work has: A ~ B
-                // Now on the stack: A ~ (C > B) if myToolArg is  2, so
+                // Now on the stack: A -> (C > B) if myToolArg is  2, so
                 // Distribute to: (A ~ C) > (A ~ B) and resume pushing
                 // if myToolArg is 1,
-                // Now on the stack: A ~ (B > C)
+                // Now on the stack: A -> (B > C)
                 // Distribute to: (A ~ B) > (A ~ C) and resume pushing
-                pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg);
+                pu = scheme.queryDistribute(goalOp, goalArg, myToolOp, myToolArg, goalOp/*PICKUP*/);
                 if (pu.grease) {
                     throw new Error("TODO: handle greased distribute");
                 }
@@ -1346,7 +1347,7 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             return;
         }
         var anteArrow;
-        var isDistribute = false;
+        var distributeArrow;
         var anteArg1;
         var anteArg2;
         var greaser;
@@ -1468,13 +1469,12 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                 // a Greased thm basically just Distributing the implicit
                 // universal quantifier?
                 // TODO: fair to treat a Distribute as a PushUp?
-                if ((stmt[1][0] != stmt[2][1][0]) ||
-                    (stmt[1][0] != stmt[2][2][0])) {
+                if (stmt[2][1][0] != stmt[2][2][0]) {
                     console.log("TODO Fancy distribute not handled: " + JSON.stringify(fact));
                     return;
                 }
-                isDistribute = true;
-                if (DEBUG){
+                distributeArrow = terms[stmt[2][1][0]];
+                if (DEBUG) {
                     console.log("Discovered distribute? " + JSON.stringify(fact));
                 }
                 anteArrow = terms[stmt[1][2][0]];
@@ -1530,7 +1530,7 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
                         " child=" + childArrow.name + "/" + whichArg + 
                         " ante=" + anteArrow + " isCov?" + isCov + " parent=" + parentArrow.name + " : " + JSON.stringify(fact.getMark()));
         }
-        if (!isDistribute) {
+        if (!distributeArrow) {
             var halfMemo = scheme.pushUpHalfMemo[[childArrow.name, whichArg]];
             if (!halfMemo) {
                 halfMemo = {};
@@ -1547,10 +1547,10 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
             }
             var pushUp = new PushUp(
                 detacher, childArrow, whichArg, i,
-                (isDistribute || i == 2) ? isCov : !isCov,
-                parentArrow, grease, fact, isDistribute);
-            if (isDistribute) {
-                scheme.distributeMemo[[childArrow.name, whichArg, anteArrow, i]] = pushUp;
+                (i == 2 || distributeArrow) ? isCov : !isCov,
+                parentArrow, grease, fact, distributeArrow);
+            if (distributeArrow) {
+                scheme.distributeMemo[[childArrow.name, whichArg, anteArrow, i, distributeArrow]] = pushUp;
             } else {
                 halfMemo[[anteArrow, i]] = [anteArrow, i];
                 //console.log("pushup: " + [childArrow.name, whichArg, anteArrow, i] +
