@@ -68,7 +68,11 @@ if (typeof document == 'undefined') {
 function chatFilter(msg) {
     var match;
     if (match = msg.match(/^\//)) {
-        message(eval(msg.substring(1)));
+        try {
+            message(eval(msg.substring(1)));
+        } catch (e) {
+            message(e);
+        }
         return false;
     }
     return true;
