@@ -1,6 +1,6 @@
 ({
     name:"&Oslash;",
-    depends:["&equals;"],  
+    depends:["&int;&int;"],  
     axioms:[
         // TODO: this axiom is unnecessary, though it does force equal into 
         // termvars, and gives us something to put in this file.

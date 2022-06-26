@@ -1,8 +1,8 @@
 (function(module) {
-    function Chat(storage, fingerprinter, pane, input) {
+    function Chat(storage, fingerprinter, pane, input, filter) {
         var that = this;
         var workChannel = null;
-
+        var history = [];
         var boxMap = {};
         input.onkeypress = function(e) {
             e = e || window.event;
@@ -11,10 +11,16 @@
                 var msg = input.value;
                 input.value = '';
                 sendMsg(msg);
+            } else if (key == 38) { // up
+                input.value = history.pop();
             }
         };
         
         function sendMsg(msg) {
+            history.push(msg);
+            if (filter && !filter(msg)) {
+                return;
+            }
             var value = {
                 v: 1,
                 msg: msg

@@ -8,7 +8,7 @@ var Chat = require('./chat.js');
 
 var storage = new Storage(Engine.fingerprint);
 var chat = new Chat(storage, Engine.fingerprint, document.getElementById('chatPane'),
-                    document.getElementById('chatInput'));
+                    document.getElementById('chatInput'), chatFilter);
 var log = {};
 var state;
 var MAX_STATES=100;
@@ -32,19 +32,9 @@ var auto = false;
 var reflexives = {};
 var thms = {};
 var currentGoal = null;
+var dumpStepMap = {}; // logFp => {parent, step}
 window.FAST_TICK = true; //XXX
 Error.stackTraceLimit = Infinity;
-
-var varColors = [
-    "#9370db",
-    "#70db93",
-    "#f13e44",
-    "#cc4a14",
-    "#99583d",
-    "#3d983d",
-    "#3d9898",
-];
-
 
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
@@ -74,6 +64,23 @@ if (typeof document == 'undefined') {
 }
 
 // ==== END stubs ====
+
+function chatFilter(msg) {
+    var match;
+    if (match = msg.match(/^\//)) {
+        try {
+            message(eval(msg.substring(1)));
+        } catch (e) {
+            message(e);
+        }
+        return false;
+    }
+    return true;
+}
+
+function clear() {
+    localStorage.clear();
+}
 
 if (window.location.search.match("CLEAR")) {
     localStorage.clear();
@@ -153,9 +160,21 @@ function registerNewTool(toolOp) {
     
 }
 
+function setAnchorPath(anchorPath) {
+    state.anchorPath = anchorPath;
+    if (state.anchorPath == undefined) {
+        document.getElementById("anchor").innerText = "anchor";
+        document.body.className = 
+            document.body.className.replace(/enableAllTools /g, "");
+    } else {
+        // XXX anchorUsableTools : should only enable usable tools
+        document.body.className = "enableAllTools " + document.body.className;
+        document.getElementById("anchor").innerText = "unanchor";
+    }
+}
+
 function setWorkPath(wp) {
-    console.log("dump: state.work = applyFact(state.work, " + JSON.stringify(wp) + ",");
-    var className = "";
+    var className = state.anchorPath ? "enableAllTools " : ""; // XXX anchorUsableTools
     if (typeof wp == 'undefined') {
         delete state.workPath;
         if (workBox) delete workBox.pathTermArr;
@@ -251,7 +270,10 @@ function groundOut() {
     try {
         var fact = this;
         state.url = "#u=" + (urlNum++) + "/" + "#f=" + fact.Skin.Name;
-        var thm = Engine.ground(state.work, fact);
+        // Make a protective clone in case ground() mutates but verify fails.
+        var workClone = new Fact(JSON.parse(JSON.stringify(state.work)));
+        var thm = Engine.ground(workClone, fact);
+        thm.verify();
         if (currentGoal == null || thm == null) {
             console.warn("null goal " + JSON.stringify(thm));
         } else {
@@ -265,6 +287,10 @@ function groundOut() {
                                 + " found " + actual)
             };
         }
+        var dumpStep="state.work = ground(state.work, sfbm('" + JSON.stringify(fact.Core) + ";" +
+            JSON.stringify(fact.Skin.TermNames) +"'));\n" +
+            "saveGoal(); // " + JSON.stringify(thm.Core);
+        dump(log, dumpStep);
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);
         if (storage.user) {
@@ -287,6 +313,7 @@ function groundOut() {
 
         message("");
         setWorkPath([]);
+        setAnchorPath();
         currentLand().goals.shift();
         nextGoal();
         redraw();
@@ -316,6 +343,7 @@ function addToShooter(factData, land) {
 
     var newTool = Engine.onAddFact(facet.fact);
     if (newTool) {
+        message("New root unlocked: " + newTool);
         registerNewTool(newTool);
     }
     switch (factData.Core[Fact.CORE_HYPS].length) {
@@ -332,15 +360,17 @@ function addToShooter(factData, land) {
             // TODO: display hyp somehow
             box.className += " shooter";
             box.onclick = function() {
-                var varMap = null;
-                if (!auto) {
-                    varMap = box.tree.getVarMap(state.work);
-                }
+                var varMap = box.tree.getVarMap(state.work);
+                var dumpStep = "state.work = Engine.applyInference(state.work, " +
+                    "    sfbm('" + JSON.stringify(fact.Core) + ";" +
+                    JSON.stringify(fact.Skin.TermNames) +"'));";
+                console.log("XXXX trying step:\n  " + dumpStep);
                 var newWork = Engine.applyInference(state.work, fact, varMap);
                 message("");
                 state.url = "";
                 setWorkPath([]);
-                setWork(newWork);
+                setAnchorPath();
+                setWork(newWork, dumpStep);
                 redraw();
             };
             var pane = panes[panes.length-1];
@@ -358,7 +388,6 @@ function addToShooter(factData, land) {
         addCssRule('.name'+cssEscape(reflexiveTerm) + " .depth1.arg2 {" +
                 "border-left: 1px solid red;}");
         reflexives[reflexiveTerm] = fact;
-        return factFp;
     }
     var box;
     function onchange() {
@@ -367,6 +396,12 @@ function addToShooter(factData, land) {
         var tree = this;
         var expTermArr = tree.getTermArr();
         var boxString = JSON.stringify(expTermArr);
+        if (state.anchorPath) { // XXX anchorUsableTools
+            box.deployButtons.forEach(button => {
+                button.className += " matched";
+                button.removeAttribute('disabled');
+            });
+        }
         for (var k in usableTools) if (usableTools.hasOwnProperty(k)) {
             var v = usableTools[k];
             var tool = v[0];
@@ -405,20 +440,25 @@ function addToShooter(factData, land) {
 
     
     function applyChild(argNum) {
-        console.log("dump: sfbm('" + JSON.stringify(fact.Core) + ";" +
-                    JSON.stringify(fact.Skin.TermNames) +"'), [" + argNum + "]); //");
-        // TODO: PICKUP: undummy
+         // TODO: PICKUP: undummy
         try {
-            var varMap = null;
-            if (!auto) {
-                varMap = box.tree.getVarMap(state.work);
-            }
+            var varMap = box.tree.getVarMap(state.work);
+            var dumpStep = "state.work = applyFact(state.work, " + JSON.stringify(state.workPath) + ",\n" +
+                "  sfbm('" + JSON.stringify(fact.Core) + ";" +
+                JSON.stringify(fact.Skin.TermNames) +"'), " +
+                JSON.stringify(state.anchorPath ? [2, argNum] : [argNum]) + ",{}," +
+                JSON.stringify(state.anchorPath ? [state.anchorPath] : []) + ");";
+            console.log("XXXX trying step:\n  " + dumpStep);
             var newWork = Engine.applyFact(state.work, state.workPath,
-                                           fact, [argNum], varMap);
+                                           fact,
+                                           (state.anchorPath ? [2, argNum] : [argNum]),
+                                           varMap,
+                                           state.anchorPath ? [state.anchorPath] : undefined);
             message("");
             state.url = "";
             setWorkPath([]);
-            setWork(newWork);
+            setAnchorPath();
+            setWork(newWork, dumpStep);
             redraw();
         } catch (e) {
             console.log("Error in applyFact: " + e);
@@ -468,9 +508,11 @@ function startWork(fact) {
     var work = new Fact(fact);
     if (work.Core[Fact.CORE_HYPS].length == 0) {
         work.setHyps([work.Core[Fact.CORE_STMT]]);
-        work.Skin.HypNames = ["Hyps.0"];
-        work.setProof(["Hyps.0"]);
     }
+    work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
+    work.Skin.HypNames = ["Hyps.0"];
+    work.setProof(["Hyps.0"]);
+
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
@@ -532,13 +574,16 @@ function verifyWork(fact) {
             e.declared.forEach(function(d) { dMap[d] = true; });
             e.calculated.forEach(function(c) { if (!dMap[c]) { throw e; } });
             return e.context;
-        } else {
-            throw e;
+        } else if ((fact.Tree.Cmd == "defthm") && (fact.Core[Fact.CORE_HYPS].length > 0)) {
+            // TODO: The verifier is persnickety about defthms with
+            // hyps. E.g. the fresh goal of proving df-subst. For now, just skip
+            // this.
+            return e.context;
         }
     }
 }
 
-function setWork(work) {
+function setWork(work, optDumpStep) {
     var verified = verifyWork(work);
     // Check for drift from planned FreeVar set. It would be nice to keep these
     // in lockstep but that requires more sophisticted dummy-tracking than we
@@ -548,8 +593,9 @@ function setWork(work) {
         // The engine sometimes spits out spurious FreeVar constraints of one
         // bindingVar in another. Trim them out before comparing. See the proof
         // of finds for example.
+        var bindingVars = verified ? verified.bindingVars : {};
         var workFree = work.Core[Fact.CORE_FREE]
-            .filter(f=>!(f[0] in verified.bindingVars));
+            .filter(f=>!(f[0] in bindingVars));
         var expected = JSON.stringify(goalFree);
         var actual = JSON.stringify(workFree);
         if (expected != actual) {
@@ -566,13 +612,16 @@ function setWork(work) {
         var idFact = reflexives[k]; 
         try {
             // TODO: should not be using exceptions for this
-            Engine.getMandHyps(state.work, [], idFact, []);
+            var workClone = new Fact(JSON.parse(JSON.stringify(work)));
+            Engine.getMandHyps(workClone, [], idFact, [], null, true);
             ground.removeAttribute('disabled');
             ground.className = "enabled";
             ground.onclick = groundOut.bind(idFact);
             break;
         } catch (e) {
             // can't ground this way
+            // TODO: need some way to tell the user why. Especially for
+            // definition dummy var issues.
         }
     }
     // TODO: might we need an extra var here?
@@ -582,16 +631,18 @@ function setWork(work) {
     for (var k in factToShooterBox) if (factToShooterBox.hasOwnProperty(k)) {
         factToShooterBox[k].box.tree.onchange();
     }
-    save();
+    save(optDumpStep);
 }
 
-function save() {
+function save(optDumpStep) {
     var stateKey = storage.fpSave("state", state);
     var stateFp = stateKey.local;
     if (stateFp != log.now) {
         var oldNow = log.now;
         log.now = stateFp;
         var logFp = storage.fpSave("log", log).local;
+        console.log("XXXX setting dump: " + logFp + " = " + log.parent + " : " + optDumpStep);
+        dumpStepMap[logFp] = {parent:log.parent, step:optDumpStep};
         log.parent = logFp;
         storage.local.setItem("childOf/" + oldNow, logFp);
         storage.local.setItem(STATE_KEY, logFp);
@@ -601,6 +652,27 @@ function save() {
         }
         history.pushState(logFp, STATE_KEY, "#s=" + stateFp + "/" + state.url);
     }
+}
+
+function dump(logObj, finalStep) {
+    var steps = [finalStep];
+    var fp = logObj.parent;
+    while (v = dumpStepMap[fp]) {
+        console.log("XXXX pulling dump: " + JSON.stringify(v));
+        fp = v.parent;
+        var step = v.step;
+        if (step) {
+            steps.unshift(step);
+            if (step.match("startNextGoal")) {
+                break;
+            }
+        }
+    }
+    var out = steps.join("\n");
+    navigator.clipboard.writeText(out)
+        .then(() => { message("Dump copied"); })
+        .catch((e) => { message("Couldn't copy: " + e); });;
+    console.log(out);
 }
 
 function currentLand() {
@@ -621,8 +693,10 @@ function nextGoal() {
     }
     currentGoal = land.goals[0];
     knowTerms(currentGoal);
-    setWork(startWork(currentGoal));
+    setWork(startWork(currentGoal), "startNextGoal();");
     setWorkPath([]);
+    setAnchorPath();
+    Engine.resetDummies(state.work);
     return;
 }
 
@@ -677,9 +751,15 @@ function redraw() {
 
 function loadState(flat) {
     state = flat;
-    setWork(new Fact(state.work));
-    currentGoal = currentLand().goals[0];
-    message("");
+    setWork(new Fact(state.work), "load()");
+    setAnchorPath(flat.anchorPath);
+    if (currentLand() &&
+        currentLand().goals) {
+        currentGoal = currentLand().goals[0];
+        message("");
+    } else {
+        message("no goals in current land");
+    }
 }
 
 function loadLogFp(logFp, cb) {
@@ -889,13 +969,18 @@ window.addEventListener('popstate', function(ev) {
         }
     }
 });
-document.getElementById("restart").onclick = function() {
-    nextGoal();
-    redraw();
-    return false;
+document.getElementById("anchor").onclick = function() {
+    if (state.anchorPath == undefined) {
+        setAnchorPath(state.workPath.slice());;
+    } else {
+        setAnchorPath(undefined);
+    }
 };
+
 document.getElementById("rewind").onclick = function() {
     var parentFp = log.parent;
+    console.log("XXXX rewind to: " + parentFp);
+
     if (parentFp) {
         loadLogFp(parentFp);
     }
@@ -926,6 +1011,10 @@ if (logFp) {
 
     });
 } else {
+    init();
+}
+
+function init() {
     state = {
         lands: [],
         url:"",
