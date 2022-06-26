@@ -753,8 +753,13 @@ function loadState(flat) {
     state = flat;
     setWork(new Fact(state.work), "load()");
     setAnchorPath(flat.anchorPath);
-    currentGoal = currentLand().goals[0];
-    message("");
+    if (currentLand() &&
+        currentLand().goals) {
+        currentGoal = currentLand().goals[0];
+        message("");
+    } else {
+        message("no goals in current land");
+    }
 }
 
 function loadLogFp(logFp, cb) {
