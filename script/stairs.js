@@ -669,9 +669,11 @@ function dump(logObj, finalStep) {
         }
     }
     var out = steps.join("\n");
-    navigator.clipboard.writeText(out)
-        .then(() => { message("Dump copied"); })
-        .catch((e) => { message("Couldn't copy: " + e); });;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(out)
+            .then(() => { message("Dump copied"); })
+            .catch((e) => { message("Couldn't copy: " + e); });;
+    }
     console.log(out);
 }
 
