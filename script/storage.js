@@ -2,6 +2,10 @@
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
     var OFFLINE = false;
+    if (require && require('fs') && require('fs').existsSync &&
+        require('fs').existsSync('use-local-storage')) {
+        OFFLINE = true;
+    }
     var FB_URL = "https://tacro.firebaseio.com/tacroV001";
     var nextTick;
     var offlineEnabled = false;
