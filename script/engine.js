@@ -860,27 +860,6 @@ Error.stackTraceLimit = Infinity;
         return actuals;
     }
 
-    // Filters the known-theorem list for facts which could ground the given
-    // work (i.e.e., a call to ground(work, fact) would succeed). For each fact,
-    // callsback with the work and the grounding fact. Currently, this will be
-    // slow if there are many known facts; in the future we hope to do some
-    // fancy indexing.
-    function forEachGroundableFact(work, cb) {
-        allKnownFacts.forEach(function(f) {
-            if (f.Core[Fact.CORE_HYPS].length == 0) {
-                try {
-                    if (work.Core[Fact.CORE_HYPS][0] !== 1) {
-                        //XXX TODO: infinite recurse bug here, not trying.
-                        getMandHyps(work, [], f, []);
-                    }
-                    nextTick(cb.bind(null,work,f));
-                } catch(e) {
-                    // TODO: should not be using exceptions for this
-                }
-            }
-        });
-    }
-    
     // Applies the given fact (with zero hypotheses) to the workspace (a proved
     // theorem with one hypothesis, representing a work-in-progress). The
     // workpath points to a subexpression of the work's only hypothesis. The
@@ -1572,7 +1551,6 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
     module.exports.applyInference = applyInference;
     module.exports.applyFact = applyFact;
     module.exports.fingerprint = fingerprint;
-    module.exports.forEachGroundableFact = forEachGroundableFact;
     module.exports.getUsableTools = getUsableTools;
     module.exports.getMandHyps = getMandHyps;
     module.exports.globalSub = globalSub;

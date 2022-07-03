@@ -733,19 +733,6 @@ function redraw() {
         well.appendChild(box);
         workBox = box;
         setWorkPath(state.workPath);
-        /*
-        Engine.forEachGroundableFact(state.work, function(w, f) {
-            message("Groundable: " + f.Skin.Name);
-            message("Ground out!");
-            var box = factToShooterBox[f.Skin.Name];
-            box.turnstile.style.display = "block";
-            landMap[box.land].tab.className = "tab groundable";
-            onNextRedraw(function() {
-                box.turnstile.style.display = "none";
-                landMap[box.land].tab.className = "tab";
-            });
-        });
-        */
     } catch (e) {
         message(e);
     }
