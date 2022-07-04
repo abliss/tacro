@@ -1,10 +1,58 @@
 // Hackish for now.
+// ==== Stubs for node.js usage ====
+if (typeof document == 'undefined') {
+    function Node() {};
+    Node.prototype = {
+        style: {},
+        appendChild: function(){},
+        removeChild: function(){},
+        sheet: { insertRule: function(){}},
+        addEventListener: function(){},
+        setAttribute: function(){},
+    };
+
+    document = {
+        createElement:function() {return new Node();},
+        getElementById:function() {return new Node();},
+        createTextNode:function() {return new Node();},
+        head: new Node(),
+        body: new Node(),
+    };
+
+    window = {
+        addEventListener: function(){},
+        location: {search: ""},
+    };
+
+    history = {
+        pushState: function(){},
+    };
+
+    d3 = {
+        layout:{
+            tree:function(){
+                return {nodeSize:function(){},
+                        separation:function(){},
+                       };
+            },
+        },
+    };
+    cssEscape = function(){};
+}
+// ==== END stubs ====
+window.cssEscape = function(str) {
+    // TODO: collisions; sync with treeMaker.js
+    return encodeURIComponent(str).replace(/%/g,"_");
+}
+
 var Fact = require('./fact.js');
 var Engine = require('./engine.js');
 var Storage = require('./storage.js');
 var Move = require('./move.js');
 var TreeMaker = require('./treeMaker.js');
 var Chat = require('./chat.js');
+
+
 
 var storage = new Storage(Engine.fingerprint);
 var chat = new Chat(storage, Engine.fingerprint, document.getElementById('chatPane'),
@@ -32,38 +80,9 @@ var auto = false;
 var reflexives = {};
 var thms = {};
 var currentGoal = null;
-var dumpStepMap = {}; // logFp => {parent, step}
 window.FAST_TICK = true; //XXX
 Error.stackTraceLimit = Infinity;
 
-// ==== Stubs for node.js usage ====
-if (typeof document == 'undefined') {
-    function Node() {};
-    Node.prototype = {
-        style: {},
-        appendChild: function(){},
-        removeChild: function(){},
-        sheet: { insertRule: function(){}},
-    };
-
-    document = {
-        createElement:function() {return new Node();},
-        getElementById:function() {return new Node();},
-        createTextNode:function() {return new Node();},
-        head: new Node(),
-    };
-
-    window = {
-        addEventListener: function(){},
-        location: {search: ""},
-    };
-
-    history = {
-        pushState: function(){},
-    }
-}
-
-// ==== END stubs ====
 
 function chatFilter(msg) {
     var match;
@@ -137,10 +156,6 @@ function makeThmBox(opts) {
 }
 
 
-function cssEscape(str) {
-    // TODO: collisions
-    return encodeURIComponent(str).replace(/%/g,"_");
-}
 function addCssRule(rule) {
     var styleEl = document.createElement('style');
     // Apparently some version of Safari needs the following line? I dunno.
@@ -287,10 +302,8 @@ function groundOut() {
                                 + " found " + actual)
             };
         }
-        var dumpStep="state.work = ground(state.work, sfbm('" + JSON.stringify(fact.Core) + ";" +
-            JSON.stringify(fact.Skin.TermNames) +"'));\n" +
-            "saveGoal(); // " + JSON.stringify(thm.Core);
-        dump(log, dumpStep);
+        var dumpStep = {func: "ground", args:[stripFact(fact)]};
+        dump(log, dumpStep, thm);
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);
         if (storage.user) {
@@ -322,6 +335,11 @@ function groundOut() {
         console.log(e.stack);
         message(e);
     }
+}
+function stripFact(fact) {
+    return {Core:fact.Core,
+            Skin:{TermNames:fact.Skin.TermNames},
+            FreeMaps:fact.FreeMaps};
 }
 
 function addToShooter(factData, land) {
@@ -361,10 +379,8 @@ function addToShooter(factData, land) {
             box.className += " shooter";
             box.onclick = function() {
                 var varMap = box.tree.getVarMap(state.work);
-                var dumpStep = "state.work = Engine.applyInference(state.work, " +
-                    "    sfbm('" + JSON.stringify(fact.Core) + ";" +
-                    JSON.stringify(fact.Skin.TermNames) +"'));";
-                console.log("XXXX trying step:\n  " + dumpStep);
+                var dumpStep = {func: "applyInference",
+                                args: [stripFact(fact), varMap]};
                 var newWork = Engine.applyInference(state.work, fact, varMap);
                 message("");
                 state.url = "";
@@ -438,22 +454,25 @@ function addToShooter(factData, land) {
     // TODO: animate to proper max-height
     window.requestAnimationFrame(function(){box.style["max-height"]="100vh";});
 
-    
     function applyChild(argNum) {
          // TODO: PICKUP: undummy
         try {
             var varMap = box.tree.getVarMap(state.work);
-            var dumpStep = "state.work = applyFact(state.work, " + JSON.stringify(state.workPath) + ",\n" +
-                "  sfbm('" + JSON.stringify(fact.Core) + ";" +
-                JSON.stringify(fact.Skin.TermNames) +"'), " +
-                JSON.stringify(state.anchorPath ? [2, argNum] : [argNum]) + ",{}," +
-                JSON.stringify(state.anchorPath ? [state.anchorPath] : []) + ");";
-            console.log("XXXX trying step:\n  " + dumpStep);
+            var factPath = (state.anchorPath ? [2, argNum] : [argNum]);
+            var anchors = state.anchorPath ? [state.anchorPath] : undefined;
+            var dumpStep =
+                {func:"applyFact",
+                 args: [state.workPath,
+                        stripFact(fact),
+                        factPath,
+                        varMap,
+                        anchors]
+                };
             var newWork = Engine.applyFact(state.work, state.workPath,
                                            fact,
-                                           (state.anchorPath ? [2, argNum] : [argNum]),
+                                           factPath,
                                            varMap,
-                                           state.anchorPath ? [state.anchorPath] : undefined);
+                                           anchors);
             message("");
             state.url = "";
             setWorkPath([]);
@@ -635,14 +654,13 @@ function setWork(work, optDumpStep) {
 }
 
 function save(optDumpStep) {
+    state.step = optDumpStep;
     var stateKey = storage.fpSave("state", state);
     var stateFp = stateKey.local;
     if (stateFp != log.now) {
         var oldNow = log.now;
         log.now = stateFp;
         var logFp = storage.fpSave("log", log).local;
-        console.log("XXXX setting dump: " + logFp + " = " + log.parent + " : " + optDumpStep);
-        dumpStepMap[logFp] = {parent:log.parent, step:optDumpStep};
         log.parent = logFp;
         storage.local.setItem("childOf/" + oldNow, logFp);
         storage.local.setItem(STATE_KEY, logFp);
@@ -654,27 +672,43 @@ function save(optDumpStep) {
     }
 }
 
-function dump(logObj, finalStep) {
+function dump(logObj1, finalStep, finishedFact) {
+    var deps = finishedFact.Tree.Deps.map(function(dep) {
+        return {Core:dep[0], Skin:{TermNames:dep[1].map(function(i){
+            return finishedFact.Skin.TermNames[i];
+        })}, FreeMaps:dep[1].map(function(i){
+            return finishedFact.FreeMaps[i];
+        })};
+    });
     var steps = [finalStep];
-    var fp = logObj.parent;
-    while (v = dumpStepMap[fp]) {
-        console.log("XXXX pulling dump: " + JSON.stringify(v));
-        fp = v.parent;
-        var step = v.step;
-        if (step) {
-            steps.unshift(step);
-            if (step.match("startNextGoal")) {
-                break;
-            }
-        }
+    function loadLogFp(logFp) {
+        storage.fpLoad("log", logFp, function(logObj) {
+            storage.fpLoad("state", logObj.now, function(stateObj) {
+                var step = stateObj.step;
+                if (step && step.goal) {
+                    var out = JSON.stringify({goal: step.goal,
+                                              steps: steps,
+                                              deps: deps
+                                             });
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(out)
+                            .then(() => { message("Dump copied"); })
+                            .catch((e) => { message("Couldn't copy: " + e); });;
+                    }
+                } else {
+                    if (step) {steps.unshift(step);}
+                    if (logObj.parent) {
+                        window.setTimeout(function(){
+                            loadLogFp(logObj.parent);
+                        },0)
+                    } else {
+                        message("Incomplete dump.");
+                    }
+                }
+            });
+        });
     }
-    var out = steps.join("\n");
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(out)
-            .then(() => { message("Dump copied"); })
-            .catch((e) => { message("Couldn't copy: " + e); });;
-    }
-    console.log(out);
+    loadLogFp(logObj1.parent);
 }
 
 function currentLand() {
@@ -695,7 +729,7 @@ function nextGoal() {
     }
     currentGoal = land.goals[0];
     knowTerms(currentGoal);
-    setWork(startWork(currentGoal), "startNextGoal();");
+    setWork(startWork(currentGoal), {"goal":currentGoal});
     setWorkPath([]);
     setAnchorPath();
     Engine.resetDummies(state.work);
@@ -740,7 +774,7 @@ function redraw() {
 
 function loadState(flat) {
     state = flat;
-    setWork(new Fact(state.work), "load()");
+    setWork(new Fact(state.work), state.step);
     setAnchorPath(flat.anchorPath);
     if (currentLand() &&
         currentLand().goals) {
@@ -968,8 +1002,6 @@ document.getElementById("anchor").onclick = function() {
 
 document.getElementById("rewind").onclick = function() {
     var parentFp = log.parent;
-    console.log("XXXX rewind to: " + parentFp);
-
     if (parentFp) {
         loadLogFp(parentFp);
     }

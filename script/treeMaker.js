@@ -64,6 +64,10 @@
         s.className = "select";            
         return s;
     }
+    function cssEscape(str) {
+    // TODO: collisions; synch with stairs.js
+        return encodeURIComponent(str).replace(/%/g,"_");
+    }
 
     // Must be called after the root has been set up.
     Node.prototype.decorate = function() {

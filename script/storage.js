@@ -2,7 +2,7 @@
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
     var OFFLINE = false;
-    if (require && require('fs') && require('fs').existsSync &&
+    if ((typeof document == 'undefined') && require && require('fs') && require('fs').existsSync &&
         require('fs').existsSync('use-local-storage')) {
         OFFLINE = true;
     }

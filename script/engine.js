@@ -17,10 +17,6 @@ Error.stackTraceLimit = Infinity;
     // An incrementing number to disambiguate dummy vars
     var dummyNum = 0;
 
-    // A list of all facts registered through onAddFact.
-    // TODO: index this in a smart way.
-    var allKnownFacts = [];
-
     var nextTick;
     if (typeof process !== 'undefined' && process.nextTick) {
         nextTick = process.nextTick;
@@ -1214,7 +1210,6 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
     // this is the first time that the fact's root operator becomes usable for a
     // tool, we'll return that operator. Otherwise, nothing will be returned.
     function onAddFact(fact) {
-        allKnownFacts.push(fact);
         scheme.factsByMark[fact.getMark()] = fact;
         var coreStr = JSON.stringify(fact.Core);
         var rarr, harr, rarr, rarrAxmp;
