@@ -302,8 +302,22 @@ function groundOut() {
                                 + " found " + actual)
             };
         }
-        var dumpStep = {func: "ground", args:[stripFact(fact)]};
-        dump(log, dumpStep, thm);
+        var finalStep = {func: "ground", args:[stripFact(fact)]};
+        dump(log, thm,
+             function(obj) {
+                 obj.steps.push(finalStep);
+                 var out = JSON.stringify(obj);
+                 if (Blob) {
+                     var msg = document.createElement('a');
+                     msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
+                     msg.innerText = "download solution";
+                     msg.download='tacro.txt';
+                     message(msg);
+                 } else if (navigator.clipboard) {
+                     navigator.clipboard.writeText(out)
+                         .then(() => { message("Dump copied"); })
+                         .catch((e) => { message("Couldn't copy: " + e); });;
+                 }});
         var newFactFp = addToShooter(thm);
         currentLand().thms.push(newFactFp.local);
         if (storage.user) {
@@ -672,7 +686,7 @@ function save(optDumpStep) {
     }
 }
 
-function dump(logObj1, finalStep, finishedFact) {
+function dump(logObj1, finishedFact, callback) {
     var deps = finishedFact.Tree.Deps.map(function(dep) {
         return {Core:dep[0], Skin:{TermNames:dep[1].map(function(i){
             return finishedFact.Skin.TermNames[i];
@@ -680,21 +694,17 @@ function dump(logObj1, finalStep, finishedFact) {
             return finishedFact.FreeMaps[i];
         })};
     });
-    var steps = [finalStep];
+    var steps = [];
+
     function loadLogFp(logFp) {
         storage.fpLoad("log", logFp, function(logObj) {
             storage.fpLoad("state", logObj.now, function(stateObj) {
                 var step = stateObj.step;
                 if (step && step.goal) {
-                    var out = JSON.stringify({goal: step.goal,
-                                              steps: steps,
-                                              deps: deps
-                                             });
-                    if (navigator.clipboard) {
-                        navigator.clipboard.writeText(out)
-                            .then(() => { message("Dump copied"); })
-                            .catch((e) => { message("Couldn't copy: " + e); });;
-                    }
+                    callback({goal: step.goal,
+                              steps: steps,
+                              deps: deps
+                             });
                 } else {
                     if (step) {steps.unshift(step);}
                     if (logObj.parent) {
@@ -849,7 +859,12 @@ function message(msg) {
     if (msg.stack) {
         console.log(msg.stack);
     }
-    document.getElementById("message").innerText = msg;
+    if (msg.href) {
+        document.getElementById("message").innerText = "";
+        document.getElementById("message").appendChild(msg);
+    } else {
+        document.getElementById("message").innerText = msg;
+    }
 }
 
 function cheat(n) {
