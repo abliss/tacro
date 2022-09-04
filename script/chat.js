@@ -1,5 +1,5 @@
 (function(module) {
-    function Chat(storage, fingerprinter, pane, input, filter) {
+    function Chat(storage, fingerprinter, pane, input, filter, Fact) {
         var that = this;
         var workChannel = null;
         var history = [];

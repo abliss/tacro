@@ -11,15 +11,6 @@
     var offlineEnabled = false;
     var firebase;
 
-    if (typeof process !== 'undefined' && process.nextTick) {
-        nextTick = process.nextTick;
-    } else if (typeof window !== 'undefined' && window.FAST_TICK) {
-        nextTick = function nextTick(cb) {cb();};
-    } else if (typeof window !== 'undefined' && window.setTimeout) {
-        nextTick = function nextTick(cb) {window.setTimeout(cb, 0);}
-    } else {
-        throw new Error("No nextTick");
-    }
 
     function FirebaseStub() {
     }
@@ -36,9 +27,18 @@
         };
     
 
-    function Storage(fingerprinter) {
-        var thatStorage = this;
+    function Storage(fingerprinter, optFastTick) {
+        if (typeof process !== 'undefined' && process.nextTick) {
+            nextTick = process.nextTick;
+        } else if (typeof window !== 'undefined' && optFastTick) {
+            nextTick = function nextTick(cb) {cb();};
+        } else if (typeof window !== 'undefined' && window.setTimeout) {
+            nextTick = function nextTick(cb) {window.setTimeout(cb, 0);}
+        } else {
+            throw new Error("No nextTick");
+        }
 
+        var thatStorage = this;
         if (typeof localStorage === "undefined" || localStorage === null) {
             var LocalStorage = require('node-localstorage').LocalStorage;
             this.local = new LocalStorage('./scratch');
