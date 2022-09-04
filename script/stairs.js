@@ -106,29 +106,6 @@ if (window.location.search.match("CLEAR")) {
     window.location.assign(window.location.href.replace("CLEAR",""));
 }
 
-function newVarNamer() {
-    var names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-    var map = {};
-    return function(obj) {
-        /*
-        if (!map[obj]) {
-            map[obj] = names.shift();
-        }
-        return map[obj];
-        */
-        return names[obj];
-    };
-}
-
-/* {
-        fact: fact,
-        exp: exp,
-        onclick: onclick,
-        width: maxWidth,
-        height: maxHeight,
-        editable:editable,
-    }
-*/
 function makeThmBox(opts) {
     if (opts.editable) {
         opts.getSpecifyOptions = function() { return state.specifyOptions; }
@@ -281,6 +258,32 @@ function getWorkTermArr() {
     return expToTermArr.bind(state.work)(exp);
 }
 
+function verifyDump() {
+    dump(log, state.work,
+         function(dump) {
+             try {
+             var Engine = require('./engine.js');
+             dump.deps.forEach(function(dep) {Engine.onAddFact(new Fact(dep))});
+             var work = Engine.canonicalize(startWork(dump.goal));
+             dump.steps.forEach(function(step) {
+                 step.args = step.args.map(function(arg){
+                     if (arg && arg.Core) {
+                         return new Fact(arg);
+                     } else {
+                         return arg;
+                     }
+                 });
+                 step.args.unshift(work);
+                 work = Engine[step.func].apply(Engine, step.args);
+             });
+             work.verify();
+             Engine.onAddFact(work);
+                 message("checked " + JSON.stringify(dump.logFps) + "\n" + (dump.steps.length) + "\n" + work.getMark());
+             } catch (e) {
+                 message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
+             }
+         });
+}
 function groundOut() {
     try {
         var fact = this;
@@ -671,6 +674,7 @@ function save(optDumpStep) {
     state.step = optDumpStep;
     var stateKey = storage.fpSave("state", state);
     var stateFp = stateKey.local;
+    console.log("saved as state=" + stateFp + " step:" + JSON.stringify(optDumpStep));
     if (stateFp != log.now) {
         var oldNow = log.now;
         log.now = stateFp;
@@ -684,6 +688,7 @@ function save(optDumpStep) {
         }
         history.pushState(logFp, STATE_KEY, "#s=" + stateFp + "/" + state.url);
     }
+    verifyDump(log);
 }
 
 function dump(logObj1, finishedFact, callback) {
@@ -695,30 +700,28 @@ function dump(logObj1, finishedFact, callback) {
         })};
     });
     var steps = [];
-
-    function loadLogFp(logFp) {
-        storage.fpLoad("log", logFp, function(logObj) {
+    var logFps = [];
+    function walkLogObj(logObj) {
             storage.fpLoad("state", logObj.now, function(stateObj) {
+                logFps.push({parent:logObj.parent, stateFp:logObj.now, step:stateObj.step});
                 var step = stateObj.step;
                 if (step && step.goal) {
                     callback({goal: step.goal,
                               steps: steps,
-                              deps: deps
+                              deps: deps,
+                              logFps: logFps,
                              });
                 } else {
                     if (step) {steps.unshift(step);}
                     if (logObj.parent) {
-                        window.setTimeout(function(){
-                            loadLogFp(logObj.parent);
-                        },0)
+                        storage.fpLoad("log", logObj.parent, walkLogObj);
                     } else {
                         message("Incomplete dump.");
                     }
                 }
             });
-        });
-    }
-    loadLogFp(logObj1.parent);
+        }
+    walkLogObj(logObj1);
 }
 
 function currentLand() {
@@ -739,7 +742,7 @@ function nextGoal() {
     }
     currentGoal = land.goals[0];
     knowTerms(currentGoal);
-    setWork(startWork(currentGoal), {"goal":currentGoal});
+    setWork(startWork(currentGoal), {goal:currentGoal});
     setWorkPath([]);
     setAnchorPath();
     Engine.resetDummies(state.work);
