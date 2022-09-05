@@ -72,9 +72,13 @@ Game.chat = new Game.Chat(
         var match;
         if (match = msg.match(/^\//)) {
             try {
-                message(eval(msg.substring(1)));
+                function clear() {
+                    localStorage.clear();
+                }
+
+                Ui.message(eval(msg.substring(1)));
             } catch (e) {
-                message(e);
+                Ui.message(e);
             }
             return false;
         }
@@ -106,17 +110,7 @@ Game.currentGoal = null;
 Error.stackTraceLimit = Infinity;
 
 
-
-function clear() {
-    localStorage.clear();
-}
-
-if (Ui.window.location.search.match("CLEAR")) {
-    localStorage.clear();
-    Ui.window.location.assign(Ui.window.location.href.replace("CLEAR",""));
-}
-
-function makeThmBox(opts) {
+Ui.makeThmBox = function(opts) {
     if (opts.editable) {
         opts.getSpecifyOptions = function() { return Game.state.specifyOptions; }
     }
@@ -143,7 +137,7 @@ function makeThmBox(opts) {
 }
 
 
-function addCssRule(rule) {
+Ui.addCssRule = function(rule) {
     var styleEl = Ui.document.createElement('style');
     // Apparently some version of Safari needs the following line? I dunno.
     styleEl.appendChild(Ui.document.createTextNode(''));
@@ -152,17 +146,17 @@ function addCssRule(rule) {
     styleSheet.insertRule(rule, 0);
     console.log("Added Rule: " + rule);
 }
-function registerNewTool(toolOp) {
+Ui.registerNewTool = function(toolOp) {
     for (var arg = 1; arg <= 2; arg++) {
         var rule = ".tool" + Ui.cssEscape(toolOp) + "_" + arg +
             " .shooter .tool" + Ui.cssEscape(toolOp) +
             ".apply" + arg + " { display:inline-block;}";
-        addCssRule(rule);
+        Ui.addCssRule(rule);
     }
     
 }
 
-function setAnchorPath(anchorPath) {
+Game.setAnchorPath = function(anchorPath) {
     Game.state.anchorPath = anchorPath;
     if (Game.state.anchorPath == undefined) {
         Ui.document.getElementById("anchor").innerText = "anchor";
@@ -175,14 +169,35 @@ function setAnchorPath(anchorPath) {
     }
 }
 
-function setWorkPath(wp) {
+Game.setWorkPath = function(wp) {
     var className = Game.state.anchorPath ? "enableAllTools " : ""; // XXX anchorUsableTools
     if (typeof wp == 'undefined') {
         delete Game.state.workPath;
         if (Ui.workBox) delete Ui.workBox.pathTermArr;
     } else {
+        // NB: not the same as orcat's xpath definition. Pass 0 to get the term.
+        // TODO: XXX
+        function zpath(exp, path) {
+            var a = exp, l = path.length, i = 0;
+            for (i = 0; i < l; i++) {
+                a=a[path[i]];
+            }
+            return a;
+        }
+
         Game.state.workPath = wp;
         var pathExp = zpath(Game.state.work.Core[Game.Fact.CORE_HYPS][0], wp);
+        // TODO: XXX expects this=fact
+        function expToTermArr(exp) {
+            if (Array.isArray(exp)) {
+                var args = exp.slice(1).map(expToTermArr.bind(this));
+                args.unshift(this.Skin.TermNames[exp[0]]);
+                return args;
+            } else {
+                return exp;
+            }
+        }
+
         if (Ui.workBox) Ui.workBox.pathTermArr = expToTermArr.bind(Game.state.work)(pathExp);
         Game.usableTools = Game.Engine.getUsableTools(Game.state.work, Game.state.workPath);
         for (var k in Game.usableTools) if (Game.usableTools.hasOwnProperty(k)) {
@@ -197,11 +212,11 @@ function setWorkPath(wp) {
     }
     Ui.document.body.className = className;
 
-    redrawSelection();
+    Ui.redrawSelection();
 }
 
 // A Facet is a Fact which can be / has been specified by some amount.
-function Facet(factData) {
+Game.Facet = function(factData) {
     var fact = Game.Engine.canonicalize(new Game.Fact(factData));
     fact.Skin.VarNames = fact.Skin.VarNames.map(function(x,i) {
         return "&#" + (i + 0x2460) + ";";
@@ -216,7 +231,7 @@ function Facet(factData) {
     }
 }
 
-function workPathHighlighter(tool, path, isHover) {
+Ui.workPathHighlighter = function(tool, path, isHover) {
     var suffix = path.slice(1);
     function getWorkPath() {
         if (Game.state.workPath) {
@@ -242,39 +257,16 @@ function workPathHighlighter(tool, path, isHover) {
     }
 }
 
-// TODO: XXX expecst this=fact
-function expToTermArr(exp) {
-    if (Array.isArray(exp)) {
-        var args = exp.slice(1).map(expToTermArr.bind(this));
-        args.unshift(this.Skin.TermNames[exp[0]]);
-        return args;
-    } else {
-        return exp;
-    }
-}
 
-// NB: not the same as orcat's xpath definition. Pass 0 to get the term.
-// TODO: XXX
-function zpath(exp, path) {
-    var a = exp, l = path.length, i = 0;
-    for (i = 0; i < l; i++) {
-        a=a[path[i]];
-    }
-    return a;
-}
 
-function getWorkTermArr() {
-    var exp = Game.state.work.Core[Game.Fact.CORE_HYPS][0];
-    return expToTermArr.bind(Game.state.work)(exp);
-}
 
-function verifyDump() {
-    dump(Game.log, Game.state.work,
+Game.verifyDump = function() {
+    Game.dump(Game.log, Game.state.work,
          function(dump) {
              try {
              var Engine = require('./engine.js');
              dump.deps.forEach(function(dep) {Engine.onAddFact(new Game.Fact(dep))});
-             var work = Engine.canonicalize(startWork(dump.goal));
+             var work = Engine.canonicalize(Game.startWork(dump.goal));
              dump.steps.forEach(function(step) {
                  step.args = step.args.map(function(arg){
                      if (arg && arg.Core) {
@@ -288,13 +280,13 @@ function verifyDump() {
              });
              work.verify();
              Engine.onAddFact(work);
-                 message("checked " + JSON.stringify(dump.logFps) + "\n" + (dump.steps.length) + "\n" + work.getMark());
+                 Ui.message("checked " + JSON.stringify(dump.logFps) + "\n" + (dump.steps.length) + "\n" + work.getMark());
              } catch (e) {
-                 message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
+                 Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
              }
          });
 }
-function groundOut() {
+Game.groundOut = function() {
     try {
         var fact = this;
         Game.state.url = "#u=" + (Game.urlNum++) + "/" + "#f=" + fact.Skin.Name;
@@ -315,8 +307,8 @@ function groundOut() {
                                 + " found " + actual)
             };
         }
-        var finalStep = {func: "ground", args:[stripFact(fact)]};
-        dump(Game.log, thm,
+        var finalStep = {func: "ground", args:[Game.stripFact(fact)]};
+        Game.dump(Game.log, thm,
              function(obj) {
                  obj.steps.push(finalStep);
                  var out = JSON.stringify(obj);
@@ -325,22 +317,22 @@ function groundOut() {
                      msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
                      msg.innerText = "download solution";
                      msg.download='tacro.txt';
-                     message(msg);
+                     Ui.message(msg);
                  } else if (navigator.clipboard) {
                      navigator.clipboard.writeText(out)
-                         .then(() => { message("Dump copied"); })
-                         .catch((e) => { message("Couldn't copy: " + e); });;
+                         .then(() => { Ui.message("Dump copied"); })
+                         .catch((e) => { Ui.message("Couldn't copy: " + e); });;
                  }});
-        var newFactFp = addToShooter(thm);
-        currentLand().thms.push(newFactFp.local);
+        var newFactFp = Ui.addToShooter(thm);
+        Game.currentLand().thms.push(newFactFp.local);
         if (Game.storage.user) {
             // TODO: numbers goals backwards and doesn't carry over
             // anonymously-won points when logging in.
             Game.storage.remote.child("users").
                 child(Game.storage.user.uid).
                 child("points").
-                child(Game.storage.escape(currentLand().name)).
-                child(currentLand().goals.length).
+                child(Game.storage.escape(Game.currentLand().name)).
+                child(Game.currentLand().goals.length).
                 set(newFactFp.remote);
         }
 
@@ -351,31 +343,31 @@ function groundOut() {
                                       span.style.display = 'none';}, 1200);
         /* XXX: sync with css */
 
-        message("");
-        setWorkPath([]);
-        setAnchorPath();
-        currentLand().goals.shift();
-        nextGoal();
-        redraw();
+        Ui.message("");
+        Game.setWorkPath([]);
+        Game.setAnchorPath();
+        Game.currentLand().goals.shift();
+        Game.nextGoal();
+        Ui.redraw();
     } catch (e) {
         console.log("Error in ground: " + e);
         console.log(e.stack);
-        message(e);
+        Ui.message(e);
     }
 }
-function stripFact(fact) {
+Game.stripFact = function(fact) {
     return {Core:fact.Core,
             Skin:{TermNames:fact.Skin.TermNames},
             FreeMaps:fact.FreeMaps};
 }
 
-function addToShooter(factData, land) {
+Ui.addToShooter = function(factData, land) {
     if (!factData) {
         throw new Error("Bad fact: "+ factData);
     }
-    if (!land) land = currentLand();
-    var facet = new Facet(factData);
-    knowTerms(facet.fact);
+    if (!land) land = Game.currentLand();
+    var facet = new Game.Facet(factData);
+    Game.knowTerms(facet.fact);
 
     var fact = facet.fact;
 
@@ -388,18 +380,18 @@ function addToShooter(factData, land) {
 
     var newTool = Game.Engine.onAddFact(facet.fact);
     if (newTool) {
-        message("New root unlocked: " + newTool);
-        registerNewTool(newTool);
+        Ui.message("New root unlocked: " + newTool);
+        Ui.registerNewTool(newTool);
     }
     switch (factData.Core[Game.Fact.CORE_HYPS].length) {
         case 0:
         break;
         case 1: {
-            var box = makeThmBox({
+            var box = Ui.makeThmBox({
                 fact:fact,
                 exp:fact.Core[Game.Fact.CORE_STMT],
                 size:Ui.shooterTreeWidth,
-                onmouseover: workPathHighlighter,
+                onmouseover: Ui.workPathHighlighter,
                 onchange: onchange,
                 editable:true});
             // TODO: display hyp somehow
@@ -407,14 +399,14 @@ function addToShooter(factData, land) {
             box.onclick = function() {
                 var varMap = box.tree.getVarMap(Game.state.work);
                 var dumpStep = {func: "applyInference",
-                                args: [stripFact(fact), varMap]};
+                                args: [Game.stripFact(fact), varMap]};
                 var newWork = Game.Engine.applyInference(Game.state.work, fact, varMap);
-                message("");
+                Ui.message("");
                 Game.state.url = "";
-                setWorkPath([]);
-                setAnchorPath();
-                setWork(newWork, dumpStep);
-                redraw();
+                Game.setWorkPath([]);
+                Game.setAnchorPath();
+                Game.setWork(newWork, dumpStep);
+                Ui.redraw();
             };
             var pane = Ui.panes[Ui.panes.length-1];
             pane.pane.insertBefore(box, pane.pane.firstChild);
@@ -426,9 +418,9 @@ function addToShooter(factData, land) {
     if ((JSON.stringify(fact.Core) === '[[],[0,0,0],[]]')) {
         var reflexiveTerm = fact.Skin.TermNames[0];
         console.log("Reflexive found:" + reflexiveTerm);
-        addCssRule('.name'+Ui.cssEscape(reflexiveTerm) + " .depth1.arg1 {" +
+        Ui.addCssRule('.name'+Ui.cssEscape(reflexiveTerm) + " .depth1.arg1 {" +
                 "border-right: 1px solid red;}");
-        addCssRule('.name'+Ui.cssEscape(reflexiveTerm) + " .depth1.arg2 {" +
+        Ui.addCssRule('.name'+Ui.cssEscape(reflexiveTerm) + " .depth1.arg2 {" +
                 "border-left: 1px solid red;}");
         Game.reflexives[reflexiveTerm] = fact;
     }
@@ -466,11 +458,11 @@ function addToShooter(factData, land) {
         }
 
     }
-    box = makeThmBox({
+    box = Ui.makeThmBox({
         fact:fact, 
         exp:fact.Core[Game.Fact.CORE_STMT],
         size:Ui.shooterTreeWidth,
-        onmouseover: workPathHighlighter,
+        onmouseover: Ui.workPathHighlighter,
         onchange: onchange,
         editable:true});
     box.className += " shooter";
@@ -490,7 +482,7 @@ function addToShooter(factData, land) {
             var dumpStep =
                 {func:"applyFact",
                  args: [Game.state.workPath,
-                        stripFact(fact),
+                        Game.stripFact(fact),
                         factPath,
                         varMap,
                         anchors]
@@ -500,16 +492,16 @@ function addToShooter(factData, land) {
                                            factPath,
                                            varMap,
                                            anchors);
-            message("");
+            Ui.message("");
             Game.state.url = "";
-            setWorkPath([]);
-            setAnchorPath();
-            setWork(newWork, dumpStep);
-            redraw();
+            Game.setWorkPath([]);
+            Game.setAnchorPath();
+            Game.setWork(newWork, dumpStep);
+            Ui.redraw();
         } catch (e) {
             console.log("Error in applyFact: " + e);
             console.log(e.stack);
-            message(e);
+            Ui.message(e);
         }
     }
 
@@ -537,20 +529,20 @@ function addToShooter(factData, land) {
 }
 
 
-function workOnclick(path, ev) {
+Ui.workOnclick = function(path, ev) {
     var goalPath = path.slice();
     if (goalPath[goalPath.length-1] == 0) {
         goalPath.pop();
     }
-    setWorkPath(goalPath);
+    Game.setWorkPath(goalPath);
     // Highlight usable tools.
     // TODO: move this somewhere else
     Game.state.url = "#u=" + (Game.urlNum++) + "/#g=" + goalPath;
-    save();
+    Game.save();
     ev.stopPropagation();
 }
 
-function startWork(fact) {
+Game.startWork = function(fact) {
     var work = new Game.Fact(fact);
     if (work.Core[Game.Fact.CORE_HYPS].length == 0) {
         work.setHyps([work.Core[Game.Fact.CORE_STMT]]);
@@ -569,7 +561,7 @@ function startWork(fact) {
     return work;
 }
 
-function knowTerms(fact) {
+Game.knowTerms = function(fact) {
     var newTerms = {};
     var numNewTerms = 0;
     fact.Skin.TermNames.forEach(function(termName, termNum) {
@@ -585,7 +577,7 @@ function knowTerms(fact) {
             Game.state.specifyOptions.Terms.push(termObj);
         }
         if (!Ui.termToPane[termName]) {
-            Ui.termToPane[termName] = new Pane(termName);
+            Ui.termToPane[termName] = new Ui.Pane(termName);
         }
     });
     function scan(exp) {
@@ -607,7 +599,7 @@ function knowTerms(fact) {
     return newTerms;
 }
 
-function verifyWork(fact) {
+Game.verifyWork = function(fact) {
     try {
         return fact.verify();
     } catch (e) {
@@ -629,8 +621,8 @@ function verifyWork(fact) {
     }
 }
 
-function setWork(work, optDumpStep) {
-    var verified = verifyWork(work);
+Game.setWork = function(work, optDumpStep) {
+    var verified = Game.verifyWork(work);
     // Check for drift from planned FreeVar set. It would be nice to keep these
     // in lockstep but that requires more sophisticted dummy-tracking than we
     // currently do.
@@ -645,7 +637,7 @@ function setWork(work, optDumpStep) {
         var expected = JSON.stringify(goalFree);
         var actual = JSON.stringify(workFree);
         if (expected != actual) {
-            message('FreeVar drift: want ' + expected + " have " + actual);
+            Ui.message('FreeVar drift: want ' + expected + " have " + actual);
         }
     }
     Game.state.work = work;
@@ -662,7 +654,7 @@ function setWork(work, optDumpStep) {
             Game.Engine.getMandHyps(workClone, [], idFact, [], null, true);
             ground.removeAttribute('disabled');
             ground.className = "enabled";
-            ground.onclick = groundOut.bind(idFact);
+            ground.onclick = Game.groundOut.bind(idFact);
             break;
         } catch (e) {
             // can't ground this way
@@ -677,10 +669,10 @@ function setWork(work, optDumpStep) {
     for (var k in Ui.factToShooterBox) if (Ui.factToShooterBox.hasOwnProperty(k)) {
         Ui.factToShooterBox[k].box.tree.onchange();
     }
-    save(optDumpStep);
+    Game.save(optDumpStep);
 }
 
-function save(optDumpStep) {
+Game.save = function(optDumpStep) {
     Game.state.step = optDumpStep;
     var stateKey = Game.storage.fpSave("state", Game.state);
     var stateFp = stateKey.local;
@@ -698,10 +690,10 @@ function save(optDumpStep) {
         }
         Ui.history.pushState(logFp, Game.STATE_KEY, "#s=" + stateFp + "/" + Game.state.url);
     }
-    verifyDump(Game.log);
+    Game.verifyDump(Game.log);
 }
 
-function dump(logObj1, finishedFact, callback) {
+Game.dump = function(logObj1, finishedFact, callback) {
     var deps = finishedFact.Tree.Deps.map(function(dep) {
         return {Core:dep[0], Skin:{TermNames:dep[1].map(function(i){
             return finishedFact.Skin.TermNames[i];
@@ -726,7 +718,7 @@ function dump(logObj1, finishedFact, callback) {
                     if (logObj.parent) {
                         Game.storage.fpLoad("log", logObj.parent, walkLogObj);
                     } else {
-                        message("Incomplete dump.");
+                        Ui.message("Incomplete dump.");
                     }
                 }
             });
@@ -734,35 +726,32 @@ function dump(logObj1, finishedFact, callback) {
     walkLogObj(logObj1);
 }
 
-function currentLand() {
+Game.currentLand = function() {
     return Game.state.lands[Game.state.lands.length-1];
 }
-function nextGoal() {
-    var land = currentLand();
+Game.nextGoal = function() {
+    var land = Game.currentLand();
     if (!land.goals || (land.goals.length <= 0)) {
         delete land.goals;
         var nextLand = Game.landDepMap[land.name]; // XXX
         if (nextLand) {
-            enterLand(nextLand);
-            return nextGoal();
+            Game.enterLand(nextLand);
+            return Game.nextGoal();
         } else {
-            message("No more lands! You win! Now go write a land.");
+            Ui.message("No more lands! You win! Now go write a land.");
             return;
         }
     }
     Game.currentGoal = land.goals[0];
-    knowTerms(Game.currentGoal);
-    setWork(startWork(Game.currentGoal), {goal:Game.currentGoal});
-    setWorkPath([]);
-    setAnchorPath();
+    Game.knowTerms(Game.currentGoal);
+    Game.setWork(Game.startWork(Game.currentGoal), {goal:Game.currentGoal});
+    Game.setWorkPath([]);
+    Game.setAnchorPath();
     Game.Engine.resetDummies(Game.state.work);
     return;
 }
 
-function onNextRedraw(f) {
-    Ui.deferredUntilRedraw.push(f);
-}
-function redrawSelection() {
+Ui.redrawSelection = function() {
     if (!Ui.workBox) return;
     if (Ui.selectedNode) {
         d3.select(Ui.selectedNode).classed("selected", false);
@@ -775,55 +764,55 @@ function redrawSelection() {
         d3.select(Ui.selectedNode).classed("selected", true);
     }
 }
-function redraw() {
+Ui.redraw = function() {
     Ui.deferredUntilRedraw.forEach(function(f) { f(); });
     Ui.deferredUntilRedraw.splice(0, Ui.deferredUntilRedraw.length);
     var well = Ui.document.getElementById("well");
     try {
-        var box = makeThmBox({
+        var box = Ui.makeThmBox({
             fact:Game.state.work,
             exp:Game.state.work.Core[Game.Fact.CORE_HYPS][0],
-            onclick:workOnclick,
+            onclick:Ui.workOnclick,
             size:Ui.workTreeWidth,
             editable:false});
         well.removeChild(well.firstChild);
         well.appendChild(box);
         Ui.workBox = box;
-        setWorkPath(Game.state.workPath);
+        Game.setWorkPath(Game.state.workPath);
     } catch (e) {
-        message(e);
+        Ui.message(e);
     }
 }
 
-function loadState(flat) {
+Game.loadState = function(flat) {
     Game.state = flat;
-    setWork(new Game.Fact(Game.state.work), Game.state.step);
-    setAnchorPath(flat.anchorPath);
-    if (currentLand() &&
-        currentLand().goals) {
-        Game.currentGoal = currentLand().goals[0];
-        message("");
+    Game.setWork(new Game.Fact(Game.state.work), Game.state.step);
+    Game.setAnchorPath(flat.anchorPath);
+    if (Game.currentLand() &&
+        Game.currentLand().goals) {
+        Game.currentGoal = Game.currentLand().goals[0];
+        Ui.message("");
     } else {
-        message("no goals in current land");
+        Ui.message("no goals in current land");
     }
 }
 
-function loadLogFp(logFp, cb) {
+Game.loadLogFp = function(logFp, cb) {
     Game.storage.fpLoad("log", logFp, function(logObj) {
         Game.storage.fpLoad("state", logObj.now, function(stateObj) {
             Game.log = logObj;
-            expireOldStates(Game.MAX_STATES, logObj);
-            loadState(stateObj);
+            Game.expireOldStates(Game.MAX_STATES, logObj);
+            Game.loadState(stateObj);
             // TODO: should popstate? double-undo problem.
             Ui.history.pushState(logFp, "state",
                               "#s=" + logObj.now + "/" + Game.state.url);
             Ui.document.getElementById("forward").style.visibility="visible";
             if (cb) {cb();}
-            redraw();
+            Ui.redraw();
         });
     });
 }
-function enterLand(landData) {
+Game.enterLand = function(landData) {
     var land = {
         name:landData.name,
         thms:[],             // hash values
@@ -833,13 +822,13 @@ function enterLand(landData) {
     land.goals = landData.goals.slice();
     if (landData.axioms) {
         landData.axioms.forEach(function(data) {
-            var factFp = addToShooter(data).local;
+            var factFp = Ui.addToShooter(data).local;
             land.thms.push(factFp);
         });
     }
 }
 
-function Pane(newTerm) {
+Ui.Pane = function(newTerm) {
     console.log("XXXX New pane " + newTerm);
     var tab = Ui.document.createElement("button");
     tab.addEventListener("click", function() {
@@ -863,11 +852,11 @@ function Pane(newTerm) {
     Ui.panes.push(this);
     if (Ui.panes.length == 3) {
         Game.auto = true;
-        message("Automatic Activation mode enabled! Manual Training/promoting is now optional.");
+        Ui.message("Automatic Activation mode enabled! Manual Training/promoting is now optional.");
     }
 }
 
-function message(msg) {
+Ui.message = function(msg) {
     if (msg) {console.log("Tacro: " + msg);}
     if (msg.stack) {
         console.log(msg.stack);
@@ -880,23 +869,23 @@ function message(msg) {
     }
 }
 
-function cheat(n) {
+Game.cheat = function(n) {
     while (n > 0) {
         var thm = new Game.Fact(Game.state.work);
         thm.Tree.Proof=[];
         //thm.Tree.Cmd = 'stmt'
         thm.setHyps([]);
-        var factFp = addToShooter(thm).local;
-        currentLand().thms.push(factFp);
-        message("");
-        currentLand().goals.shift();
-        nextGoal();
+        var factFp = Ui.addToShooter(thm).local;
+        Game.currentLand().thms.push(factFp);
+        Ui.message("");
+        Game.currentLand().goals.shift();
+        Game.nextGoal();
         n--;
-        redraw();
-        save();
+        Ui.redraw();
+        Game.save();
     }
 }
-function exportFacts() {
+Game.exportFacts = function() {
 
     console.log("==== EXPORT BEGIN ====");
     Game.state.lands.forEach(function(land) {
@@ -921,8 +910,8 @@ function exportFacts() {
 
 
 
-
-function firebaseLoginLoaded() {
+// called from index.html
+Game.firebaseLoginLoaded = function() {
     console.log("Firebase Login loaded.");
     Game.storage.authInit(FirebaseSimpleLogin, function(user) {
         if (user) {
@@ -942,33 +931,22 @@ function firebaseLoginLoaded() {
         } else {
             // user is logged out
             Ui.document.getElementById("login").innerText = "guest";
-            resetLoginLink();
+            //resetLoginLink
+            var link = Ui.document.getElementById("login");
+            link.disabled = false;
+            link.onclick = function() {
+                Game.storage.authLogin();
+                return false;
+            };
         }
     });
 }
 
 
-function resetLoginLink() {
-    var link = Ui.document.getElementById("login");
-    link.disabled = false;
-    link.onclick = function() {
-        Game.storage.authLogin();
-        return false;
-    };
-}
-
-function getPageCoords(node) {
-    var x = 0;
-    var y = 0;
-    do {
-        y += node.offsetTop;
-        x += node.offsetLeft;
-    } while ((node = node.offsetParent));
-    return [x,y];
-}
 
 
-function loadLands(lands) { // TODO: this has become totally gefucked PICKUP
+
+Game.loadLands = function(lands) { // TODO: this has become totally gefucked PICKUP
     var numLands = 0;
     for (var n in lands) if (lands.hasOwnProperty(n)) {
         numLands++;
@@ -981,23 +959,23 @@ function loadLands(lands) { // TODO: this has become totally gefucked PICKUP
         } else {
             Game.landDepMap[undefined] = land;
             if (Game.state.lands.length == 0) {
-                enterLand(land);
-                nextGoal();
+                Game.enterLand(land);
+                Game.nextGoal();
                 Game.state.url = "";
-                save();
-                redraw();
+                Game.save();
+                Ui.redraw();
             }
         }
     }
     console.log("Got checked lands: " + numLands);
 }
 
-function expireOldStates(maxStates, logObj) {
+Game.expireOldStates = function(maxStates, logObj) {
     if (logObj) {
         var parentFp = logObj.parent;
         var stateFp = logObj.now;
         Game.storage.fpLoad("log", parentFp,
-                       expireOldStates.bind(null, maxStates-1));
+                       Game.expireOldStates.bind(null, maxStates-1));
         if (maxStates <= 0) {
             console.info("removing state " + stateFp);
             Game.storage.fpRm("log", parentFp);
@@ -1005,60 +983,61 @@ function expireOldStates(maxStates, logObj) {
         }
     }
 }
+
 // ==== STARTUP ====
-Ui.window.addEventListener('popstate', function(ev) {
-    console.log("popstate to " + ev.state);
-    if (ev.state) {
-        loadLogFp(ev.state);
-    } else {
-        var match = Ui.window.location.hash.match(/CHEAT=(\d+)/);
-        if (match) {
-            cheat(match[1]);
+Ui.startup = function() {
+    Ui.window.addEventListener('popstate', function(ev) {
+        console.log("popstate to " + ev.state);
+        if (ev.state) {
+            Game.loadLogFp(ev.state);
+        } else {
+            var match = Ui.window.location.hash.match(/CHEAT=(\d+)/);
+            if (match) {
+                Game.cheat(match[1]);
+            }
+            if (Ui.window.location.search.match(/auto=1/)) {
+                Game.auto = true;
+            }
         }
-        if (Ui.window.location.search.match(/auto=1/)) {
-            Game.auto = true;
+    });
+    Ui.document.getElementById("anchor").onclick = function() {
+        if (Game.state.anchorPath == undefined) {
+            Game.setAnchorPath(Game.state.workPath.slice());;
+        } else {
+            Game.setAnchorPath(undefined);
         }
-    }
-});
-Ui.document.getElementById("anchor").onclick = function() {
-    if (Game.state.anchorPath == undefined) {
-        setAnchorPath(Game.state.workPath.slice());;
-    } else {
-        setAnchorPath(undefined);
-    }
-};
+    };
 
-Ui.document.getElementById("rewind").onclick = function() {
-    var parentFp = Game.log.parent;
-    if (parentFp) {
-        loadLogFp(parentFp);
-    }
-    return false;
-};
-Ui.document.getElementById("forward").onclick = function() {
-    var childLogFp = Game.storage.local.getItem("childOf/" + Game.log.now);
-    if (childLogFp) {
-        loadLogFp(childLogFp);
-    } else {
-        Ui.document.getElementById("forward").style.visibility="hidden";
-    }
-    return false;
-};
+    Ui.document.getElementById("rewind").onclick = function() {
+        var parentFp = Game.log.parent;
+        if (parentFp) {
+            Game.loadLogFp(parentFp);
+        }
+        return false;
+    };
+    Ui.document.getElementById("forward").onclick = function() {
+        var childLogFp = Game.storage.local.getItem("childOf/" + Game.log.now);
+        if (childLogFp) {
+            Game.loadLogFp(childLogFp);
+        } else {
+            Ui.document.getElementById("forward").style.visibility="hidden";
+        }
+        return false;
+    };
 
-(function() {
     var logFp = Game.storage.local.getItem(Game.STATE_KEY);
     if (logFp) {
         // restore
-        loadLogFp(logFp, function() {
+        Game.loadLogFp(logFp, function() {
             Game.state.lands.forEach(function(land) {
                 land.thms.forEach(function(thmFp) {
                     Game.storage.fpLoad("fact", thmFp, function(thmObj) {
-                        addToShooter(thmObj, land);
-                        redraw();
+                        Ui.addToShooter(thmObj, land);
+                        Ui.redraw();
                     });
                 });
             });
-            loadLands(JSON.parse(Game.storage.local.getItem("my-checked-lands")));
+            Game.loadLands(JSON.parse(Game.storage.local.getItem("my-checked-lands")));
 
         });
     } else {
@@ -1074,8 +1053,10 @@ Ui.document.getElementById("forward").onclick = function() {
         };
         Game.storage.remoteGet("checked/lands", function(lands) {
             Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
-            loadLands(lands);
+            Game.loadLands(lands);
         });
 
     }
-})();
+};
+
+Ui.startup();
