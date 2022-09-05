@@ -1,5 +1,7 @@
 // Hackish for now.
+Error.stackTraceLimit = Infinity;
 var Ui;
+var Game = {};
 // ==== Stubs for node.js usage ====
 if (typeof document == 'undefined') {
     function Node() {};
@@ -55,60 +57,16 @@ if (typeof document == 'undefined') {
     }
 }
 
-var Game = {};
-Game.Fact = require('./fact.js');
-Game.Engine = require('./engine.js');
-Game.Storage = require('./storage.js');
 Ui.TreeMaker = require('./treeMaker.js');
-Game.Chat = require('./chat.js');
-
-
-
-Game.storage = new Game.Storage(Game.Engine.fingerprint, true);
-Game.chat = new Game.Chat(
-    Game.storage, Game.Engine.fingerprint, Ui.document.getElementById('chatPane'),
-    Ui.document.getElementById('chatInput'),
-    function chatFilter(msg) {
-        var match;
-        if (match = msg.match(/^\//)) {
-            try {
-                function clear() {
-                    localStorage.clear();
-                }
-
-                Ui.message(eval(msg.substring(1)));
-            } catch (e) {
-                Ui.message(e);
-            }
-            return false;
-        }
-        return true;
-    },
-    Game.Fact
-);
-Game.log = {};
-Game.state;
-Game.MAX_STATES=100;
-Game.STATE_KEY = "lastState-v13";
-Game.urlNum = 0;
 Ui.selectedNode = null;
 Ui.workBox;
 Ui.factToShooterBox = {};
 Ui.deferredUntilRedraw = [];
-Game.landMap = {};
-Game.landDepMap = {}; // XXX
 Ui.currentPane;
 Ui.panes = [];
 Ui.termToPane = {};
 Ui.shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
 Ui.workTreeWidth = 50; // XXXX in VW. sync with stairs.less
-Game.usableTools = {};
-Game.auto = false;
-Game.reflexives = {};
-Game.thms = {};
-Game.currentGoal = null;
-Error.stackTraceLimit = Infinity;
-
 
 Ui.makeThmBox = function(opts) {
     if (opts.editable) {
@@ -156,81 +114,6 @@ Ui.registerNewTool = function(toolOp) {
     
 }
 
-Game.setAnchorPath = function(anchorPath) {
-    Game.state.anchorPath = anchorPath;
-    if (Game.state.anchorPath == undefined) {
-        Ui.document.getElementById("anchor").innerText = "anchor";
-        Ui.document.body.className =
-            Ui.document.body.className.replace(/enableAllTools /g, "");
-    } else {
-        // XXX anchorUsableTools : should only enable usable tools
-        Ui.document.body.className = "enableAllTools " + Ui.document.body.className;
-        Ui.document.getElementById("anchor").innerText = "unanchor";
-    }
-}
-
-Game.setWorkPath = function(wp) {
-    var className = Game.state.anchorPath ? "enableAllTools " : ""; // XXX anchorUsableTools
-    if (typeof wp == 'undefined') {
-        delete Game.state.workPath;
-        if (Ui.workBox) delete Ui.workBox.pathTermArr;
-    } else {
-        // NB: not the same as orcat's xpath definition. Pass 0 to get the term.
-        // TODO: XXX
-        function zpath(exp, path) {
-            var a = exp, l = path.length, i = 0;
-            for (i = 0; i < l; i++) {
-                a=a[path[i]];
-            }
-            return a;
-        }
-
-        Game.state.workPath = wp;
-        var pathExp = zpath(Game.state.work.Core[Game.Fact.CORE_HYPS][0], wp);
-        // TODO: XXX expects this=fact
-        function expToTermArr(exp) {
-            if (Array.isArray(exp)) {
-                var args = exp.slice(1).map(expToTermArr.bind(this));
-                args.unshift(this.Skin.TermNames[exp[0]]);
-                return args;
-            } else {
-                return exp;
-            }
-        }
-
-        if (Ui.workBox) Ui.workBox.pathTermArr = expToTermArr.bind(Game.state.work)(pathExp);
-        Game.usableTools = Game.Engine.getUsableTools(Game.state.work, Game.state.workPath);
-        for (var k in Game.usableTools) if (Game.usableTools.hasOwnProperty(k)) {
-            var v = Game.usableTools[k];
-            //console.log("XXXX Usable tool:" + " tool" + Ui.cssEscape(v[0]) + "_" + v[1]);
-            className += " tool" + Ui.cssEscape(v[0]) + "_" + v[1];
-        }
-    }
-    // TODO: XXX: will be slow
-    for (var k in Ui.factToShooterBox) if (Ui.factToShooterBox.hasOwnProperty(k)) {
-        Ui.factToShooterBox[k].box.tree.onchange();
-    }
-    Ui.document.body.className = className;
-
-    Ui.redrawSelection();
-}
-
-// A Facet is a Fact which can be / has been specified by some amount.
-Game.Facet = function(factData) {
-    var fact = Game.Engine.canonicalize(new Game.Fact(factData));
-    fact.Skin.VarNames = fact.Skin.VarNames.map(function(x,i) {
-        return "&#" + (i + 0x2460) + ";";
-    });
-
-    this.fact = fact;
-    // Find the var at the given path. Replace all instances of it with the
-    // named term or variable. Iff name is a term, its arity must be
-    // specified. The new term will get that many new children variables.
-    this.specify = function(varNum, name, arity, freeMap) {
-        
-    }
-}
-
 Ui.workPathHighlighter = function(tool, path, isHover) {
     var suffix = path.slice(1);
     function getWorkPath() {
@@ -255,110 +138,6 @@ Ui.workPathHighlighter = function(tool, path, isHover) {
     } else {
         n.className = n.className.replace(/ fakeHover/, '');
     }
-}
-
-
-
-
-Game.verifyDump = function() {
-    Game.dump(Game.log, Game.state.work,
-         function(dump) {
-             try {
-             var Engine = require('./engine.js');
-             dump.deps.forEach(function(dep) {Engine.onAddFact(new Game.Fact(dep))});
-             var work = Engine.canonicalize(Game.startWork(dump.goal));
-             dump.steps.forEach(function(step) {
-                 step.args = step.args.map(function(arg){
-                     if (arg && arg.Core) {
-                         return new Game.Fact(arg);
-                     } else {
-                         return arg;
-                     }
-                 });
-                 step.args.unshift(work);
-                 work = Engine[step.func].apply(Engine, step.args);
-             });
-             work.verify();
-             Engine.onAddFact(work);
-                 Ui.message("checked " + JSON.stringify(dump.logFps) + "\n" + (dump.steps.length) + "\n" + work.getMark());
-             } catch (e) {
-                 Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
-             }
-         });
-}
-Game.groundOut = function() {
-    try {
-        var fact = this;
-        Game.state.url = "#u=" + (Game.urlNum++) + "/" + "#f=" + fact.Skin.Name;
-        // Make a protective clone in case ground() mutates but verify fails.
-        var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
-        var thm = Game.Engine.ground(workClone, fact);
-        thm.verify();
-        if (Game.currentGoal == null || thm == null) {
-            console.warn("null goal " + JSON.stringify(thm));
-        } else {
-            // NOTE: we used to assert that the Cores matched, but then some
-            // special goal start off with a Hyp, and the grounded-out version
-            // doesn't have any Hyps. So just assert the Stmt and Dvs match.
-            var expected = JSON.stringify(Game.currentGoal.Core.slice(1));
-            var actual = JSON.stringify(thm.Core.slice(1));
-            if (expected != actual) {
-                throw new Error("Core mismatch! Wanted " + expected
-                                + " found " + actual)
-            };
-        }
-        var finalStep = {func: "ground", args:[Game.stripFact(fact)]};
-        Game.dump(Game.log, thm,
-             function(obj) {
-                 obj.steps.push(finalStep);
-                 var out = JSON.stringify(obj);
-                 if (Blob) {
-                     var msg = Ui.document.createElement('a');
-                     msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
-                     msg.innerText = "download solution";
-                     msg.download='tacro.txt';
-                     Ui.message(msg);
-                 } else if (navigator.clipboard) {
-                     navigator.clipboard.writeText(out)
-                         .then(() => { Ui.message("Dump copied"); })
-                         .catch((e) => { Ui.message("Couldn't copy: " + e); });;
-                 }});
-        var newFactFp = Ui.addToShooter(thm);
-        Game.currentLand().thms.push(newFactFp.local);
-        if (Game.storage.user) {
-            // TODO: numbers goals backwards and doesn't carry over
-            // anonymously-won points when logging in.
-            Game.storage.remote.child("users").
-                child(Game.storage.user.uid).
-                child("points").
-                child(Game.storage.escape(Game.currentLand().name)).
-                child(Game.currentLand().goals.length).
-                set(newFactFp.remote);
-        }
-
-        var span = Ui.document.getElementById("achieved");
-        span.style.display = '';
-        Ui.window.setTimeout(function() {span.className = "animated";}, 10);
-        Ui.window.setTimeout(function() {span.className = "";
-                                      span.style.display = 'none';}, 1200);
-        /* XXX: sync with css */
-
-        Ui.message("");
-        Game.setWorkPath([]);
-        Game.setAnchorPath();
-        Game.currentLand().goals.shift();
-        Game.nextGoal();
-        Ui.redraw();
-    } catch (e) {
-        console.log("Error in ground: " + e);
-        console.log(e.stack);
-        Ui.message(e);
-    }
-}
-Game.stripFact = function(fact) {
-    return {Core:fact.Core,
-            Skin:{TermNames:fact.Skin.TermNames},
-            FreeMaps:fact.FreeMaps};
 }
 
 Ui.addToShooter = function(factData, land) {
@@ -540,6 +319,368 @@ Ui.workOnclick = function(path, ev) {
     Game.state.url = "#u=" + (Game.urlNum++) + "/#g=" + goalPath;
     Game.save();
     ev.stopPropagation();
+}
+Ui.redrawSelection = function() {
+    if (!Ui.workBox) return;
+    if (Ui.selectedNode) {
+        d3.select(Ui.selectedNode).classed("selected", false);
+    }
+    if (typeof Game.state.workPath  !== 'undefined') {
+        Ui.selectedNode = Ui.workBox.spanMap[Game.state.workPath];
+        if (!Ui.selectedNode) {
+            throw new Error("Selected node not found:" + Game.state.workPath);
+        }
+        d3.select(Ui.selectedNode).classed("selected", true);
+    }
+}
+Ui.redraw = function() {
+    Ui.deferredUntilRedraw.forEach(function(f) { f(); });
+    Ui.deferredUntilRedraw.splice(0, Ui.deferredUntilRedraw.length);
+    var well = Ui.document.getElementById("well");
+    try {
+        var box = Ui.makeThmBox({
+            fact:Game.state.work,
+            exp:Game.state.work.Core[Game.Fact.CORE_HYPS][0],
+            onclick:Ui.workOnclick,
+            size:Ui.workTreeWidth,
+            editable:false});
+        well.removeChild(well.firstChild);
+        well.appendChild(box);
+        Ui.workBox = box;
+        Game.setWorkPath(Game.state.workPath);
+    } catch (e) {
+        Ui.message(e);
+    }
+}
+
+Ui.Pane = function(newTerm) {
+    console.log("XXXX New pane " + newTerm);
+    var tab = Ui.document.createElement("button");
+    tab.addEventListener("click", function() {
+        var doc = Ui.document; var docEl = doc.documentElement; var requestFullscreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        //requestFullscreen.call(docEl);
+    });
+    Ui.document.getElementById("shooterTabs").appendChild(tab);
+    tab.className = "tab";
+    tab.innerHTML = newTerm.replace(/[<]/g,"&lt;");
+    var pane = Ui.document.createElement("span");
+    Ui.document.getElementById("shooterTape").appendChild(pane);
+    pane.className = "pane"
+    function onclick() {
+        if (Ui.currentPane) {Ui.currentPane.style.display="none";}
+        pane.style.display="inline-block";
+        Ui.currentPane = pane;
+    }
+    tab.addEventListener("click", onclick);
+    onclick();
+    this.pane = pane;
+    Ui.panes.push(this);
+    if (Ui.panes.length == 3) {
+        Game.auto = true;
+        Ui.message("Automatic Activation mode enabled! Manual Training/promoting is now optional.");
+    }
+}
+
+Ui.message = function(msg) {
+    if (msg) {console.log("Tacro: " + msg);}
+    if (msg.stack) {
+        console.log(msg.stack);
+    }
+    if (msg.href) {
+        Ui.document.getElementById("message").innerText = "";
+        Ui.document.getElementById("message").appendChild(msg);
+    } else {
+        Ui.document.getElementById("message").innerText = msg;
+    }
+}
+Ui.startup = function() {
+    Ui.window.addEventListener('popstate', function(ev) {
+        console.log("popstate to " + ev.state);
+        if (ev.state) {
+            Game.loadLogFp(ev.state);
+        } else {
+            var match = Ui.window.location.hash.match(/CHEAT=(\d+)/);
+            if (match) {
+                Game.cheat(match[1]);
+            }
+            if (Ui.window.location.search.match(/auto=1/)) {
+                Game.auto = true;
+            }
+        }
+    });
+    Ui.document.getElementById("anchor").onclick = function() {
+        if (Game.state.anchorPath == undefined) {
+            Game.setAnchorPath(Game.state.workPath.slice());;
+        } else {
+            Game.setAnchorPath(undefined);
+        }
+    };
+
+    Ui.document.getElementById("rewind").onclick = function() {
+        var parentFp = Game.log.parent;
+        if (parentFp) {
+            Game.loadLogFp(parentFp);
+        }
+        return false;
+    };
+    Ui.document.getElementById("forward").onclick = function() {
+        var childLogFp = Game.storage.local.getItem("childOf/" + Game.log.now);
+        if (childLogFp) {
+            Game.loadLogFp(childLogFp);
+        } else {
+            Ui.document.getElementById("forward").style.visibility="hidden";
+        }
+        return false;
+    };
+
+    var logFp = Game.storage.local.getItem(Game.STATE_KEY);
+    if (logFp) {
+        // restore
+        Game.loadLogFp(logFp, function() {
+            Game.state.lands.forEach(function(land) {
+                land.thms.forEach(function(thmFp) {
+                    Game.storage.fpLoad("fact", thmFp, function(thmObj) {
+                        Ui.addToShooter(thmObj, land);
+                        Ui.redraw();
+                    });
+                });
+            });
+            Game.loadLands(JSON.parse(Game.storage.local.getItem("my-checked-lands")));
+
+        });
+    } else {
+        //init
+        Game.state = {
+            lands: [],
+            url:"",
+            specifyOptions: {
+                Vars:[],
+                Terms:[]
+            },
+            knownTerms: {},
+        };
+        Game.storage.remoteGet("checked/lands", function(lands) {
+            Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
+            Game.loadLands(lands);
+        });
+
+    }
+};
+
+Game.Fact = require('./fact.js');
+Game.Engine = require('./engine.js');
+Game.Storage = require('./storage.js');
+Game.Chat = require('./chat.js');
+Game.storage = new Game.Storage(Game.Engine.fingerprint, true);
+Game.chat = new Game.Chat(
+    Game.storage, Game.Engine.fingerprint, Ui.document.getElementById('chatPane'),
+    Ui.document.getElementById('chatInput'),
+    function chatFilter(msg) {
+        var match;
+        if (match = msg.match(/^\//)) {
+            try {
+                function clear() {
+                    localStorage.clear();
+                }
+
+                Ui.message(eval(msg.substring(1)));
+            } catch (e) {
+                Ui.message(e);
+            }
+            return false;
+        }
+        return true;
+    },
+    Game.Fact
+);
+Game.log = {};
+Game.state;
+Game.MAX_STATES=100;
+Game.STATE_KEY = "lastState-v13";
+Game.urlNum = 0;
+Game.landMap = {};
+Game.landDepMap = {}; // XXX
+Game.usableTools = {};
+Game.auto = false;
+Game.reflexives = {};
+Game.thms = {};
+Game.currentGoal = null;
+
+Game.setAnchorPath = function(anchorPath) {
+    Game.state.anchorPath = anchorPath;
+    if (Game.state.anchorPath == undefined) {
+        Ui.document.getElementById("anchor").innerText = "anchor";
+        Ui.document.body.className =
+            Ui.document.body.className.replace(/enableAllTools /g, "");
+    } else {
+        // XXX anchorUsableTools : should only enable usable tools
+        Ui.document.body.className = "enableAllTools " + Ui.document.body.className;
+        Ui.document.getElementById("anchor").innerText = "unanchor";
+    }
+}
+
+Game.setWorkPath = function(wp) {
+    var className = Game.state.anchorPath ? "enableAllTools " : ""; // XXX anchorUsableTools
+    if (typeof wp == 'undefined') {
+        delete Game.state.workPath;
+        if (Ui.workBox) delete Ui.workBox.pathTermArr;
+    } else {
+        // NB: not the same as orcat's xpath definition. Pass 0 to get the term.
+        // TODO: XXX
+        function zpath(exp, path) {
+            var a = exp, l = path.length, i = 0;
+            for (i = 0; i < l; i++) {
+                a=a[path[i]];
+            }
+            return a;
+        }
+
+        Game.state.workPath = wp;
+        var pathExp = zpath(Game.state.work.Core[Game.Fact.CORE_HYPS][0], wp);
+        // TODO: XXX expects this=fact
+        function expToTermArr(exp) {
+            if (Array.isArray(exp)) {
+                var args = exp.slice(1).map(expToTermArr.bind(this));
+                args.unshift(this.Skin.TermNames[exp[0]]);
+                return args;
+            } else {
+                return exp;
+            }
+        }
+
+        if (Ui.workBox) Ui.workBox.pathTermArr = expToTermArr.bind(Game.state.work)(pathExp);
+        Game.usableTools = Game.Engine.getUsableTools(Game.state.work, Game.state.workPath);
+        for (var k in Game.usableTools) if (Game.usableTools.hasOwnProperty(k)) {
+            var v = Game.usableTools[k];
+            //console.log("XXXX Usable tool:" + " tool" + Ui.cssEscape(v[0]) + "_" + v[1]);
+            className += " tool" + Ui.cssEscape(v[0]) + "_" + v[1];
+        }
+    }
+    // TODO: XXX: will be slow
+    for (var k in Ui.factToShooterBox) if (Ui.factToShooterBox.hasOwnProperty(k)) {
+        Ui.factToShooterBox[k].box.tree.onchange();
+    }
+    Ui.document.body.className = className;
+
+    Ui.redrawSelection();
+}
+
+// A Facet is a Fact which can be / has been specified by some amount.
+Game.Facet = function(factData) {
+    var fact = Game.Engine.canonicalize(new Game.Fact(factData));
+    fact.Skin.VarNames = fact.Skin.VarNames.map(function(x,i) {
+        return "&#" + (i + 0x2460) + ";";
+    });
+
+    this.fact = fact;
+    // Find the var at the given path. Replace all instances of it with the
+    // named term or variable. Iff name is a term, its arity must be
+    // specified. The new term will get that many new children variables.
+    this.specify = function(varNum, name, arity, freeMap) {
+        
+    }
+}
+
+
+Game.verifyDump = function() {
+    Game.dump(Game.log, Game.state.work,
+         function(dump) {
+             try {
+             var Engine = require('./engine.js');
+             dump.deps.forEach(function(dep) {Engine.onAddFact(new Game.Fact(dep))});
+             var work = Engine.canonicalize(Game.startWork(dump.goal));
+             dump.steps.forEach(function(step) {
+                 step.args = step.args.map(function(arg){
+                     if (arg && arg.Core) {
+                         return new Game.Fact(arg);
+                     } else {
+                         return arg;
+                     }
+                 });
+                 step.args.unshift(work);
+                 work = Engine[step.func].apply(Engine, step.args);
+             });
+             work.verify();
+             Engine.onAddFact(work);
+                 Ui.message("checked " + JSON.stringify(dump.logFps) + "\n" + (dump.steps.length) + "\n" + work.getMark());
+             } catch (e) {
+                 Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
+             }
+         });
+}
+Game.groundOut = function() {
+    try {
+        var fact = this;
+        Game.state.url = "#u=" + (Game.urlNum++) + "/" + "#f=" + fact.Skin.Name;
+        // Make a protective clone in case ground() mutates but verify fails.
+        var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
+        var thm = Game.Engine.ground(workClone, fact);
+        thm.verify();
+        if (Game.currentGoal == null || thm == null) {
+            console.warn("null goal " + JSON.stringify(thm));
+        } else {
+            // NOTE: we used to assert that the Cores matched, but then some
+            // special goal start off with a Hyp, and the grounded-out version
+            // doesn't have any Hyps. So just assert the Stmt and Dvs match.
+            var expected = JSON.stringify(Game.currentGoal.Core.slice(1));
+            var actual = JSON.stringify(thm.Core.slice(1));
+            if (expected != actual) {
+                throw new Error("Core mismatch! Wanted " + expected
+                                + " found " + actual)
+            };
+        }
+        var finalStep = {func: "ground", args:[Game.stripFact(fact)]};
+        Game.dump(Game.log, thm,
+             function(obj) {
+                 obj.steps.push(finalStep);
+                 var out = JSON.stringify(obj);
+                 if (Blob) {
+                     var msg = Ui.document.createElement('a');
+                     msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
+                     msg.innerText = "download solution";
+                     msg.download='tacro.txt';
+                     Ui.message(msg);
+                 } else if (navigator.clipboard) {
+                     navigator.clipboard.writeText(out)
+                         .then(() => { Ui.message("Dump copied"); })
+                         .catch((e) => { Ui.message("Couldn't copy: " + e); });;
+                 }});
+        var newFactFp = Ui.addToShooter(thm);
+        Game.currentLand().thms.push(newFactFp.local);
+        if (Game.storage.user) {
+            // TODO: numbers goals backwards and doesn't carry over
+            // anonymously-won points when logging in.
+            Game.storage.remote.child("users").
+                child(Game.storage.user.uid).
+                child("points").
+                child(Game.storage.escape(Game.currentLand().name)).
+                child(Game.currentLand().goals.length).
+                set(newFactFp.remote);
+        }
+
+        var span = Ui.document.getElementById("achieved");
+        span.style.display = '';
+        Ui.window.setTimeout(function() {span.className = "animated";}, 10);
+        Ui.window.setTimeout(function() {span.className = "";
+                                      span.style.display = 'none';}, 1200);
+        /* XXX: sync with css */
+
+        Ui.message("");
+        Game.setWorkPath([]);
+        Game.setAnchorPath();
+        Game.currentLand().goals.shift();
+        Game.nextGoal();
+        Ui.redraw();
+    } catch (e) {
+        console.log("Error in ground: " + e);
+        console.log(e.stack);
+        Ui.message(e);
+    }
+}
+Game.stripFact = function(fact) {
+    return {Core:fact.Core,
+            Skin:{TermNames:fact.Skin.TermNames},
+            FreeMaps:fact.FreeMaps};
 }
 
 Game.startWork = function(fact) {
@@ -751,39 +892,6 @@ Game.nextGoal = function() {
     return;
 }
 
-Ui.redrawSelection = function() {
-    if (!Ui.workBox) return;
-    if (Ui.selectedNode) {
-        d3.select(Ui.selectedNode).classed("selected", false);
-    }
-    if (typeof Game.state.workPath  !== 'undefined') {
-        Ui.selectedNode = Ui.workBox.spanMap[Game.state.workPath];
-        if (!Ui.selectedNode) {
-            throw new Error("Selected node not found:" + Game.state.workPath);
-        }
-        d3.select(Ui.selectedNode).classed("selected", true);
-    }
-}
-Ui.redraw = function() {
-    Ui.deferredUntilRedraw.forEach(function(f) { f(); });
-    Ui.deferredUntilRedraw.splice(0, Ui.deferredUntilRedraw.length);
-    var well = Ui.document.getElementById("well");
-    try {
-        var box = Ui.makeThmBox({
-            fact:Game.state.work,
-            exp:Game.state.work.Core[Game.Fact.CORE_HYPS][0],
-            onclick:Ui.workOnclick,
-            size:Ui.workTreeWidth,
-            editable:false});
-        well.removeChild(well.firstChild);
-        well.appendChild(box);
-        Ui.workBox = box;
-        Game.setWorkPath(Game.state.workPath);
-    } catch (e) {
-        Ui.message(e);
-    }
-}
-
 Game.loadState = function(flat) {
     Game.state = flat;
     Game.setWork(new Game.Fact(Game.state.work), Game.state.step);
@@ -828,46 +936,6 @@ Game.enterLand = function(landData) {
     }
 }
 
-Ui.Pane = function(newTerm) {
-    console.log("XXXX New pane " + newTerm);
-    var tab = Ui.document.createElement("button");
-    tab.addEventListener("click", function() {
-        var doc = Ui.document; var docEl = doc.documentElement; var requestFullscreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
-        //requestFullscreen.call(docEl);
-    });
-    Ui.document.getElementById("shooterTabs").appendChild(tab);
-    tab.className = "tab";
-    tab.innerHTML = newTerm.replace(/[<]/g,"&lt;");
-    var pane = Ui.document.createElement("span");
-    Ui.document.getElementById("shooterTape").appendChild(pane);
-    pane.className = "pane"
-    function onclick() {
-        if (Ui.currentPane) {Ui.currentPane.style.display="none";}
-        pane.style.display="inline-block";
-        Ui.currentPane = pane;
-    }
-    tab.addEventListener("click", onclick);
-    onclick();
-    this.pane = pane;
-    Ui.panes.push(this);
-    if (Ui.panes.length == 3) {
-        Game.auto = true;
-        Ui.message("Automatic Activation mode enabled! Manual Training/promoting is now optional.");
-    }
-}
-
-Ui.message = function(msg) {
-    if (msg) {console.log("Tacro: " + msg);}
-    if (msg.stack) {
-        console.log(msg.stack);
-    }
-    if (msg.href) {
-        Ui.document.getElementById("message").innerText = "";
-        Ui.document.getElementById("message").appendChild(msg);
-    } else {
-        Ui.document.getElementById("message").innerText = msg;
-    }
-}
 
 Game.cheat = function(n) {
     while (n > 0) {
@@ -984,79 +1052,5 @@ Game.expireOldStates = function(maxStates, logObj) {
     }
 }
 
-// ==== STARTUP ====
-Ui.startup = function() {
-    Ui.window.addEventListener('popstate', function(ev) {
-        console.log("popstate to " + ev.state);
-        if (ev.state) {
-            Game.loadLogFp(ev.state);
-        } else {
-            var match = Ui.window.location.hash.match(/CHEAT=(\d+)/);
-            if (match) {
-                Game.cheat(match[1]);
-            }
-            if (Ui.window.location.search.match(/auto=1/)) {
-                Game.auto = true;
-            }
-        }
-    });
-    Ui.document.getElementById("anchor").onclick = function() {
-        if (Game.state.anchorPath == undefined) {
-            Game.setAnchorPath(Game.state.workPath.slice());;
-        } else {
-            Game.setAnchorPath(undefined);
-        }
-    };
-
-    Ui.document.getElementById("rewind").onclick = function() {
-        var parentFp = Game.log.parent;
-        if (parentFp) {
-            Game.loadLogFp(parentFp);
-        }
-        return false;
-    };
-    Ui.document.getElementById("forward").onclick = function() {
-        var childLogFp = Game.storage.local.getItem("childOf/" + Game.log.now);
-        if (childLogFp) {
-            Game.loadLogFp(childLogFp);
-        } else {
-            Ui.document.getElementById("forward").style.visibility="hidden";
-        }
-        return false;
-    };
-
-    var logFp = Game.storage.local.getItem(Game.STATE_KEY);
-    if (logFp) {
-        // restore
-        Game.loadLogFp(logFp, function() {
-            Game.state.lands.forEach(function(land) {
-                land.thms.forEach(function(thmFp) {
-                    Game.storage.fpLoad("fact", thmFp, function(thmObj) {
-                        Ui.addToShooter(thmObj, land);
-                        Ui.redraw();
-                    });
-                });
-            });
-            Game.loadLands(JSON.parse(Game.storage.local.getItem("my-checked-lands")));
-
-        });
-    } else {
-        //init
-        Game.state = {
-            lands: [],
-            url:"",
-            specifyOptions: {
-                Vars:[],
-                Terms:[]
-            },
-            knownTerms: {},
-        };
-        Game.storage.remoteGet("checked/lands", function(lands) {
-            Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
-            Game.loadLands(lands);
-        });
-
-    }
-};
 
 Ui.startup();
