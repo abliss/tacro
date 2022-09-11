@@ -157,7 +157,7 @@ Ui.addToShooter = function(factData, land) {
     }
     Game.thms[factFp.local] = facet.fact;
 
-    var newTool = Game.Engine.onAddFact(facet.fact);
+    var newTool = Game.engine.onAddFact(facet.fact);
     if (newTool) {
         Ui.message("New root unlocked: " + newTool);
         Ui.registerNewTool(newTool);
@@ -179,7 +179,7 @@ Ui.addToShooter = function(factData, land) {
                 var varMap = box.tree.getVarMap(Game.state.work);
                 var dumpStep = {func: "applyInference",
                                 args: [Game.stripFact(fact), varMap]};
-                var newWork = Game.Engine.applyInference(Game.state.work, fact, varMap);
+                var newWork = Game.engine.applyInference(Game.state.work, fact, varMap);
                 Ui.message("");
                 Game.state.url = "";
                 Game.setWorkPath([]);
@@ -266,7 +266,7 @@ Ui.addToShooter = function(factData, land) {
                         varMap,
                         anchors]
                 };
-            var newWork = Game.Engine.applyFact(Game.state.work, Game.state.workPath,
+            var newWork = Game.engine.applyFact(Game.state.work, Game.state.workPath,
                                            fact,
                                            factPath,
                                            varMap,
@@ -468,12 +468,13 @@ Ui.startup = function() {
 };
 
 Game.Fact = require('./fact.js');
-Game.Engine = require('./engine.js');
+var Engine = require('./engine.js');
+Game.engine = new Engine();
 Game.Storage = require('./storage.js');
 Game.Chat = require('./chat.js');
-Game.storage = new Game.Storage(Game.Engine.fingerprint, true);
+Game.storage = new Game.Storage(Game.engine.fingerprint, true);
 Game.chat = new Game.Chat(
-    Game.storage, Game.Engine.fingerprint, Ui.document.getElementById('chatPane'),
+    Game.storage, Game.engine.fingerprint, Ui.document.getElementById('chatPane'),
     Ui.document.getElementById('chatInput'),
     function chatFilter(msg) {
         var match;
@@ -549,7 +550,7 @@ Game.setWorkPath = function(wp) {
         }
 
         if (Ui.workBox) Ui.workBox.pathTermArr = expToTermArr.bind(Game.state.work)(pathExp);
-        Game.usableTools = Game.Engine.getUsableTools(Game.state.work, Game.state.workPath);
+        Game.usableTools = Game.engine.getUsableTools(Game.state.work, Game.state.workPath);
         for (var k in Game.usableTools) if (Game.usableTools.hasOwnProperty(k)) {
             var v = Game.usableTools[k];
             //console.log("XXXX Usable tool:" + " tool" + Ui.cssEscape(v[0]) + "_" + v[1]);
@@ -567,7 +568,7 @@ Game.setWorkPath = function(wp) {
 
 // A Facet is a Fact which can be / has been specified by some amount.
 Game.Facet = function(factData) {
-    var fact = Game.Engine.canonicalize(new Game.Fact(factData));
+    var fact = Game.engine.canonicalize(new Game.Fact(factData));
     fact.Skin.VarNames = fact.Skin.VarNames.map(function(x,i) {
         return "&#" + (i + 0x2460) + ";";
     });
@@ -586,9 +587,9 @@ Game.verifyDump = function() {
     Game.dump(Game.log, Game.state.work,
          function(dump) {
              try {
-             var Engine = require('./engine.js');
-             dump.deps.forEach(function(dep) {Engine.onAddFact(new Game.Fact(dep))});
-             var work = Engine.canonicalize(Game.startWork(dump.goal));
+             var engine = new Engine();
+             dump.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
+             var work = engine.canonicalize(Game.startWork(dump.goal));
              dump.steps.forEach(function(step) {
                  step.args = step.args.map(function(arg){
                      if (arg && arg.Core) {
@@ -598,10 +599,10 @@ Game.verifyDump = function() {
                      }
                  });
                  step.args.unshift(work);
-                 work = Engine[step.func].apply(Engine, step.args);
+                 work = engine[step.func].apply(engine, step.args);
              });
              work.verify();
-             Engine.onAddFact(work);
+             engine.onAddFact(work);
                  Ui.message("checked " + JSON.stringify(dump.logFps) + "\n" + (dump.steps.length) + "\n" + work.getMark());
              } catch (e) {
                  Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
@@ -614,7 +615,7 @@ Game.groundOut = function() {
         Game.state.url = "#u=" + (Game.urlNum++) + "/" + "#f=" + fact.Skin.Name;
         // Make a protective clone in case ground() mutates but verify fails.
         var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
-        var thm = Game.Engine.ground(workClone, fact);
+        var thm = Game.engine.ground(workClone, fact);
         thm.verify();
         if (Game.currentGoal == null || thm == null) {
             console.warn("null goal " + JSON.stringify(thm));
@@ -695,7 +696,7 @@ Game.startWork = function(fact) {
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
-    work = Game.Engine.canonicalize(work);
+    work = Game.engine.canonicalize(work);
     work.Skin.VarNames = work.Skin.VarNames.map(function(x,i) {
         return "&#" + (i + 0x24D0) + ";";
     });
@@ -782,7 +783,7 @@ Game.setWork = function(work, optDumpStep) {
         }
     }
     Game.state.work = work;
-    Game.state.workHash = Game.Engine.fingerprint(work);
+    Game.state.workHash = Game.engine.fingerprint(work);
     var ground = Ui.document.getElementById('ground');
     ground.setAttribute('disabled','disabled');
     ground.className = "disabled";
@@ -792,7 +793,7 @@ Game.setWork = function(work, optDumpStep) {
         try {
             // TODO: should not be using exceptions for this
             var workClone = new Game.Fact(JSON.parse(JSON.stringify(work)));
-            Game.Engine.getMandHyps(workClone, [], idFact, [], null, true);
+            Game.engine.getMandHyps(workClone, [], idFact, [], null, true);
             ground.removeAttribute('disabled');
             ground.className = "enabled";
             ground.onclick = Game.groundOut.bind(idFact);
@@ -888,7 +889,7 @@ Game.nextGoal = function() {
     Game.setWork(Game.startWork(Game.currentGoal), {goal:Game.currentGoal});
     Game.setWorkPath([]);
     Game.setAnchorPath();
-    Game.Engine.resetDummies(Game.state.work);
+    Game.engine.resetDummies(Game.state.work);
     return;
 }
 

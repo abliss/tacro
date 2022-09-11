@@ -10,7 +10,7 @@ var Fact = require('./fact.js'); //XXX
 // hope to "ground" the workspace in a known Fact, leaving us with a completed
 // zero-hypothesis theorem.
 Error.stackTraceLimit = Infinity;
-(function(module) {
+(function(module) { function Engine() {
     // Enable for logs
     var DEBUG = false;
 
@@ -1538,18 +1538,19 @@ a  (4 b d)  (4 c d)  1z6z  mp9i    mp10i
         }
     };
 
-    if (!module.exports) module.exports = {};
-    module.exports.onAddFact = onAddFact;
-    module.exports.canonicalize = canonicalize;
-    module.exports.ground = ground;
-    module.exports.specifyDummy = specifyDummy;
-    module.exports.applyInference = applyInference;
-    module.exports.applyFact = applyFact;
-    module.exports.fingerprint = fingerprint;
-    module.exports.getUsableTools = getUsableTools;
-    module.exports.getMandHyps = getMandHyps;
-    module.exports.globalSub = globalSub;
-    module.exports.specify = specify;
-    module.exports.resetDummies = resetDummies;
-    module.exports.DEBUG = function(d) {DEBUG = d;};
+    this.onAddFact = onAddFact;
+    this.canonicalize = canonicalize;
+    this.ground = ground;
+    this.specifyDummy = specifyDummy;
+    this.applyInference = applyInference;
+    this.applyFact = applyFact;
+    this.fingerprint = fingerprint;
+    this.getUsableTools = getUsableTools;
+    this.getMandHyps = getMandHyps;
+    this.globalSub = globalSub;
+    this.specify = specify;
+    this.resetDummies = resetDummies;
+    this.DEBUG = function(d) {DEBUG = d;};
+}
+                    module.exports = Engine;
 })(module);

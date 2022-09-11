@@ -2,6 +2,7 @@ var Fs = require('fs');
 var Async = require('async');
 var Fact = require('../script/fact.js');
 var Engine = require('../script/engine.js');
+var engine = new Engine();
 var He = require('he');
 var lands = [];
 var state = {};
@@ -54,13 +55,13 @@ function applyFact(work, workPath, fact, factPath, optVarMap, optAnchors) {
         fact = sfbm(parseMark(fact).getMark());
     }
     if (!UNUSABLE_OK) {
-        var usable = Engine.getUsableTools(work, workPath);
+        var usable = engine.getUsableTools(work, workPath);
         var toolOp = fact.Skin.TermNames[fact.Core[Fact.CORE_STMT][0]];
         if (!usable[[toolOp, factPath[0]]]) {
             throw new Error("Unusable tool! did you forget to enable anchors?" + JSON.stringify(usable) + "\n" + toolOp + "/" + factPath[0]);
         }
     }
-    var newFact = Engine.applyFact(work, workPath, fact, factPath, optVarMap, optAnchors);
+    var newFact = engine.applyFact(work, workPath, fact, factPath, optVarMap, optAnchors);
     if (DEBUG) { console.log("DEBUG: " + (TMPI++) + " work now " + JSON.stringify(newFact.Tree.Proof)); }
     return newFact;
 }
@@ -68,7 +69,7 @@ function ground(work, dirtFact) {
     if (typeof dirtFact == 'string') {
         dirtFact = sfbm(parseMark(dirtFact).getMark());
     }
-    return Engine.ground(work, dirtFact);
+    return engine.ground(work, dirtFact);
 }
 
 
@@ -93,13 +94,13 @@ function getLand(filename) {
         if (DEBUG) {
             console.log("# Adding fact: " + JSON.stringify(fact));
         }
-        fact = Engine.canonicalize(fact);
+        fact = engine.canonicalize(fact);
         if (DEBUG) {
             console.log("# Canonically: " + JSON.stringify(fact));
             console.log("# Mark: " + JSON.stringify(fact.getMark()));
         }
         state.factsByMark[fact.getMark()] = fact;
-        Engine.onAddFact(fact);
+        engine.onAddFact(fact);
         return fact;
     }
     function addAxiom(fact) {
@@ -133,7 +134,7 @@ function startWork(fact) {
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
-    return Engine.canonicalize(work);
+    return engine.canonicalize(work);
 }
 
 
@@ -468,8 +469,8 @@ function startNextGoal() {
 
 }
 function checkGoalAndSave(goalFact) {
-    var origCore = JSON.stringify(Engine.canonicalize(new Fact(goalFact)).Core.slice(1));
-    var newCore = JSON.stringify(Engine.canonicalize(state.work).Core.slice(1));
+    var origCore = JSON.stringify(engine.canonicalize(new Fact(goalFact)).Core.slice(1));
+    var newCore = JSON.stringify(engine.canonicalize(state.work).Core.slice(1));
     if (origCore != newCore) {
         throw new Error("Core mismatch! Wanted\n" + origCore + "\nGot\n" + newCore);
     }
@@ -484,7 +485,7 @@ function saveGoal() {
 }    
 function startWith(fact) {
     if (typeof fact == 'string') {
-        fact = Engine.canonicalize(parseMark(fact));
+        fact = engine.canonicalize(parseMark(fact));
     }
     stack = [[fact]];
 }
@@ -561,13 +562,13 @@ function applyArrow(path, fact, side) {
 }
 function generify() {
     stack.unshift(function() {
-        state.work = Engine.applyInference(state.work,
+        state.work = engine.applyInference(state.work,
                                            sfbm('[[0],[0,1,0],[]];["&forall;"]'));
     });
 }
 function addSpecify(path, term, arity, freeMap) {
     stack.unshift(function() {
-        state.work = Engine.specifyDummy(state.work, path, term, arity, freeMap);
+        state.work = engine.specifyDummy(state.work, path, term, arity, freeMap);
         if (DEBUG) {console.log("Work specced: " + JSON.stringify(state.work));}
     });
 }
@@ -600,7 +601,7 @@ function save(goal) {
     return state.work;
 }
 function saveAs(str) {
-    state.work = startWork(Engine.canonicalize(parseMark(str)));
+    state.work = startWork(engine.canonicalize(parseMark(str)));
     stack.forEach(function(step) {
         if (DEBUG) {console.log("# XXXX Work now: " + JSON.stringify(state.work));}
         try {
@@ -1083,7 +1084,6 @@ if (true) {
 
     checkGoalAndSave(goal);
     UNUSABLE_OK=false;
-    Engine.DEBUG(false);
 }
 //  scheme.setEquivalenceThm(exports.and, 0, thms.anbi1);
 
@@ -1170,7 +1170,7 @@ if (true) {
 
 startNextGoal();
 state.work = applyFact(state.work, [], thms.idie, [2]);
-state.work = Engine.specifyDummy(state.work, [1,1], "&rarr;", 2, []);
+state.work = engine.specifyDummy(state.work, [1,1], "&rarr;", 2, []);
 state.work = applyFact(state.work, [1,1,1], thms.conj, [1]);
 state.work = applyFact(state.work, [1,1], thms.imim2, [2]);
 state.work = applyFact(state.work, [2], thms.defbi2, [2]);
@@ -1482,8 +1482,8 @@ save();
 startNextGoal();
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [2],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
@@ -1790,7 +1790,7 @@ state.work = startWork(goal);
 //startNextGoal();
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [2],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
@@ -1836,7 +1836,7 @@ state.work = applyFact(state.work, [],
                        sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [2],{},[]);
 state.work = applyFact(state.work, [2,2],
                        sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
 checkGoalAndSave(goal);
 //saveGoal(); // [[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]]
@@ -1859,9 +1859,9 @@ state.work = new Fact(tmpWork); // df-subst
 state.work = applyFact(state.work, [],
    sfbm('[[],[0,[1,0,[1,1,[0,[2,0,1],[3,2,3]]]],[3,[4,1,2],[4,0,3]]],[[2,0],[3,1]]];["→","∀","=","↔","∃"]'), [2]); //
 
-state.work = Engine.applyInference(state.work,
+state.work = engine.applyInference(state.work,
                                    sfbm('[[0],[0,1,0],[]];["&forall;"]'));
-state.work = Engine.applyInference(state.work,
+state.work = engine.applyInference(state.work,
                                    sfbm('[[0],[0,1,0],[]];["&forall;"]'));
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["→"]'), [2]); //
@@ -2241,8 +2241,8 @@ state.work = applyFact(state.work, [1,2],
   sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[1,0,[1,1,[0,[2,0,1],[0,2,3]]]],[0,[1,0,2],[1,1,3]]],[[2,1],[3,0]]];["→","∀","="]'), [2]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[1,0,[1,1,2]],[1,[2,0,1],2]],[]];["↔","→","∧"]'), [1]);
 state.work = applyFact(state.work, [1,2,2,2],
@@ -2281,7 +2281,7 @@ state.work = applyFact(state.work, [2],
   sfbm('[[],[0,[1,0,[2,[3,0,1],2]],[4,0,[5,[3,0,1],2]]],[[1,0]]];["↔","∃","∧","=","∀","→"]'), [1]);
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[1,0,[0,1,2]],[0,[1,0,1],[1,0,2]]],[]];["→","∀"]'), [2]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [2],
   sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2]);
 state.work = applyFact(state.work, [2,2],
@@ -2429,7 +2429,7 @@ state.work = applyFact(state.work, [2,2,2],
   sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["↔","="]'), [1],{},[]);
 state.work = applyFact(state.work, [2],
   sfbm('[[],[0,0,[1,1,0]],[[0,1]]];["→","∀"]'), [2],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]];["→","∃","="]'), [2],{},[]);
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
@@ -2575,8 +2575,8 @@ if (true) {
                            sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,1,2,2,1]]);
     state.work = applyFact(state.work, [],
                            sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [2],{},[]);
-    state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
-    state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+    state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+    state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
     state.work = applyFact(state.work, [],
                            sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
     state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["&harr;"]'));
@@ -2634,7 +2634,7 @@ state.work = applyFact(state.work, [1,1],
   sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [2,1],
   sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
 state.work = applyFact(state.work, [2],
@@ -2680,7 +2680,7 @@ state.work = applyFact(state.work, [1,2],
   sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [2,2],
   sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
 state.work = applyFact(state.work, [2,2,1],
@@ -2721,7 +2721,7 @@ state.work = applyFact(state.work, [1,2,1],
   sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [2,2,1],
   sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
 state.work = applyFact(state.work, [2,1],
@@ -2766,7 +2766,7 @@ state.work = applyFact(state.work, [1,2,2],
                        sfbm('[[],[0,[1,0,[2]],0],[]];["=","+","Ø"]'), [1],{},[]);
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,[1,[2,0,0],1],1],[]];["↔","∧","="]'), [1],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [2,1],
                        sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
 state.work = applyFact(state.work, [2,2,2],
@@ -2817,7 +2817,7 @@ state.work = applyFact(state.work, [1],
                        sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2],{},[]);
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,0,[1,[0,1,1],0]],[]];["→","∧"]'), [2],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [2,1,1],
                        sfbm('[[],[0,[1,0,[2,1]],[2,[1,0,1]]],[]];["=","+","§"]'), [1],{},[]);
 state.work = applyFact(state.work, [2,1,2],
@@ -2853,8 +2853,8 @@ state.work = applyFact(state.work, [2,2,2,2,1,2],
                        sfbm('[[],[0,0,0],[]];["→"]'), [2,1],{},[[2,2,1]]);
 state.work = applyFact(state.work, [2,2],
                        sfbm('[[],[0,0,[0,1,0]],[]];["→"]'), [2],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["&harr;"]'));
 saveGoal(); // [[],[0,[1,0],[2,0,[1,[3]]]],[]]
 
@@ -3061,7 +3061,7 @@ state.work = applyFact(state.work, [2],
   sfbm('[[],[0,[1,0,1],[1,1,0]],[]];["→","∧"]'), [2],{},[]);
 state.work = applyFact(state.work, [],
   sfbm('[[],[0,0,[0,1,[1,0,1]]],[]];["→","∧"]'), [2],{},[]);
-state.work = Engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
+state.work = engine.applyInference(state.work,     sfbm('[[0],[0,1,0],[]];["∀"]'));
 state.work = applyFact(state.work, [],
                        sfbm('[[],[0,[1,0,1],[1,[2,1],[2,0]]],[]];["↔","→","¬"]'), [1],{},[]);
 state.work = applyFact(state.work, [2,1,2],
@@ -3223,7 +3223,7 @@ Async.parallel(
     });
 /**/
 /*
-console.log(JSON.stringify(Engine.canonicalize(       new Fact(
+console.log(JSON.stringify(engine.canonicalize(       new Fact(
         {Core:[[],
                [0,
                 [6, [1,0,[1,1,[0,[2,1,[3]],[4,2,3]]]],
