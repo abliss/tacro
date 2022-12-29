@@ -2,8 +2,7 @@
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
     var OFFLINE = false;
-    if ((typeof document == 'undefined') && require && require('fs') && require('fs').existsSync &&
-        require('fs').existsSync('use-local-storage')) {
+    if (process && process.env && process.env["TACRO_USE_LOCAL_STORAGE"]) {
         OFFLINE = true;
     }
     var FB_URL = "https://tacro.firebaseio.com/tacroV001";
@@ -21,12 +20,13 @@
         FirebaseStub.prototype.on =
         FirebaseStub.prototype.off =
         FirebaseStub.prototype.name =
+        FirebaseStub.prototype.key =
         FirebaseStub.prototype.authWithCustomToken =
         function() {
             return new FirebaseStub();
         };
+    FirebaseStub.ServerValue = {TIMESTAMP:null};
     
-
     function Storage(fingerprinter, optFastTick) {
         if (typeof process !== 'undefined' && process.nextTick) {
             nextTick = process.nextTick;
@@ -65,16 +65,16 @@
             }
             var pushRef = this.remote.child("incoming").child(kind).push(
                 {
-                    "when":Firebase.ServerValue.TIMESTAMP,
+                    "when":firebase.ServerValue.TIMESTAMP,
                     "what":str
                 }, function(err) {
                     if (err) {
                         console.log("Err on push: " + err);
                     } else {
-                        that.local.setItem("fb-" + key, pushRef.name());
+                        that.local.setItem("fb-" + key, pushRef.key());
                     }
                 });
-            return {local: fp, remote: pushRef.name()};
+            return {local: fp, remote: pushRef.key()};
             return fp;
         },
 

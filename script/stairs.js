@@ -28,7 +28,7 @@ if (typeof document == 'undefined') {
             addEventListener: function(){},
             location: {search: ""},
             requestAnimationFrame:function(){},
-            setTimeout:function(){},
+            setTimeout:setTimeout,
         },
         history: { pushState: function(){}, },
         d3: {
@@ -38,7 +38,10 @@ if (typeof document == 'undefined') {
                         separation:function(){},
                         nodes:function(){},
                        }; }, } },
-        cssEscape: function(){},
+
+        cssEscape: function(str){
+            return encodeURIComponent(str).replace(/%/g,"_");
+        },
     };
     d3 = Ui.d3 // TODO: use module dependencies for treeMaker
     document = Ui.document
