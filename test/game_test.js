@@ -1,5 +1,8 @@
 
-require('../script/stairs.js');
+var Stairs = require('../script/stairs.js');
+Stairs.Ui.startup({
+    redrawDelay:1,
+});
 
 if (false) {
     const { whyIsNodeStillRunning } = require('why-is-node-still-running');

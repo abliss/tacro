@@ -14,13 +14,14 @@
     
     // Container for a mutable, d3-compatible graph-structure with mapped
     // HTML DOM nodes.
-    function Node(parent, exp, argNumFromZero) {
+    function Node(parent, exp, argNumFromZero, opts) {
         this.exp = exp;
         this.div = document.createElement("div");
         this.children = [];
         this.height = 0;
         this.div.className = Array.isArray(exp) ? "term" : "var";
         this.isPromoted = false;
+        this.redrawDelay = opts.redrawDelay || 0;
         if (!(parent instanceof Node)) {
             this.path = [];
             this.root = parent;
@@ -206,10 +207,11 @@
     // Trigger a redraw right now; fulfill the promise when all anims are done.
     Node.prototype.redrawP = function() {
         this.redraw();
+        var delay = this.redrawDelay;
         // TODO: should not wait if nothing changed.
         // TODO: should use animationEnd callback
         return new Promise(function(resolve){
-            window.setTimeout(resolve, 1050); // XXX sync with css
+            window.setTimeout(resolve, delay);
         });
     };
     
@@ -253,10 +255,10 @@
     };
     
     // ==== Reduce methods ====
-    function makeGraph(parent, exp, i) {
-        var n = new Node(parent, exp, i);
+    function makeGraph(opts, parent, exp, i) {
+        var n = new Node(parent, exp, i, opts);
         if (Array.isArray(exp)) {
-            exp.slice(1).reduce(makeGraph, n);
+            exp.slice(1).reduce(makeGraph.bind(null, opts), n);
         } else {
             n.root.maxVar = Math.max(n.root.maxVar, exp);
         }
@@ -382,6 +384,7 @@
      * @param opts.onclick
      * @param opts.size
      * @param opts.getSpecifyOptions
+     * @param opts.redrawDelay
      * @return a DOM element containing the tree
      */
     var tm = function(opts) {
@@ -426,7 +429,7 @@
             }
             return map;
         };
-        var graph = makeGraph(root, opts.exp);
+        var graph = makeGraph(opts, root, opts.exp);
         rootDiv.appendChild(graph.div);
         graph.layoutAndRedrawP();
         return root;
