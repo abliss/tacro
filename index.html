@@ -72,12 +72,13 @@
 
     <script src="script/stairs.js" type="text/javascript"></script>
     <script type="text/javascript">
-      module.exports.Ui.startup();
+      Stairs = modules['./stairs.js'] = module.exports;
+      Stairs.Ui.startup();
     </script>
 
 
     <script src="https://cdn.firebase.com/js/simple-login/1.6.1/firebase-simple-login.js"
-            onload="Game.firebaseLoginLoaded()">
+            onload="Stairs.Game.firebaseLoginLoaded()">
     </script>
 
   </body></html>

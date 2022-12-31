@@ -9,8 +9,8 @@
         function Node() {};
         Node.prototype = {
             style: {},
-            appendChild: function(n){return n},
-            removeChild: function(){},
+            appendChild: function(n){this.firstChild = n; return n},
+            removeChild: function(){delete this.firstChild; },
             sheet: { insertRule: function(){}},
             addEventListener: function(){},
             setAttribute: function(){},
@@ -305,13 +305,12 @@
             apply.onclick = applyChild.bind(null, argNum);
             box.deployButtons[argNum] = apply;
         });
-        Ui.factToShooterBox[fact.Skin.Name] = {
+        Ui.factToShooterBox[fact.getMark()] = {
             fact: fact,
             box: box,
             land: land.name,
         };
         box.id = "shooter-" + fact.Skin.Name;
-
         return factFp;
     }
 
@@ -587,6 +586,7 @@
         // named term or variable. Iff name is a term, its arity must be
         // specified. The new term will get that many new children variables.
         this.specify = function(varNum, name, arity, freeMap) {
+            //TODO: implement
         }
     }
 

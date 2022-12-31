@@ -2,7 +2,8 @@
     // Storage abstraction. Currently involves localStorage and Firebase,
     // and automatically adapts to browser or node.
     var OFFLINE = false;
-    if (process && process.env && process.env["TACRO_USE_LOCAL_STORAGE"]) {
+    if (typeof process !== 'undefined' && process.env &&
+        process.env["TACRO_USE_LOCAL_STORAGE"]) {
         OFFLINE = true;
     }
     var FB_URL = "https://tacro.firebaseio.com/tacroV001";
@@ -71,10 +72,10 @@
                     if (err) {
                         console.log("Err on push: " + err);
                     } else {
-                        that.local.setItem("fb-" + key, pushRef.key());
+                        that.local.setItem("fb-" + key, pushRef.name());
                     }
                 });
-            return {local: fp, remote: pushRef.key()};
+            return {local: fp, remote: pushRef.name()};
             return fp;
         },
 

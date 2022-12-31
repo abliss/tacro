@@ -242,3 +242,4 @@ OfflineFirebase.clear = function() {
 		}
 	}
 };
+OfflineFirebase.ServerValue = {"TIMESTAMP":{".sv":"timestamp"}};
