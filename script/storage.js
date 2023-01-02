@@ -149,6 +149,11 @@
                 xhr.open("GET", "rest/" + path + ".json?t=" + Date.now(), true);
                 xhr.send(null);
             };
+        } else if (OFFLINE) {
+            restGet = function(path, callback) {
+                callback(eval("("+require('fs').readFileSync(
+                    "../rest/" + path + '.json','utf8')+")"));
+            };
         }
 
         this.remoteGet = function(path, callback) {

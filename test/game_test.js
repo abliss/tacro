@@ -1,4 +1,5 @@
-
+//TODO: allow storage.js to init with empty LocalStorage
+require('fs').rmdirSync("./scratch", {recursive: true});
 const {Ui, Game} = require('../script/stairs.js');
 Ui.startup({
     redrawDelay:1,
@@ -10,16 +11,35 @@ if (false) {
         whyIsNodeStillRunning();
     },1000);
 }
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function specify(box, path, selectedIndex, ignoredValTODO) {
+    var node = path.reduce((node, index) => node.children[index],box.tree.node);
+    node.populateSelect();
+    node.span.value = selectedIndex;
+    node.onchange();
+    await sleep(2);
+}
+
 
 const ax1Mark = '[[],[0,0,[0,1,0]],[]];["→"]';
-setTimeout(function(){
+
+async function test1() {
+    await sleep(2);
     var ax1Box = Ui.factToShooterBox[ax1Mark].box;
-    var a = ax1Box.tree.node.children[0];
-    a.populateSelect();
-    a.span.value = 1;
-    a.onchange();
+        console.log( JSON.stringify(ax1Box.tree.getTermArr()) );
+    await specify(ax1Box, [0], 1, "→");
+    await specify(ax1Box, [0,0], 0, 0);
+    await specify(ax1Box, [0,1], 0, 0);
+    await specify(ax1Box, [1,0], 0, 0);
     console.log( JSON.stringify(ax1Box.tree.getTermArr()) );
-},10);
+    console.log( JSON.stringify(ax1Box.tree.getVarMap(Game.state.work) ));
+    // TODO: assert removeAttribute disabled
+    ax1Box.deployButtons[2].onclick();    
+}
+
+test1();
+
 
 // TODO: figure out why the script doesn't end naturally. Need to deregister
 // event callbacks?

@@ -15,6 +15,7 @@
             addEventListener: function(){},
             setAttribute: function(){},
             insertBefore: function(){},
+            removeAttribute: function(){},
             className:"",
         };
         Ui = {

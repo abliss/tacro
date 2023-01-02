@@ -174,7 +174,10 @@
             promise = Promise.resolve();
         }
         var specifyOption = this.optionValues[this.span.value];
-
+        if (typeof specifyOption === 'undefined') {
+            throw new Error(
+                `no option ${this.span.value} in ${JSON.stringify(this.optionValues)}`);
+        }
         var newChildren = null;
         if (specifyOption.group == 'Terms') {
             newChildren = [];
