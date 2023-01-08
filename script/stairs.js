@@ -362,7 +362,6 @@
     }
 
     Ui.Pane = function(newTerm) {
-        console.log("XXXX New pane " + newTerm);
         var tab = Ui.document.createElement("button");
         tab.addEventListener("click", function() {
             var doc = Ui.document; var docEl = doc.documentElement; var requestFullscreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
@@ -433,7 +432,7 @@
             return false;
         };
         Ui.document.getElementById("forward").onclick = function() {
-            var childLogFp = Game.storage.local.getItem("childOf/" + Game.log.now);
+            var childLogFp = Game.storage.local.getItem("childOf/" + Game.log.state);
             if (childLogFp) {
                 Game.loadLogFp(childLogFp);
             } else {
@@ -609,10 +608,10 @@
                               });
                               step.args.unshift(work);
                               work = engine[step.func].apply(engine, step.args);
+                              step.args.shift();
                           });
                           work.verify();
                           engine.onAddFact(work);
-                          Ui.message("checked " + JSON.stringify(dump.logFps) + "\n" + (dump.steps.length) + "\n" + work.getMark());
                       } catch (e) {
                           Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
                       }
@@ -824,15 +823,14 @@
     }
 
     Game.save = function(optDumpStep) {
-        Game.state.step = optDumpStep;
         var stateKey = Game.storage.fpSave("state", Game.state);
         var stateFp = stateKey.local;
-        console.log("saved as state=" + stateFp + " step:" + JSON.stringify(optDumpStep));
-        if (stateFp != Game.log.now) {
-            var oldNow = Game.log.now;
-            Game.log.now = stateFp;
+        if (stateFp != Game.log.state) {
+            var oldNow = Game.log.state;
+            Game.log.state = stateFp;
+            Game.log.step = optDumpStep;
             var logFp = Game.storage.fpSave("log", Game.log).local;
-            Game.log.parent = logFp;
+            Game.log = {parent:logFp};
             Game.storage.local.setItem("childOf/" + oldNow, logFp);
             Game.storage.local.setItem(Game.STATE_KEY, logFp);
             if (Game.storage.user) {
@@ -853,26 +851,22 @@
             })};
         });
         var steps = [];
-        var logFps = [];
         function walkLogObj(logObj) {
-            Game.storage.fpLoad("state", logObj.now, function(stateObj) {
-                logFps.push({parent:logObj.parent, stateFp:logObj.now, step:stateObj.step});
-                var step = stateObj.step;
-                if (step && step.goal) {
-                    callback({goal: step.goal,
-                              steps: steps,
-                              deps: deps,
-                              logFps: logFps,
-                             });
-                } else {
-                    if (step) {steps.unshift(step);}
-                    if (logObj.parent) {
-                        Game.storage.fpLoad("log", logObj.parent, walkLogObj);
-                    } else {
-                        Ui.message("Incomplete dump.");
-                    }
+            var step = logObj.step;
+            if (step && step.goal) {
+                callback({goal: step.goal, steps, deps});
+            } else {
+                if (step) {
+                    delete logObj.step;
+                    step.logObj = logObj;
+                    steps.unshift(step);
                 }
-            });
+                if (logObj.parent) {
+                    Game.storage.fpLoad("log", logObj.parent, walkLogObj);
+                } else {
+                    Ui.message("Incomplete dump.");
+                }
+            }
         }
         walkLogObj(logObj1);
     }
@@ -917,13 +911,13 @@
 
     Game.loadLogFp = function(logFp, cb) {
         Game.storage.fpLoad("log", logFp, function(logObj) {
-            Game.storage.fpLoad("state", logObj.now, function(stateObj) {
+            Game.storage.fpLoad("state", logObj.state, function(stateObj) {
                 Game.log = logObj;
                 Game.expireOldStates(Game.MAX_STATES, logObj);
                 Game.loadState(stateObj);
                 // TODO: should popstate? double-undo problem.
                 Ui.history.pushState(logFp, "state",
-                                     "#s=" + logObj.now + "/" + Game.state.url);
+                                     "#s=" + logObj.state + "/" + Game.state.url);
                 Ui.document.getElementById("forward").style.visibility="visible";
                 if (cb) {cb();}
                 Ui.redraw();
@@ -1051,7 +1045,7 @@
     Game.expireOldStates = function(maxStates, logObj) {
         if (logObj) {
             var parentFp = logObj.parent;
-            var stateFp = logObj.now;
+            var stateFp = logObj.state;
             Game.storage.fpLoad("log", parentFp,
                                 Game.expireOldStates.bind(null, maxStates-1));
             if (maxStates <= 0) {

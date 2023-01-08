@@ -27,20 +27,13 @@ const ax1Mark = '[[],[0,0,[0,1,0]],[]];["→"]';
 async function test1() {
     await sleep(2);
     var ax1Box = Ui.factToShooterBox[ax1Mark].box;
-        console.log( JSON.stringify(ax1Box.tree.getTermArr()) );
     await specify(ax1Box, [0], 1, "→");
     await specify(ax1Box, [0,0], 0, 0);
     await specify(ax1Box, [0,1], 0, 0);
     await specify(ax1Box, [1,0], 0, 0);
-    console.log( JSON.stringify(ax1Box.tree.getTermArr()) );
-    console.log( JSON.stringify(ax1Box.tree.getVarMap(Game.state.work) ));
     // TODO: assert removeAttribute disabled
     ax1Box.deployButtons[2].onclick();    
 }
 
 test1();
 
-
-// TODO: figure out why the script doesn't end naturally. Need to deregister
-// event callbacks?
-//process.exit(0);
