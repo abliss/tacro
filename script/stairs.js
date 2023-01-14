@@ -2,81 +2,89 @@
 !function() {
 
     Error.stackTraceLimit = Infinity;
-    var Ui;
-    var Game = {};
+    function Ui(harness) {
+        const Ui = this;
     // ==== Stubs for node.js usage ====
-    if (typeof document == 'undefined') {
-        function Node() {};
-        Node.prototype = {
-            style: {},
-            appendChild: function(n){this.firstChild = n; return n},
-            removeChild: function(){delete this.firstChild; },
-            sheet: { insertRule: function(){}},
-            addEventListener: function(){},
-            setAttribute: function(){},
-            insertBefore: function(){},
-            removeAttribute: function(){},
-            className:"",
-        };
-        Ui = {
-            Node:function() {},
-            document: {
+        if (typeof harness !== 'undefined') {
+            function Node() {};
+            Node.prototype = {
+                style: {},
+                appendChild: function(n){this.firstChild = n; return n},
+                removeChild: function(){delete this.firstChild; },
+                sheet: { insertRule: function(){}},
+                addEventListener: function(){},
+                setAttribute: function(){},
+                insertBefore: function(){},
+                removeAttribute: function(){},
+                click: function(){},
+                className:"",
+            };
+            Blob= function() {};
+            if (typeof URL.createObjectURL == 'undefined') {
+                URL.createObjectURL = function(){};
+            }
+
+            Ui.Node=function() {};
+            Ui.document= {
                 createElement:function() {return new Node();},
                 getElementById:function() {return new Node();},
                 createTextNode:function() {return new Node();},
                 head: new Node(),
                 body: new Node(),
-            },
-            window: {
+            };
+            Ui.window= {
                 addEventListener: function(){},
                 location: {search: ""},
                 requestAnimationFrame:function(){},
                 setTimeout:setTimeout,
-            },
-            history: { pushState: function(){}, },
-            d3: {
+            };
+            Ui.history= { pushState: function(){}, };
+            Ui.d3= {
                 "select":function(){return {classed:function(){}}},
                 layout:{ tree:function(){
                     return {nodeSize:function(){},
                             separation:function(){},
                             nodes:function(){},
-                           }; }, } },
+                           }; }, } };
 
-            cssEscape: function(str){
+            Ui.cssEscape= function(str){
                 return encodeURIComponent(str).replace(/%/g,"_");
-            },
-        };
-        d3 = Ui.d3 // TODO: use module dependencies for treeMaker
-        document = Ui.document
-        window = Ui.window
-    } else {
-        Ui = {
-            Node:Node,
-            document:document,
-            window:window,
-            history:history,
-            d3:d3,
-            cssEscape:function(str) {
+            };
+            Ui.groundButton= new Node();
+
+            d3 = Ui.d3 // TODO: use module dependencies for treeMaker
+            document = Ui.document
+            window = Ui.window
+        } else {
+
+            Ui.Node=Node;
+            Ui.document=document;
+            Ui.window=window;
+            Ui.history=history;
+            Ui.d3=d3;
+            Ui.cssEscape=function(str) {
                 // TODO: collisions; pass this to treeMaker.js
                 return encodeURIComponent(str).replace(/%/g,"_");
-            }
+            };
+            Ui.groundButton=document.getElementById('ground');
         }
+
+        Ui.TreeMaker = require('./treeMaker.js');
+        Ui.selectedNode = null;
+        Ui.workBox;
+        Ui.factToShooterBox = {};
+        Ui.deferredUntilRedraw = [];
+        Ui.currentPane;
+        Ui.panes = [];
+        Ui.termToPane = {};
+        Ui.shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
+        Ui.workTreeWidth = 50; // XXXX in VW. sync with stairs.less
     }
 
-    Ui.TreeMaker = require('./treeMaker.js');
-    Ui.selectedNode = null;
-    Ui.workBox;
-    Ui.factToShooterBox = {};
-    Ui.deferredUntilRedraw = [];
-    Ui.currentPane;
-    Ui.panes = [];
-    Ui.termToPane = {};
-    Ui.shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
-    Ui.workTreeWidth = 50; // XXXX in VW. sync with stairs.less
-
-    Ui.makeThmBox = function(opts) {
+    Ui.prototype.makeThmBox = function(opts) {
+        const Ui = this;
         if (opts.editable) {
-            opts.getSpecifyOptions = function() { return Game.state.specifyOptions; }
+            opts.getSpecifyOptions = function() { return Ui.Game.state.specifyOptions; }
         }
         // XXX sync with css
         opts.redrawDelay = opts.redrawDelay || Ui.opts.redrawDelay || 1050;
@@ -100,10 +108,11 @@
         });
         */
         return termBox;
-    }
+    };
 
 
-    Ui.addCssRule = function(rule) {
+    Ui.prototype.addCssRule = function(rule) {
+        const Ui = this;
         var styleEl = Ui.document.createElement('style');
         // Apparently some version of Safari needs the following line? I dunno.
         styleEl.appendChild(Ui.document.createTextNode(''));
@@ -111,8 +120,9 @@
         var styleSheet = styleEl.sheet;
         styleSheet.insertRule(rule, 0);
         console.log("Added Rule: " + rule);
-    }
-    Ui.registerNewTool = function(toolOp) {
+    };
+    Ui.prototype.registerNewTool = function(toolOp) {
+        const Ui = this;
         for (var arg = 1; arg <= 2; arg++) {
             var rule = ".tool" + Ui.cssEscape(toolOp) + "_" + arg +
                 " .shooter .tool" + Ui.cssEscape(toolOp) +
@@ -120,17 +130,18 @@
             Ui.addCssRule(rule);
         }
         
-    }
+    };
 
-    Ui.workPathHighlighter = function(tool, path, isHover) {
+    Ui.prototype.workPathHighlighter = function(tool, path, isHover) {
+        const Ui = this;
         var suffix = path.slice(1);
         function getWorkPath() {
-            if (Game.state.workPath) {
-                if ((path.length == 0) || !Game.usableTools[[tool, path[0]]]) {
+            if (Ui.Game.state.workPath) {
+                if ((path.length == 0) || !Ui.Game.usableTools[[tool, path[0]]]) {
                     return null;
                 }
-                if ((Game.state.workPath.length > 0) && (suffix.length > 0)) {
-                    return "" + Game.state.workPath + "," + suffix;
+                if ((Ui.Game.state.workPath.length > 0) && (suffix.length > 0)) {
+                    return "" + Ui.Game.state.workPath + "," + suffix;
                 } else {
                     return suffix;
                 }
@@ -146,54 +157,55 @@
         } else {
             n.className = n.className.replace(/ fakeHover/, '');
         }
-    }
+    };
 
-    Ui.addToShooter = function(factData, land) {
+    Ui.prototype.addToShooter = function(factData, land) {
+        const Ui = this;
         if (!factData) {
             throw new Error("Bad fact: "+ factData);
         }
-        if (!land) land = Game.currentLand();
-        var facet = new Game.Facet(factData);
-        Game.knowTerms(facet.fact);
+        if (!land) land = Ui.Game.currentLand();
+        var facet = Ui.Game.makeFacet(factData);
+        Ui.Game.knowTerms(facet.fact);
 
         var fact = facet.fact;
 
-        var factFp = Game.storage.fpSave("fact", facet.fact);
-        if (Game.thms[factFp.local]) {
+        var factFp = Ui.Game.storage.fpSave("fact", facet.fact);
+        if (Ui.Game.thms[factFp.local]) {
             console.log("XXXX Skipping duplicate fact " + factFp.local);
             return factFp;
         }
-        Game.thms[factFp.local] = facet.fact;
+        Ui.Game.thms[factFp.local] = facet.fact;
 
-        var newTool = Game.engine.onAddFact(facet.fact);
+        var newTool = Ui.Game.engine.onAddFact(facet.fact);
         if (newTool) {
             Ui.message("New root unlocked: " + newTool);
             Ui.registerNewTool(newTool);
         }
-        switch (factData.Core[Game.Fact.CORE_HYPS].length) {
+        switch (factData.Core[Ui.Game.Fact.CORE_HYPS].length) {
         case 0:
             break;
         case 1: {
             var box = Ui.makeThmBox({
                 fact:fact,
-                exp:fact.Core[Game.Fact.CORE_STMT],
+                exp:fact.Core[Ui.Game.Fact.CORE_STMT],
                 size:Ui.shooterTreeWidth,
-                onmouseover: Ui.workPathHighlighter,
+                onmouseover: Ui.workPathHighlighter.bind(Ui),
                 onchange: onchange,
                 editable:true,
             });
             // TODO: display hyp somehow
             box.className += " shooter";
             box.onclick = function() {
-                var varMap = box.tree.getVarMap(Game.state.work);
+                var varMap = box.tree.getVarMap(Ui.Game.state.work);
                 var dumpStep = {func: "applyInference",
-                                args: [Game.stripFact(fact), varMap]};
-                var newWork = Game.engine.applyInference(Game.state.work, fact, varMap);
+                                args: [Ui.Game.stripFact(fact), varMap]};
+                var newWork = Ui.Game.engine.applyInference(Ui.Game.state.work, fact, varMap);
                 Ui.message("");
-                Game.state.url = "";
-                Game.setWorkPath([]);
-                Game.setAnchorPath();
-                Game.setWork(newWork, dumpStep);
+                Ui.Game.state.url = "";
+                Ui.Game.setWorkPath([]);
+                Ui.Game.setAnchorPath();
+                Ui.Game.setWork(newWork, dumpStep);
                 Ui.redraw();
             };
             var pane = Ui.panes[Ui.panes.length-1];
@@ -210,7 +222,7 @@
                           "border-right: 1px solid red;}");
             Ui.addCssRule('.name'+Ui.cssEscape(reflexiveTerm) + " .depth1.arg2 {" +
                           "border-left: 1px solid red;}");
-            Game.reflexives[reflexiveTerm] = fact;
+            Ui.Game.reflexives[reflexiveTerm] = fact;
         }
         var box;
         function onchange() {
@@ -219,20 +231,20 @@
             var tree = this;
             var expTermArr = tree.getTermArr();
             var boxString = JSON.stringify(expTermArr);
-            if (Game.state.anchorPath) { // XXX anchorUsableTools
+            if (Ui.Game.state.anchorPath) { // XXX anchorUsableTools
                 box.deployButtons.forEach(button => {
                     button.className += " matched";
                     button.removeAttribute('disabled');
                 });
             }
-            for (var k in Game.usableTools) if (Game.usableTools.hasOwnProperty(k)) {
-                var v = Game.usableTools[k];
+            for (var k in Ui.Game.usableTools) if (Ui.Game.usableTools.hasOwnProperty(k)) {
+                var v = Ui.Game.usableTools[k];
                 var tool = v[0];
                 var argNum = v[1];
                 if (expTermArr[0] != tool) continue;
                 var button = box.deployButtons[argNum];
                 if (!button) continue;
-                if (Game.auto ||
+                if (Ui.Game.auto ||
                     ((JSON.stringify(expTermArr[argNum]) ===
                       JSON.stringify(Ui.workBox.pathTermArr)) &&
                      !boxString.match(/null/))) {
@@ -248,9 +260,9 @@
         }
         box = Ui.makeThmBox({
             fact:fact,
-            exp:fact.Core[Game.Fact.CORE_STMT],
+            exp:fact.Core[Ui.Game.Fact.CORE_STMT],
             size:Ui.shooterTreeWidth,
-            onmouseover: Ui.workPathHighlighter,
+            onmouseover: Ui.workPathHighlighter.bind(Ui),
             onchange: onchange,
             editable:true});
         box.className += " shooter";
@@ -264,27 +276,27 @@
         function applyChild(argNum) {
             // TODO: PICKUP: undummy
             try {
-                var varMap = box.tree.getVarMap(Game.state.work);
-                var factPath = (Game.state.anchorPath ? [2, argNum] : [argNum]);
-                var anchors = Game.state.anchorPath ? [Game.state.anchorPath] : undefined;
+                var varMap = box.tree.getVarMap(Ui.Game.state.work);
+                var factPath = (Ui.Game.state.anchorPath ? [2, argNum] : [argNum]);
+                var anchors = Ui.Game.state.anchorPath ? [Ui.Game.state.anchorPath] : undefined;
                 var dumpStep =
                     {func:"applyFact",
-                     args: [Game.state.workPath,
-                            Game.stripFact(fact),
+                     args: [Ui.Game.state.workPath,
+                            Ui.Game.stripFact(fact),
                             factPath,
                             varMap,
                             anchors]
                     };
-                var newWork = Game.engine.applyFact(Game.state.work, Game.state.workPath,
+                var newWork = Ui.Game.engine.applyFact(Ui.Game.state.work, Ui.Game.state.workPath,
                                                     fact,
                                                     factPath,
                                                     varMap,
                                                     anchors);
                 Ui.message("");
-                Game.state.url = "";
-                Game.setWorkPath([]);
-                Game.setAnchorPath();
-                Game.setWork(newWork, dumpStep);
+                Ui.Game.state.url = "";
+                Ui.Game.setWorkPath([]);
+                Ui.Game.setAnchorPath();
+                Ui.Game.setWork(newWork, dumpStep);
                 Ui.redraw();
             } catch (e) {
                 console.log("Error in applyFact: " + e);
@@ -313,55 +325,59 @@
         };
         box.id = "shooter-" + fact.Skin.Name;
         return factFp;
-    }
+    };
 
 
-    Ui.workOnclick = function(path, ev) {
+    Ui.prototype.workOnclick = function(path, ev) {
+        const Ui = this;
         var goalPath = path.slice();
         if (goalPath[goalPath.length-1] == 0) {
             goalPath.pop();
         }
-        Game.setWorkPath(goalPath);
+        Ui.Game.setWorkPath(goalPath);
         // Highlight usable tools.
         // TODO: move this somewhere else
-        Game.state.url = "#u=" + (Game.urlNum++) + "/#g=" + goalPath;
-        Game.save();
+        Ui.Game.state.url = "#u=" + (Ui.Game.urlNum++) + "/#g=" + goalPath;
+        Ui.Game.save();
         ev.stopPropagation();
-    }
-    Ui.redrawSelection = function() {
+    };
+    Ui.prototype.redrawSelection = function() {
+        const Ui = this;
         if (!Ui.workBox) return;
         if (Ui.selectedNode) {
             d3.select(Ui.selectedNode).classed("selected", false);
         }
-        if (typeof Game.state.workPath  !== 'undefined') {
-            Ui.selectedNode = Ui.workBox.spanMap[Game.state.workPath];
+        if (typeof Ui.Game.state.workPath  !== 'undefined') {
+            Ui.selectedNode = Ui.workBox.spanMap[Ui.Game.state.workPath];
             if (!Ui.selectedNode) {
-                throw new Error("Selected node not found:" + Game.state.workPath);
+                throw new Error("Selected node not found:" + Ui.Game.state.workPath);
             }
             d3.select(Ui.selectedNode).classed("selected", true);
         }
-    }
-    Ui.redraw = function() {
+    };
+    Ui.prototype.redraw = function() {
+        const Ui = this;
         Ui.deferredUntilRedraw.forEach(function(f) { f(); });
         Ui.deferredUntilRedraw.splice(0, Ui.deferredUntilRedraw.length);
         var well = Ui.document.getElementById("well");
         try {
             var box = Ui.makeThmBox({
-                fact:Game.state.work,
-                exp:Game.state.work.Core[Game.Fact.CORE_HYPS][0],
+                fact:Ui.Game.state.work,
+                exp:Ui.Game.state.work.Core[Ui.Game.Fact.CORE_HYPS][0],
                 onclick:Ui.workOnclick,
                 size:Ui.workTreeWidth,
                 editable:false});
             well.removeChild(well.firstChild);
             well.appendChild(box);
             Ui.workBox = box;
-            Game.setWorkPath(Game.state.workPath);
+            Ui.Game.setWorkPath(Ui.Game.state.workPath);
         } catch (e) {
             Ui.message(e);
         }
-    }
+    };
 
-    Ui.Pane = function(newTerm) {
+    Ui.prototype.newPane = function(newTerm) {
+        const Ui = this;
         var tab = Ui.document.createElement("button");
         tab.addEventListener("click", function() {
             var doc = Ui.document; var docEl = doc.documentElement; var requestFullscreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
@@ -380,15 +396,17 @@
         }
         tab.addEventListener("click", onclick);
         onclick();
-        this.pane = pane;
-        Ui.panes.push(this);
+        const paneObj = {pane};
+        Ui.panes.push(paneObj);
         if (Ui.panes.length == 3) {
-            Game.auto = true;
+            Ui.Game.auto = true;
             Ui.message("Automatic Activation mode enabled! Manual Training/promoting is now optional.");
         }
-    }
+        return paneObj
+    };
 
-    Ui.message = function(msg) {
+    Ui.prototype.message = function(msg) {
+        const Ui = this;
         if (msg) {console.log("Tacro: " + msg);}
         if (msg.stack) {
             console.log(msg.stack);
@@ -400,65 +418,67 @@
             Ui.document.getElementById("message").innerText = msg;
         }
     };
-    Ui.startup = function(opts) {
+    Ui.prototype.startup = function(opts) {
+        const Ui = this;
+        Ui.Game = new Game(Ui, opts);
         Ui.opts = opts || {};
         Ui.window.addEventListener('popstate', function(ev) {
             console.log("popstate to " + ev.state);
             if (ev.state) {
-                Game.loadLogFp(ev.state);
+                Ui.Game.loadLogFp(ev.state);
             } else {
                 var match = Ui.window.location.hash.match(/CHEAT=(\d+)/);
                 if (match) {
-                    Game.cheat(match[1]);
+                    Ui.Game.cheat(match[1]);
                 }
                 if (Ui.window.location.search.match(/auto=1/)) {
-                    Game.auto = true;
+                    Ui.Game.auto = true;
                 }
             }
         });
         Ui.document.getElementById("anchor").onclick = function() {
-            if (Game.state.anchorPath == undefined) {
-                Game.setAnchorPath(Game.state.workPath.slice());;
+            if (Ui.Game.state.anchorPath == undefined) {
+                Ui.Game.setAnchorPath(Ui.Game.state.workPath.slice());;
             } else {
-                Game.setAnchorPath(undefined);
+                Ui.Game.setAnchorPath(undefined);
             }
         };
 
         Ui.document.getElementById("rewind").onclick = function() {
-            var parentFp = Game.log.parent;
+            var parentFp = Ui.Game.log.parent;
             if (parentFp) {
-                Game.loadLogFp(parentFp);
+                Ui.Game.loadLogFp(parentFp);
             }
             return false;
         };
         Ui.document.getElementById("forward").onclick = function() {
-            var childLogFp = Game.storage.local.getItem("childOf/" + Game.log.state);
+            var childLogFp = Ui.Game.storage.local.getItem("childOf/" + Ui.Game.log.state);
             if (childLogFp) {
-                Game.loadLogFp(childLogFp);
+                Ui.Game.loadLogFp(childLogFp);
             } else {
                 Ui.document.getElementById("forward").style.visibility="hidden";
             }
             return false;
         };
 
-        var logFp = Game.storage.local.getItem(Game.STATE_KEY);
+        var logFp = Ui.Game.storage.local.getItem(Ui.Game.STATE_KEY);
         if (logFp) {
             // restore
-            Game.loadLogFp(logFp, function() {
-                Game.state.lands.forEach(function(land) {
+            Ui.Game.loadLogFp(logFp, function() {
+                Ui.Game.state.lands.forEach(function(land) {
                     land.thms.forEach(function(thmFp) {
-                        Game.storage.fpLoad("fact", thmFp, function(thmObj) {
+                        Ui.Game.storage.fpLoad("fact", thmFp, function(thmObj) {
                             Ui.addToShooter(thmObj, land);
                             Ui.redraw();
                         });
                     });
                 });
-                Game.loadLands(JSON.parse(Game.storage.local.getItem("my-checked-lands")));
+                Ui.Game.loadLands(JSON.parse(Ui.Game.storage.local.getItem("my-checked-lands")));
 
             });
         } else {
             //init
-            Game.state = {
+            Ui.Game.state = {
                 lands: [],
                 url:"",
                 specifyOptions: {
@@ -467,55 +487,60 @@
                 },
                 knownTerms: {},
             };
-            Game.storage.remoteGet("checked/lands", function(lands) {
-                Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
-                Game.loadLands(lands);
+            Ui.Game.storage.remoteGet("checked/lands", function(lands) {
+                Ui.Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
+                Ui.Game.loadLands(lands);
             });
 
         }
     };
 
-    Game.Fact = require('./fact.js');
-    var Engine = require('./engine.js');
-    Game.engine = new Engine();
-    Game.Storage = require('./storage.js');
-    Game.Chat = require('./chat.js');
-    Game.storage = new Game.Storage(Game.engine.fingerprint, true);
-    Game.chat = new Game.Chat(
-        Game.storage, Game.engine.fingerprint, Ui.document.getElementById('chatPane'),
-        Ui.document.getElementById('chatInput'),
-        function chatFilter(msg) {
-            var match;
-            if (match = msg.match(/^\//)) {
-                try {
-                    function clear() {
-                        localStorage.clear();
+    function Game(Ui, opts) {
+        const Game = this;
+        this.Ui = Ui;
+        Game.Fact = require('./fact.js');
+        var Engine = require('./engine.js');
+        Game.engine = new Engine();
+        const Storage = require('./storage.js');
+        Game.storage = new Storage(Game.engine.fingerprint, true, opts.scratchDir)
+        var Chat = require('./chat.js');
+        Game.chat = new Chat(
+            Game.storage, Game.engine.fingerprint, Ui.document.getElementById('chatPane'),
+            Ui.document.getElementById('chatInput'),
+            function chatFilter(msg) {
+                var match;
+                if (match = msg.match(/^\//)) {
+                    try {
+                        function clear() {
+                            localStorage.clear();
+                        }
+
+                        Ui.message(eval(msg.substring(1)));
+                    } catch (e) {
+                        Ui.message(e);
                     }
-
-                    Ui.message(eval(msg.substring(1)));
-                } catch (e) {
-                    Ui.message(e);
+                    return false;
                 }
-                return false;
-            }
-            return true;
-        },
-        Game.Fact
-    );
-    Game.log = {};
-    Game.state;
-    Game.MAX_STATES=100;
-    Game.STATE_KEY = "lastState-v13";
-    Game.urlNum = 0;
-    Game.landMap = {};
-    Game.landDepMap = {}; // XXX
-    Game.usableTools = {};
-    Game.auto = false;
-    Game.reflexives = {};
-    Game.thms = {};
-    Game.currentGoal = null;
-
-    Game.setAnchorPath = function(anchorPath) {
+                return true;
+            },
+            Game.Fact
+        );
+        Game.log = {};
+        Game.state;
+        Game.MAX_STATES=100;
+        Game.STATE_KEY = "lastState-v13";
+        Game.urlNum = 0;
+        Game.landMap = {};
+        Game.landDepMap = {}; // XXX
+        Game.usableTools = {};
+        Game.auto = false;
+        Game.reflexives = {};
+        Game.thms = {};
+        Game.currentGoal = null;
+    }
+    Game.prototype.setAnchorPath = function(anchorPath) {
+        const Game = this;
+        const Ui = this.Ui;
         Game.state.anchorPath = anchorPath;
         if (Game.state.anchorPath == undefined) {
             Ui.document.getElementById("anchor").innerText = "anchor";
@@ -526,9 +551,11 @@
             Ui.document.body.className = "enableAllTools " + Ui.document.body.className;
             Ui.document.getElementById("anchor").innerText = "unanchor";
         }
-    }
+    };
 
-    Game.setWorkPath = function(wp) {
+    Game.prototype.setWorkPath = function(wp) {
+        const Game = this;
+        const Ui = this.Ui;
         var className = Game.state.anchorPath ? "enableAllTools " : ""; // XXX anchorUsableTools
         if (typeof wp == 'undefined') {
             delete Game.state.workPath;
@@ -572,29 +599,33 @@
         Ui.document.body.className = className;
 
         Ui.redrawSelection();
-    }
+    };
 
     // A Facet is a Fact which can be / has been specified by some amount.
-    Game.Facet = function(factData) {
+    Game.prototype.makeFacet = function(factData) {
+        const Game = this;
+        const Ui = this.Ui;
         var fact = Game.engine.canonicalize(new Game.Fact(factData));
         fact.Skin.VarNames = fact.Skin.VarNames.map(function(x,i) {
             return "&#" + (i + 0x2460) + ";";
         });
-
-        this.fact = fact;
         // Find the var at the given path. Replace all instances of it with the
         // named term or variable. Iff name is a term, its arity must be
         // specified. The new term will get that many new children variables.
-        this.specify = function(varNum, name, arity, freeMap) {
+        var specify = function(varNum, name, arity, freeMap) {
             //TODO: implement
         }
-    }
+        return {fact, specify};
+    };
 
 
-    Game.verifyDump = function() {
+    Game.prototype.verifyDump = function() {
+        const Game = this;
+        const Ui = this.Ui;
         Game.dump(Game.log, Game.state.work,
                   function(dump) {
                       try {
+                          var Engine = require('./engine.js');
                           var engine = new Engine();
                           dump.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
                           var work = engine.canonicalize(Game.startWork(dump.goal));
@@ -616,10 +647,11 @@
                           Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
                       }
                   });
-    }
-    Game.groundOut = function() {
+    };
+    Game.prototype.groundOut = function(fact) {
+        const Game = this;
+        const Ui = this.Ui;
         try {
-            var fact = this;
             Game.state.url = "#u=" + (Game.urlNum++) + "/" + "#f=" + fact.Skin.Name;
             // Make a protective clone in case ground() mutates but verify fails.
             var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
@@ -643,12 +675,13 @@
                       function(obj) {
                           obj.steps.push(finalStep);
                           var out = JSON.stringify(obj);
-                          if (Blob) {
+                          if (typeof(Blob)!=='undefined') {
                               var msg = Ui.document.createElement('a');
                               msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
                               msg.innerText = "download solution";
                               msg.download='tacro.txt';
                               Ui.message(msg);
+                              msg.click();
                           } else if (navigator.clipboard) {
                               navigator.clipboard.writeText(out)
                                   .then(() => { Ui.message("Dump copied"); })
@@ -674,6 +707,7 @@
                                              span.style.display = 'none';}, 1200);
             /* XXX: sync with css */
 
+
             Ui.message("");
             Game.setWorkPath([]);
             Game.setAnchorPath();
@@ -685,14 +719,18 @@
             console.log(e.stack);
             Ui.message(e);
         }
-    }
-    Game.stripFact = function(fact) {
+    };
+    Game.prototype.stripFact = function(fact) {
+        const Game = this;
+        const Ui = this.Ui;
         return {Core:fact.Core,
                 Skin:{TermNames:fact.Skin.TermNames},
                 FreeMaps:fact.FreeMaps};
-    }
+    };
 
-    Game.startWork = function(fact) {
+    Game.prototype.startWork = function(fact) {
+        const Game = this;
+        const Ui = this.Ui;
         var work = new Game.Fact(fact);
         if (work.Core[Game.Fact.CORE_HYPS].length == 0) {
             work.setHyps([work.Core[Game.Fact.CORE_STMT]]);
@@ -709,9 +747,11 @@
             return "&#" + (i + 0x24D0) + ";";
         });
         return work;
-    }
+    };
 
-    Game.knowTerms = function(fact) {
+    Game.prototype.knowTerms = function(fact) {
+        const Game = this;
+        const Ui = this.Ui;
         var newTerms = {};
         var numNewTerms = 0;
         fact.Skin.TermNames.forEach(function(termName, termNum) {
@@ -727,7 +767,7 @@
                 Game.state.specifyOptions.Terms.push(termObj);
             }
             if (!Ui.termToPane[termName]) {
-                Ui.termToPane[termName] = new Ui.Pane(termName);
+                Ui.termToPane[termName] = Ui.newPane(termName);
             }
         });
         function scan(exp) {
@@ -747,9 +787,11 @@
         scan(fact.Core[Game.Fact.CORE_STMT]);
         fact.Core[Game.Fact.CORE_HYPS].forEach(scan);
         return newTerms;
-    }
+    };
 
-    Game.verifyWork = function(fact) {
+    Game.prototype.verifyWork = function(fact) {
+        const Game = this;
+        const Ui = this.Ui;
         try {
             return fact.verify();
         } catch (e) {
@@ -769,9 +811,11 @@
                 return e.context;
             }
         }
-    }
+    };
 
-    Game.setWork = function(work, optDumpStep) {
+    Game.prototype.setWork = function(work, optDumpStep) {
+        const Game = this;
+        const Ui = this.Ui;
         var verified = Game.verifyWork(work);
         // Check for drift from planned FreeVar set. It would be nice to keep these
         // in lockstep but that requires more sophisticted dummy-tracking than we
@@ -792,7 +836,7 @@
         }
         Game.state.work = work;
         Game.state.workHash = Game.engine.fingerprint(work);
-        var ground = Ui.document.getElementById('ground');
+        var ground = Ui.groundButton;
         ground.setAttribute('disabled','disabled');
         ground.className = "disabled";
         ground.onclick = null;
@@ -804,7 +848,7 @@
                 Game.engine.getMandHyps(workClone, [], idFact, [], null, true);
                 ground.removeAttribute('disabled');
                 ground.className = "enabled";
-                ground.onclick = Game.groundOut.bind(idFact);
+                ground.onclick = Game.groundOut.bind(Game, idFact);
                 break;
             } catch (e) {
                 // can't ground this way
@@ -820,9 +864,11 @@
             Ui.factToShooterBox[k].box.tree.onchange();
         }
         Game.save(optDumpStep);
-    }
+    };
 
-    Game.save = function(optDumpStep) {
+    Game.prototype.save = function(optDumpStep) {
+        const Game = this;
+        const Ui = this.Ui;
         var stateKey = Game.storage.fpSave("state", Game.state);
         var stateFp = stateKey.local;
         if (stateFp != Game.log.state) {
@@ -840,9 +886,11 @@
             Ui.history.pushState(logFp, Game.STATE_KEY, "#s=" + stateFp + "/" + Game.state.url);
         }
         Game.verifyDump(Game.log);
-    }
+    };
 
-    Game.dump = function(logObj1, finishedFact, callback) {
+    Game.prototype.dump = function(logObj1, finishedFact, callback) {
+        const Game = this;
+        const Ui = this.Ui;
         var deps = finishedFact.Tree.Deps.map(function(dep) {
             return {Core:dep[0], Skin:{TermNames:dep[1].map(function(i){
                 return finishedFact.Skin.TermNames[i];
@@ -869,12 +917,16 @@
             }
         }
         walkLogObj(logObj1);
-    }
+    };
 
-    Game.currentLand = function() {
+    Game.prototype.currentLand = function() {
+        const Game = this;
+        const Ui = this.Ui;
         return Game.state.lands[Game.state.lands.length-1];
-    }
-    Game.nextGoal = function() {
+    };
+    Game.prototype.nextGoal = function() {
+        const Game = this;
+        const Ui = this.Ui;
         var land = Game.currentLand();
         if (!land.goals || (land.goals.length <= 0)) {
             delete land.goals;
@@ -894,9 +946,11 @@
         Game.setAnchorPath();
         Game.engine.resetDummies(Game.state.work);
         return;
-    }
+    };
 
-    Game.loadState = function(flat) {
+    Game.prototype.loadState = function(flat) {
+        const Game = this;
+        const Ui = this.Ui;
         Game.state = flat;
         Game.setWork(new Game.Fact(Game.state.work), Game.state.step);
         Game.setAnchorPath(flat.anchorPath);
@@ -907,9 +961,11 @@
         } else {
             Ui.message("no goals in current land");
         }
-    }
+    };
 
-    Game.loadLogFp = function(logFp, cb) {
+    Game.prototype.loadLogFp = function(logFp, cb) {
+        const Game = this;
+        const Ui = this.Ui;
         Game.storage.fpLoad("log", logFp, function(logObj) {
             Game.storage.fpLoad("state", logObj.state, function(stateObj) {
                 Game.log = logObj;
@@ -923,8 +979,10 @@
                 Ui.redraw();
             });
         });
-    }
-    Game.enterLand = function(landData) {
+    };
+    Game.prototype.enterLand = function(landData) {
+        const Game = this;
+        const Ui = this.Ui;
         var land = {
             name:landData.name,
             thms:[],             // hash values
@@ -938,10 +996,12 @@
                 land.thms.push(factFp);
             });
         }
-    }
+    };
 
 
-    Game.cheat = function(n) {
+    Game.prototype.cheat = function(n) {
+        const Game = this;
+        const Ui = this.Ui;
         while (n > 0) {
             var thm = new Game.Fact(Game.state.work);
             thm.Tree.Proof=[];
@@ -956,8 +1016,10 @@
             Ui.redraw();
             Game.save();
         }
-    }
-    Game.exportFacts = function() {
+    };
+    Game.prototype.exportFacts = function() {
+        const Game = this;
+        const Ui = this.Ui;
 
         console.log("==== EXPORT BEGIN ====");
         Game.state.lands.forEach(function(land) {
@@ -977,13 +1039,15 @@
                 });
             });
         });
-    }
+    };
 
 
 
 
     // called from index.html
-    Game.firebaseLoginLoaded = function() {
+    Game.prototype.firebaseLoginLoaded = function() {
+        const Game = this;
+        const Ui = this.Ui;
         console.log("Firebase Login loaded.");
         Game.storage.authInit(FirebaseSimpleLogin, function(user) {
             if (user) {
@@ -1012,13 +1076,15 @@
                 };
             }
         });
-    }
+    };
 
 
 
 
 
-    Game.loadLands = function(lands) { // TODO: this has become totally gefucked PICKUP
+    Game.prototype.loadLands = function(lands) { // TODO: this has become totally gefucked PICKUP;
+        const Game = this;
+        const Ui = this.Ui;
         var numLands = 0;
         for (var n in lands) if (lands.hasOwnProperty(n)) {
             numLands++;
@@ -1042,19 +1108,21 @@
         console.log("Got checked lands: " + numLands);
     }
 
-    Game.expireOldStates = function(maxStates, logObj) {
+    Game.prototype.expireOldStates = function(maxStates, logObj) {
+        const Game = this;
+        const Ui = this.Ui;
         if (logObj) {
             var parentFp = logObj.parent;
             var stateFp = logObj.state;
             Game.storage.fpLoad("log", parentFp,
-                                Game.expireOldStates.bind(null, maxStates-1));
+                                Game.expireOldStates.bind(Game, maxStates-1));
             if (maxStates <= 0) {
                 console.info("removing state " + stateFp);
                 Game.storage.fpRm("log", parentFp);
                 Game.storage.fpRm("state", stateFp);
             }
         }
-    }
+    };
 
 
     if (typeof define === "function" && define.amd) define(tm); else if (typeof module === "object" && module.exports) module.exports = {Game:Game,Ui:Ui};

@@ -1,9 +1,3 @@
-//TODO: allow storage.js to init with empty LocalStorage
-require('fs').rmdirSync("./scratch", {recursive: true});
-const {Ui, Game} = require('../script/stairs.js');
-Ui.startup({
-    redrawDelay:1,
-});
 
 if (false) {
     const { whyIsNodeStillRunning } = require('why-is-node-still-running');
@@ -25,15 +19,57 @@ async function specify(box, path, selectedIndex, ignoredValTODO) {
 const ax1Mark = '[[],[0,0,[0,1,0]],[]];["→"]';
 
 async function test1() {
+    //TODO: allow storage.js to init with empty LocalStorage
+    const scratchDir = "./scratch2"
+    require('fs').rmdirSync(scratchDir, {recursive: true});
+    const {Ui, Game} = require('../script/stairs.js');
+    const ui = new Ui({});
+    ui.startup({
+        redrawDelay:1,
+        scratchDir,
+    });
     await sleep(2);
-    var ax1Box = Ui.factToShooterBox[ax1Mark].box;
+    var ax1Box = ui.factToShooterBox[ax1Mark].box;
     await specify(ax1Box, [0], 1, "→");
     await specify(ax1Box, [0,0], 0, 0);
     await specify(ax1Box, [0,1], 0, 0);
     await specify(ax1Box, [1,0], 0, 0);
     // TODO: assert removeAttribute disabled
-    ax1Box.deployButtons[2].onclick();    
+    ax1Box.deployButtons[2].onclick();
+    await sleep(2);
+    // TODO: assert enabled
+    ui.groundButton.onclick();
 }
 
-test1();
+async function test2() {
+    //TODO: allow storage.js to init with empty LocalStorage
+    const scratchDir = "./scratch2"
+    require('fs').rmdirSync(scratchDir, {recursive: true});
+    const {Ui, Game} = require('../script/stairs.js');
+    const ui = new Ui({});
+    ui.startup({
+        redrawDelay:1,
+        scratchDir,
+    });
+    await sleep(2);
+    var ax1Box = ui.factToShooterBox[ax1Mark].box;
+    await specify(ax1Box, [0], 1, "→");
+    await specify(ax1Box, [0,0], 0, 0);
+    await specify(ax1Box, [0,1], 0, 0);
+    await specify(ax1Box, [1,0], 0, 0);
+    // TODO: assert removeAttribute disabled
+    ax1Box.deployButtons[2].onclick();
+    await sleep(2);
+    // TODO: assert enabled
+    ui.groundButton.onclick();
+    //TODO: need a promise to resolve at end of test
+    //require('fs').rmdirSync(scratchDir, {recursive: true});
+}
 
+async function testAll() {
+    await test1();
+    //await sleep(2000);
+    //await test2();
+}
+
+testAll();

@@ -28,7 +28,7 @@
         };
     FirebaseStub.ServerValue = {TIMESTAMP:null};
     
-    function Storage(fingerprinter, optFastTick) {
+    function Storage(fingerprinter, optFastTick, optScratchDir) {
         if (typeof process !== 'undefined' && process.nextTick) {
             nextTick = process.nextTick;
         } else if (typeof window !== 'undefined' && optFastTick) {
@@ -42,7 +42,7 @@
         var thatStorage = this;
         if (typeof localStorage === "undefined" || localStorage === null) {
             var LocalStorage = require('node-localstorage').LocalStorage;
-            this.local = new LocalStorage('./scratch');
+            this.local = new LocalStorage(optScratchDir||'./scratch');
         } else {
             this.local = localStorage;
         }
