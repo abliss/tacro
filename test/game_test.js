@@ -20,7 +20,7 @@ const ax1Mark = '[[],[0,0,[0,1,0]],[]];["→"]';
 
 async function test1() {
     //TODO: allow storage.js to init with empty LocalStorage
-    const scratchDir = "./scratch2"
+    const scratchDir = "./scratch1"
     require('fs').rmdirSync(scratchDir, {recursive: true});
     const {Ui, Game} = require('../script/stairs.js');
     const ui = new Ui({});
@@ -46,7 +46,7 @@ async function test2() {
     const scratchDir = "./scratch2"
     require('fs').rmdirSync(scratchDir, {recursive: true});
     const {Ui, Game} = require('../script/stairs.js');
-    const ui = new Ui({});
+    var ui = new Ui({});
     ui.startup({
         redrawDelay:1,
         scratchDir,
@@ -60,7 +60,13 @@ async function test2() {
     // TODO: assert removeAttribute disabled
     ax1Box.deployButtons[2].onclick();
     await sleep(2);
-    // TODO: assert enabled
+    ui = new Ui({});
+    ui.startup({
+        redrawDelay:1,
+        scratchDir,
+    });
+    await sleep(200);
+    // TODO: register promise for observing, then await
     ui.groundButton.onclick();
     //TODO: need a promise to resolve at end of test
     //require('fs').rmdirSync(scratchDir, {recursive: true});
@@ -68,8 +74,8 @@ async function test2() {
 
 async function testAll() {
     await test1();
-    //await sleep(2000);
-    //await test2();
+    await sleep(20);
+    await test2();
 }
 
 testAll();

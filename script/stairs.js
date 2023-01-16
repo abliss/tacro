@@ -19,9 +19,9 @@
                 click: function(){},
                 className:"",
             };
-            Blob= function() {};
+            Blob= function(data, type) {this.data=data; this.type=type};
             if (typeof URL.createObjectURL == 'undefined') {
-                URL.createObjectURL = function(){};
+                URL.createObjectURL = function(blob){return {blob}};
             }
 
             Ui.Node=function() {};
@@ -364,7 +364,7 @@
             var box = Ui.makeThmBox({
                 fact:Ui.Game.state.work,
                 exp:Ui.Game.state.work.Core[Ui.Game.Fact.CORE_HYPS][0],
-                onclick:Ui.workOnclick,
+                onclick:Ui.workOnclick.bind(this),
                 size:Ui.workTreeWidth,
                 editable:false});
             well.removeChild(well.firstChild);
@@ -407,7 +407,7 @@
 
     Ui.prototype.message = function(msg) {
         const Ui = this;
-        if (msg) {console.log("Tacro: " + msg);}
+        if (msg) {console.log("Tacro: " + JSON.stringify(msg));}
         if (msg.stack) {
             console.log(msg.stack);
         }
@@ -619,30 +619,36 @@
     };
 
 
+    Game.prototype.verifySolution = function(soln) {
+        const Game = this;
+        var Engine = require('./engine.js');
+        var engine = new Engine();
+        soln.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
+        var work = engine.canonicalize(Game.startWork(soln.goal));
+        soln.steps.forEach(function(step) {
+            step.args = step.args.map(function(arg){
+                if (arg && arg.Core) {
+                    return new Game.Fact(arg);
+                } else {
+                    return arg;
+                }
+            });
+            step.args.unshift(work);
+            work = engine[step.func].apply(engine, step.args);
+            step.args.shift();
+        });
+        work.verify();
+        engine.onAddFact(work);
+        return work;
+    }
     Game.prototype.verifyDump = function() {
         const Game = this;
         const Ui = this.Ui;
         Game.dump(Game.log, Game.state.work,
                   function(dump) {
                       try {
-                          var Engine = require('./engine.js');
-                          var engine = new Engine();
-                          dump.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
-                          var work = engine.canonicalize(Game.startWork(dump.goal));
-                          dump.steps.forEach(function(step) {
-                              step.args = step.args.map(function(arg){
-                                  if (arg && arg.Core) {
-                                      return new Game.Fact(arg);
-                                  } else {
-                                      return arg;
-                                  }
-                              });
-                              step.args.unshift(work);
-                              work = engine[step.func].apply(engine, step.args);
-                              step.args.shift();
-                          });
-                          work.verify();
-                          engine.onAddFact(work);
+                          Game.verifySolution(dump);
+                          //console.log("Verified dump.")
                       } catch (e) {
                           Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
                       }
@@ -674,6 +680,12 @@
             Game.dump(Game.log, thm,
                       function(obj) {
                           obj.steps.push(finalStep);
+                          try {
+                              Game.verifySolution(obj);
+                              console.log("verified ground");
+                          } catch (e) {
+                              Ui.message("dump verify failed: " + "\n" + JSON.stringify(obj) + "\n" + e + "\n" + e.stack);
+                          }
                           var out = JSON.stringify(obj);
                           if (typeof(Blob)!=='undefined') {
                               var msg = Ui.document.createElement('a');
@@ -905,8 +917,6 @@
                 callback({goal: step.goal, steps, deps});
             } else {
                 if (step) {
-                    delete logObj.step;
-                    step.logObj = logObj;
                     steps.unshift(step);
                 }
                 if (logObj.parent) {
@@ -971,6 +981,12 @@
                 Game.log = logObj;
                 Game.expireOldStates(Game.MAX_STATES, logObj);
                 Game.loadState(stateObj);
+                if (cb) {cb();}
+                // TODO: PICKUP XXX HACK
+                Ui.window.setTimeout(function() {
+                    Game.setWork(new Game.Fact(Game.state.work), Game.state.step);
+                }, 10);
+
                 // TODO: should popstate? double-undo problem.
                 Ui.history.pushState(logFp, "state",
                                      "#s=" + logObj.state + "/" + Game.state.url);
@@ -1114,12 +1130,14 @@
         if (logObj) {
             var parentFp = logObj.parent;
             var stateFp = logObj.state;
-            Game.storage.fpLoad("log", parentFp,
-                                Game.expireOldStates.bind(Game, maxStates-1));
             if (maxStates <= 0) {
                 console.info("removing state " + stateFp);
                 Game.storage.fpRm("log", parentFp);
                 Game.storage.fpRm("state", stateFp);
+            }
+            if (parentFp) {
+                Game.storage.fpLoad("log", parentFp,
+                                    Game.expireOldStates.bind(Game, maxStates-1));
             }
         }
     };
