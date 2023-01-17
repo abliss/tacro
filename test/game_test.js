@@ -15,6 +15,7 @@ async function specify(box, path, selectedIndex, ignoredValTODO) {
     await sleep(2);
 }
 
+const ev = {stopPropagation:function(){}};
 
 const ax1Mark = '[[],[0,0,[0,1,0]],[]];["→"]';
 
@@ -39,6 +40,20 @@ async function test1() {
     await sleep(2);
     // TODO: assert enabled
     ui.groundButton.onclick();
+    await sleep(20);
+    var ax2Box = ui.factToShooterBox['[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["→"]'].box;
+    await specify(ax2Box, [0,0], 1, 1);
+    await specify(ax2Box, [1,1,1], 2, 2);
+    await specify(ax2Box, [1,0,0], 3, "→");
+    await specify(ax2Box, [1,0,0,0], 0, 0);
+    await specify(ax2Box, [1,0,0,1], 1, 1);
+    ax2Box.deployButtons[2].onclick();
+    await sleep(2);
+    ui.workOnclick([1],ev);
+    await specify(ax1Box, [0], 1, 1);
+    await specify(ax1Box, [1,0], 0, 0);
+    ax1Box.deployButtons[1].onclick();
+    await sleep(2);
 }
 
 async function test2() {

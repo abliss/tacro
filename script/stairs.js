@@ -364,7 +364,7 @@
             var box = Ui.makeThmBox({
                 fact:Ui.Game.state.work,
                 exp:Ui.Game.state.work.Core[Ui.Game.Fact.CORE_HYPS][0],
-                onclick:Ui.workOnclick.bind(this),
+                onclick:Ui.workOnclick.bind(Ui),
                 size:Ui.workTreeWidth,
                 editable:false});
             well.removeChild(well.firstChild);
@@ -623,8 +623,15 @@
         const Game = this;
         var Engine = require('./engine.js');
         var engine = new Engine();
+        // TODO: the engine won't discover pushup theorems if they are added
+        // before their respective detachers. Maybe we should have the gamestate
+        // assign each mark an ordinal for when it was discovered?  For now we
+        // just add everything twice, and hope nothing needs 2 other
+        // dependencies to be added first.
+        soln.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
         soln.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
         var work = engine.canonicalize(Game.startWork(soln.goal));
+        var goalName = work.Skin.Name;
         soln.steps.forEach(function(step) {
             step.args = step.args.map(function(arg){
                 if (arg && arg.Core) {
@@ -639,7 +646,7 @@
         });
         work.verify();
         engine.onAddFact(work);
-        return work;
+        return {goalName};
     }
     Game.prototype.verifyDump = function() {
         const Game = this;
@@ -681,24 +688,26 @@
                       function(obj) {
                           obj.steps.push(finalStep);
                           try {
-                              Game.verifySolution(obj);
-                              console.log("verified ground");
+                              const {goalName} = Game.verifySolution(obj);
+                              console.log("verified ground " + goalName);
+                              var out = JSON.stringify(obj);
+                              if (typeof(Blob)!=='undefined') {
+                                  var msg = Ui.document.createElement('a');
+                                  msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
+                                  msg.innerText = "download solution";
+                                  msg.download=`tacro-${goalName}.txt`;
+                                  Ui.message(msg);
+                                  msg.click();
+                              } else if (navigator.clipboard) {
+                                  navigator.clipboard.writeText(out)
+                                      .then(() => { Ui.message("Dump copied"); })
+                                      .catch((e) => { Ui.message("Couldn't copy: " + e); });;
+                              }
                           } catch (e) {
                               Ui.message("dump verify failed: " + "\n" + JSON.stringify(obj) + "\n" + e + "\n" + e.stack);
-                          }
-                          var out = JSON.stringify(obj);
-                          if (typeof(Blob)!=='undefined') {
-                              var msg = Ui.document.createElement('a');
-                              msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
-                              msg.innerText = "download solution";
-                              msg.download='tacro.txt';
-                              Ui.message(msg);
-                              msg.click();
-                          } else if (navigator.clipboard) {
-                              navigator.clipboard.writeText(out)
-                                  .then(() => { Ui.message("Dump copied"); })
-                                  .catch((e) => { Ui.message("Couldn't copy: " + e); });;
-                          }});
+                          }}
+
+                      );
             var newFactFp = Ui.addToShooter(thm);
             Game.currentLand().thms.push(newFactFp.local);
             if (Game.storage.user) {
