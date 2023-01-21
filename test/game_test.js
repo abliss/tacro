@@ -54,6 +54,14 @@ async function test1() {
     await specify(ax1Box, [1,0], 0, 0);
     ax1Box.deployButtons[1].onclick();
     await sleep(2);
+    ui.Game.cheat(6);
+    await sleep(10);
+    var ax3Box = ui.factToShooterBox['[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["→","¬"]'].box;
+    await specify(ax3Box, [1,0], 0, 0);
+    await specify(ax3Box, [1,1], 1, 1);
+    ui.workOnclick([2],ev);
+    ax3Box.deployButtons[2].onclick();
+    await sleep(2);
 }
 
 async function test2() {

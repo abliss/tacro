@@ -631,7 +631,7 @@
         soln.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
         soln.deps.forEach(function(dep) {engine.onAddFact(new Game.Fact(dep))});
         var work = engine.canonicalize(Game.startWork(soln.goal));
-        var goalName = work.Skin.Name;
+        var goalName = engine.fingerprint((new Game.Fact(soln.goal)).getMark());
         soln.steps.forEach(function(step) {
             step.args = step.args.map(function(arg){
                 if (arg && arg.Core) {
