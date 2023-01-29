@@ -641,8 +641,13 @@
                 }
             });
             step.args.unshift(work);
-            work = engine[step.func].apply(engine, step.args);
-            step.args.shift();
+            try {
+                work = engine[step.func].apply(engine, step.args);
+            } catch (e) {
+                throw new Error("at logfp " + step.logFp + ":" + e, e);
+            } finally {
+                step.args.shift();
+            }
         });
         work.verify();
         engine.onAddFact(work);
@@ -657,7 +662,7 @@
                           Game.verifySolution(dump);
                           //console.log("Verified dump.")
                       } catch (e) {
-                          Ui.message("dump verify failed: " + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
+                          Ui.message("dump verify failed: \n" + dump.walkName + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
                       }
                   });
     };
@@ -908,7 +913,7 @@
         }
         Game.verifyDump(Game.log);
     };
-
+    var walkName = 0;
     Game.prototype.dump = function(logObj1, finishedFact, callback) {
         const Game = this;
         const Ui = this.Ui;
@@ -920,22 +925,24 @@
             })};
         });
         var steps = [];
-        function walkLogObj(logObj) {
+        function walkLogObj(walkName, fp, logObj) {
             var step = logObj.step;
             if (step && step.goal) {
-                callback({goal: step.goal, steps, deps});
+                callback(({walkName, goal: step.goal, steps, deps}));
             } else {
                 if (step) {
+                    step.logFp = fp;
                     steps.unshift(step);
                 }
                 if (logObj.parent) {
-                    Game.storage.fpLoad("log", logObj.parent, walkLogObj);
+                    Game.storage.fpLoad("log", logObj.parent, walkLogObj.bind(null, walkName, logObj.parent));
                 } else {
                     Ui.message("Incomplete dump.");
                 }
             }
         }
-        walkLogObj(logObj1);
+        walkName++;
+        walkLogObj(walkName, "start", logObj1);
     };
 
     Game.prototype.currentLand = function() {
@@ -987,7 +994,7 @@
         const Ui = this.Ui;
         Game.storage.fpLoad("log", logFp, function(logObj) {
             Game.storage.fpLoad("state", logObj.state, function(stateObj) {
-                Game.log = logObj;
+                Game.log = {parent:logFp};
                 Game.expireOldStates(Game.MAX_STATES, logObj);
                 Game.loadState(stateObj);
                 if (cb) {cb();}

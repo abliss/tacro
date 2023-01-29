@@ -54,14 +54,6 @@ async function test1() {
     await specify(ax1Box, [1,0], 0, 0);
     ax1Box.deployButtons[1].onclick();
     await sleep(2);
-    ui.Game.cheat(6);
-    await sleep(10);
-    var ax3Box = ui.factToShooterBox['[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["→","¬"]'].box;
-    await specify(ax3Box, [1,0], 0, 0);
-    await specify(ax3Box, [1,1], 1, 1);
-    ui.workOnclick([2],ev);
-    ax3Box.deployButtons[2].onclick();
-    await sleep(2);
 }
 
 async function test2() {
@@ -95,10 +87,50 @@ async function test2() {
     //require('fs').rmdirSync(scratchDir, {recursive: true});
 }
 
+async function test3() {
+    //TODO: allow storage.js to init with empty LocalStorage
+    const scratchDir = "./scratch3"
+    require('fs').rmdirSync(scratchDir, {recursive: true});
+    const {Ui, Game} = require('../script/stairs.js');
+    var ui = new Ui({});
+    ui.startup({
+        redrawDelay:1,
+        scratchDir,
+    });
+    await sleep(2);
+    ui.Game.cheat(7);
+    await sleep(2);
+    var ax1Box = ui.factToShooterBox[ax1Mark].box;
+    var ax3Box = ui.factToShooterBox['[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["→","¬"]'].box;
+    await specify(ax3Box, [1,0], 0, 0);
+    await specify(ax3Box, [1,1], 1, 1);
+    ui.workOnclick([2],ev);
+    ax3Box.deployButtons[2].onclick();
+    await sleep(2);
+    ui = new Ui({});
+    ui.startup({
+        redrawDelay:1,
+        scratchDir,
+    });
+    await sleep(20);
+    ui.workOnclick([2],ev);
+    await sleep(2);
+
+    var ax1Box = ui.factToShooterBox[ax1Mark].box;
+    await specify(ax1Box, [1,0], 3, "¬");
+    await specify(ax1Box, [1,1], 3, "¬");
+    await specify(ax1Box, [1,1,0], 0, 0);
+    await specify(ax1Box, [1,0,0], 1, 1);
+    await sleep(200);
+    ax1Box.deployButtons[2].onclick();
+    await sleep(2);
+
+}
 async function testAll() {
     await test1();
     await sleep(20);
     await test2();
+    await test3();
 }
 
 testAll();

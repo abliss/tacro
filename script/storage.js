@@ -29,7 +29,7 @@
     FirebaseStub.ServerValue = {TIMESTAMP:null};
     
     function Storage(fingerprinter, optFastTick, optScratchDir) {
-        if (typeof process !== 'undefined' && process.nextTick) {
+        if (typeof process !== 'undefined' && process.nextTick && !optFastTick) {
             nextTick = process.nextTick;
         } else if (typeof window !== 'undefined' && optFastTick) {
             nextTick = function nextTick(cb) {cb();};

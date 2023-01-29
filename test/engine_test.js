@@ -476,6 +476,7 @@ function checkGoalAndSave(goalFact) {
     }
     proofCtx.append(state.work);
     state.land.addFact(state.work);
+    console.log("Proved "+ (new Fact(goalFact)).getMark());
 }
 function saveGoal() {
     checkGoalAndSave(state.land.goals[state.goal]);
