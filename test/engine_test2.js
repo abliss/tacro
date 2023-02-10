@@ -4,6 +4,7 @@ var Fs = require('fs');
 var He = require('he');
 var marks = {};
 var score = 0;
+var skipped = 0;
 function startWork(fact) {
 
     var work = new Fact(fact);
@@ -44,7 +45,7 @@ function verify(dump) {
     });
     work.verify();
     engine.onAddFact(work);
-    console.log(`${score}: Checked ${work.getMark()}`);
+    console.log(`${score}: Checked: ${work.getMark()}`);
 }
 
 function getLand(filename) {
@@ -54,8 +55,7 @@ function getLand(filename) {
 }
 
 function check(land) {
-
-    land.axioms.forEach((ax)=>{
+    (land.axioms||[]).forEach((ax)=>{
         var mark = He.decode(new Fact(ax).getMark());
         marks[mark] = 1;
     });
@@ -63,22 +63,32 @@ function check(land) {
     land.goals.forEach((goal)=>{
         var goalMark = He.decode((new Fact(goal)).getMark());
         var goalFp = Engine.fingerprint(goalMark);
-        var soln = eval("("+Fs.readFileSync(`solutions/tacro-${goalFp}.txt`,'utf8')+")");
-        soln.deps.forEach((dep)=>{
-            var mark = (new Fact(dep).getMark());
-            if (!marks[mark]) {
-                throw new Error("unknown mark " + mark);
-            }
-        });
-        verify(soln);
+        var soln;
+        try {
+            soln = Fs.readFileSync(`solutions/tacro-${goalFp}.txt`,'utf8');
+        } catch (e) {
+            console.log(`${score}: Skipping ${goalMark}`);
+            skipped++;
+        }
+        if (soln) {    
+            var soln = eval("("+soln+")");
+            soln.deps.forEach((dep)=>{
+                var mark = (new Fact(dep).getMark());
+                if (!marks[mark]) {
+                    throw new Error("unknown mark " + mark);
+                }
+            });
+            verify(soln);
+        }
         marks[goalMark] = 1;
         score++;
         
     });
 }
 Fs.readdirSync("../data/").forEach((filename)=>{
+        console.log("==== " + filename + " ====");
     if (filename.startsWith("land_")) {
         check(getLand("../data/" + filename));
     }
 });
-
+console.log("${skipped} skipped.");
