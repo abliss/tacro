@@ -444,14 +444,19 @@
             }
         };
 
-        Ui.document.getElementById("rewind").onclick = function() {
+        Ui.document.getElementById("rewind").onclick = Ui.rewind = function() {
             var parentFp = Ui.Game.log.parent;
             if (parentFp) {
-                Ui.Game.loadLogFp(parentFp);
+                Ui.Game.storage.fpLoad("log", parentFp, function(logObj) {
+                    if (logObj.parent) {
+                        Ui.Game.loadLogFp(logObj.parent);
+                    }
+                });
             }
             return false;
         };
-        Ui.document.getElementById("forward").onclick = function() {
+
+        Ui.document.getElementById("forward").onclick = Ui.forward = function() {
             var childLogFp = Ui.Game.storage.local.getItem("childOf/" + Ui.Game.log.state);
             if (childLogFp) {
                 Ui.Game.loadLogFp(childLogFp);
@@ -865,7 +870,7 @@
         var ground = Ui.groundButton;
         ground.setAttribute('disabled','disabled');
         ground.className = "disabled";
-        ground.onclick = null;
+        ground.onclick = undefined;
         for (var k in Game.reflexives) if (Game.reflexives.hasOwnProperty(k)) {
             var idFact = Game.reflexives[k];
             try {
@@ -997,7 +1002,7 @@
                 Game.log = {parent:logFp};
                 Game.expireOldStates(Game.MAX_STATES, logObj);
                 Game.loadState(stateObj);
-                if (cb) {cb();}
+                //if (cb) {cb();}
                 // TODO: PICKUP XXX HACK
                 Ui.window.setTimeout(function() {
                     Game.setWork(new Game.Fact(Game.state.work), Game.state.step);

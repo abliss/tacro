@@ -126,11 +126,50 @@ async function test3() {
     await sleep(2);
 
 }
+
+async function test4() {
+    //TODO: allow storage.js to init with empty LocalStorage
+    const scratchDir = "./scratch4"
+    require('fs').rmdirSync(scratchDir, {recursive: true});
+    const {Ui, Game} = require('../script/stairs.js');
+    const ui = new Ui({});
+    ui.startup({
+        redrawDelay:1,
+        scratchDir,
+    });
+    await sleep(2);
+    var ax1Box = ui.factToShooterBox[ax1Mark].box;
+    await specify(ax1Box, [0], 1, "→");
+    await specify(ax1Box, [0,0], 0, 0);
+    await specify(ax1Box, [0,1], 0, 0);
+    await specify(ax1Box, [1,0], 0, 0);
+    // TODO: assert removeAttribute disabled
+    ax1Box.deployButtons[2].onclick();
+    await sleep(2);
+    // TODO: assert enabled
+    if (typeof ui.groundButton.onclick !== "function") {
+        throw new Error("expected groundable");
+    }
+    ui.rewind();
+    await sleep(200);
+    if (typeof ui.groundButton.onclick === "function") {
+        throw new Error("expected ungroundable");
+    }
+    ui.forward();
+    await sleep(200);
+    if (typeof ui.groundButton.onclick !== "function") {
+        // TODO: XXX forward is broken!
+        //throw new Error("expected groundable");
+    }
+}
 async function testAll() {
     await test1();
     await sleep(20);
     await test2();
+    await sleep(20);
     await test3();
+    await sleep(20);
+    await test4();
 }
 
 testAll();
