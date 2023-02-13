@@ -750,11 +750,11 @@ Error.stackTraceLimit = Infinity;
                     return recurse(workSubExp, factSubExp[factSubPath.shift()], factSubPath, alreadyMapped);
                 }
                 if (alreadyMapped) {
-                    while (dummyMap[factSubExp]) {
+                    while (!Array.isArray(factSubExp) && dummyMap[factSubExp]) {
                         factSubExp = dummyMap[factSubExp];
                     }
                 }
-                while (dummyMap[workSubExp]) {
+                while (!Array.isArray(workSubExp) && dummyMap[workSubExp]) {
                     workSubExp = dummyMap[workSubExp];
                 }
 
@@ -774,7 +774,7 @@ Error.stackTraceLimit = Infinity;
                 if (!Array.isArray(factSubExp)) {
                     if (alreadyMapped) {
                         if (!nonDummy[factSubExp]) {
-                            if (factSubExp != workSubExp) {
+                            if (factSubExp !== workSubExp) {
                                 dummyMap[factSubExp] = workSubExp;
                             }
                         } else if (Array.isArray(workSubExp)) {
@@ -782,7 +782,7 @@ Error.stackTraceLimit = Infinity;
                             // This isn't going to work.
                             assertEqual("mappedA", factSubExp, workSubExp)
                         } else if (!nonDummy[workSubExp]) {
-                            if (factSubExp != workSubExp) {
+                            if (factSubExp !== workSubExp) {
                                 dummyMap[workSubExp] = factSubExp;
                             }
                         } else {

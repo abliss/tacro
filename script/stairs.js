@@ -422,6 +422,10 @@
         const Ui = this;
         Ui.Game = new Game(Ui, opts);
         Ui.opts = opts || {};
+        var gotoMatch = Ui.window.location.search.match(/goto=(\d+)/);
+        if (gotoMatch) {
+            localStorage.clear();
+        }
         Ui.window.addEventListener('popstate', function(ev) {
             console.log("popstate to " + ev.state);
             if (ev.state) {
@@ -495,6 +499,10 @@
             Ui.Game.storage.remoteGet("checked/lands", function(lands) {
                 Ui.Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
                 Ui.Game.loadLands(lands);
+                if (gotoMatch) {
+                    Ui.Game.cheat(Number(gotoMatch[1]));
+                    Ui.window.location.search = "";
+                }
             });
 
         }

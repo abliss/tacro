@@ -42,7 +42,7 @@ function verify(dump) {
         });
         step.args.unshift(work);
         work = engine[step.func].apply(engine, step.args);
-    });
+     });
     work.verify();
     engine.onAddFact(work);
     console.log(`${score}: Checked: ${work.getMark()}`);
@@ -85,10 +85,14 @@ function check(land) {
         
     });
 }
-Fs.readdirSync("../data/").forEach((filename)=>{
+
+if (true) {
+    Fs.readdirSync("../data/").forEach((filename)=>{
         console.log("==== " + filename + " ====");
-    if (filename.startsWith("land_")) {
-        check(getLand("../data/" + filename));
-    }
-});
-console.log("${skipped} skipped.");
+        if (filename.startsWith("land_")) {
+            check(getLand("../data/" + filename));
+        }
+    });
+    console.log(`${skipped} skipped.`);
+}
+
