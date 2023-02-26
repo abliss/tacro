@@ -10,11 +10,10 @@ function startWork(fact) {
     var work = new Fact(fact);
     if (work.Core[Fact.CORE_HYPS].length == 0) {
         work.setHyps([work.Core[Fact.CORE_STMT]]);
+        work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
+        work.Skin.HypNames = ["Hyps.0"];
+        work.setProof(["Hyps.0"]);
     }
-    work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
-    work.Skin.HypNames = ["Hyps.0"];
-    work.setProof(["Hyps.0"]);
-
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
@@ -22,7 +21,7 @@ function startWork(fact) {
 }
 
 
-function verify(dump) {
+function verify(dump, goalMark) {
     var engine = new Engine();
         // TODO: the engine won't discover pushup theorems if they are added
         // before their respective detachers. Maybe we should have the gamestate
@@ -42,9 +41,14 @@ function verify(dump) {
         });
         step.args.unshift(work);
         work = engine[step.func].apply(engine, step.args);
-     });
-    work.verify();
+        engine.canonicalize(work).verify();
+    });
+    engine.canonicalize(work).verify();
     engine.onAddFact(work);
+    if (work.getMark() !== goalMark) {
+        throw new Error(
+            `mark mismatch: ${work.getMark()} !== ${goalMark}`);
+    }
     console.log(`${score}: Checked: ${work.getMark()}`);
 }
 
@@ -61,6 +65,7 @@ function check(land) {
     });
 
     land.goals.forEach((goal)=>{
+        goal.Core[Fact.CORE_HYPS]=[]; // remove hyps from defthms
         var goalMark = He.decode((new Fact(goal)).getMark());
         var goalFp = Engine.fingerprint(goalMark);
         var soln;
@@ -78,7 +83,7 @@ function check(land) {
                     throw new Error("unknown mark " + mark);
                 }
             });
-            verify(soln);
+            verify(soln, goalMark);
         }
         marks[goalMark] = 1;
         score++;
@@ -94,5 +99,6 @@ if (true) {
         }
     });
     console.log(`${skipped} skipped.`);
-}
+} else {
 
+}

@@ -84,14 +84,15 @@ Error.stackTraceLimit = Infinity;
         // Remove freelist entries where the first var is a binding var.
         var bindingVars = {};
         work.Core[Fact.CORE_FREE].forEach(function(freeList) {
-            freeList.slice(1).forEach(function(v) {bindingVars[v] = 1;});
+            freeList.slice(1).forEach(function(v) {bindingVars[v] = true;});
         });
         work.Core[Fact.CORE_FREE].forEach(function(freeList) {
-            var termVar = mapExp(freeList[0]);
+            var termVar = freeList[0];
             if (varsSeen[termVar] && !bindingVars[termVar]) {
                 freeList.slice(1).forEach(function(v) {
                     if (varsSeen[v]) {
                         var bVar = mapExp(v)
+                        termVar = mapExp(termVar);
                         if (bVar == termVar) {
                             throw new Error("Freeness violation! bVar=" + bVar);
                         }
@@ -114,6 +115,7 @@ Error.stackTraceLimit = Infinity;
         out.Tree.Deps = work.Tree.Deps.map(function(d) {
             return [clone(d[0]), d[1].map(mapTerm)];
         });
+        out.Skin.DepNames = out.Tree.Deps.map(fingerprint);
         if (work.Tree.Definiendum != undefined) {
             out.Tree.Definiendum = mapTerm(work.Tree.Definiendum);
         }

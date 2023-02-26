@@ -662,7 +662,7 @@
                 step.args.shift();
             }
         });
-        work.verify();
+        engine.canonicalize(work).verify();
         engine.onAddFact(work);
         return {goalName};
     }
