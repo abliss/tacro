@@ -236,7 +236,7 @@ function Context() {
                     // Positive (or presumptive) bindingness from the term
                     // constrains var arg, UNLESS the term is the definiendum. TODO:??
                     if ((termArgIsTerm[i] == false)
-                       || (termsAreDone && (termArgIsTerm[i] == null))
+                        || (termsAreDone && (termArgIsTerm[i] == null))
                        ) {
                         if (typeof arg == 'number') {
                             if (factVarIsBinding[arg] == false) {
@@ -315,7 +315,7 @@ function Context() {
                         }
                     });
                     mandHyps = [];
-                    }
+                }
             });
         }
         // TODO: we might need to propagate these changes by running through
@@ -384,7 +384,7 @@ var proofCtx = new Context();
 var ifaceCtx = new Context();
 var thms = {};
 
-getLand("../data/land_00.2_tut.js");
+getLand("./engine_test_lands/land_00.2_tut.js");
 var id  =   sfbm('[[],[0,0,0],[]];["&rarr;"]');
 var ax1 =   sfbm('[[],[0,0,[0,1,0]],[]];["&rarr;"]');
 startNextGoal();
@@ -392,7 +392,7 @@ state.work = applyFact(state.work, [], ax1, [2]);
 state.work = ground(state.work, id);
 saveGoal();
 
-getLand("../data/land_00.4_tut.js");
+getLand("./engine_test_lands/land_00.4_tut.js");
 var imim1 = sfbm('[[],[0,[0,0,1],[0,[0,1,2],[0,0,2]]],[]];["&rarr;"]');
 startNextGoal();
 state.work = applyFact(state.work, [], imim1, [2]);
@@ -400,14 +400,14 @@ state.work = ground(state.work, ax1);
 thms.himp1 = saveGoal();
 
 
-getLand("../data/land_00.6_tut.js");
+getLand("./engine_test_lands/land_00.6_tut.js");
 var imim2 = sfbm('[[],[0,[0,0,1],[0,[0,2,0],[0,2,1]]],[]];["&rarr;"]');
 startNextGoal();
 state.work = applyFact(state.work, [], imim2, [2]);
 state.work = ground(state.work, ax1);
 saveGoal();
 
-var landRarr = getLand("../data/land_00_rarr.js");
+var landRarr = getLand("./engine_test_lands/land_00_rarr.js");
 var pm243 = sfbm('[[],[0,[0,0,[0,0,1]],[0,0,1]],[]];["&rarr;"]');
 thms.id = id;
 /*
@@ -643,7 +643,7 @@ function saveAs(str) {
 
 // Level 2
 
-var landNot = getLand("../data/land_01_not.js");
+var landNot = getLand("./engine_test_lands/land_01_not.js");
 
 thms.Transpose = sfbm('[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["&rarr;","&not;"]');
 
@@ -693,7 +693,7 @@ state.work = applyFact(state.work, [], thms.conjnimp, [2]);
 state.work = ground(state.work, id);
 thms['dfandie-just'] = saveGoal();
 */
-var landAnd = getLand("../data/land_02_and.js");
+var landAnd = getLand("./engine_test_lands/land_02_and.js");
 
 startNextGoal(); // dfandie
 state.work = applyFact(state.work, [], thms.mp, [2]);
@@ -909,7 +909,7 @@ if (true) {
     checkGoalAndSave(goal);
     UNUSABLE_OK=false;
 }
-var landHarr = getLand("../data/land_03_harr.js");
+var landHarr = getLand("./engine_test_lands/land_03_harr.js");
 
 startNextGoal(); // dfbiie
 state.work = applyFact(state.work, [], thms.mp, [2]);
@@ -1302,7 +1302,7 @@ state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
 checkGoalAndSave(goal); // [[],[0,[0,0,[1,1,2]],[1,[2,0,1],[2,0,2]]],[]]
 
 UNUSABLE_OK=false;
-var landOr = getLand("../data/land_04_or.js");
+var landOr = getLand("./engine_test_lands/land_04_or.js");
 
   // Level 6
 
@@ -1385,7 +1385,7 @@ state.work = applyFact(state.work, [2,2], "harr_rarr_not_A_B_or_A_B", [1]);
 state.work = applyFact(state.work, [2,2], thms.orcom, [2]);
 // <-> v v A B C v v A B C
 thms.orass = saveGoal()
-var landForall = getLand("../data/land_05_forall.js");
+var landForall = getLand("./engine_test_lands/land_05_forall.js");
 
 thms.axalim='rarr_forall_z_rarr_A_B_rarr_forall_z_A_forall_z_B';
 startWith(thms.bi1);
@@ -1491,7 +1491,7 @@ state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["↔"]'));
 saveGoal(); // [[],[0,0,[1,[2,1,[2,2,[0,3,[3,4,4]]]],0]],[]]
 
 
-var landExist = getLand("../data/land_06_exist.js");
+var landExist = getLand("./engine_test_lands/land_06_exist.js");
 startNextGoal();
 state.work = ground(state.work, thms.biid);
 thms.df_ex = saveGoal();
@@ -1569,7 +1569,7 @@ applyArrow([1],"harr_A_not_not_A",1)
 //saveAs("_dv_A_z___rarr_exist_z_A_A") //undefined
 save();
 
-var landEquals = getLand("../data/land_07_equals.js");
+var landEquals = getLand("./engine_test_lands/land_07_equals.js");
 
 
 startWith("_dv_a_z___rarr_rarr_not_forall_z_not_equals_z_a_A_A")
@@ -1843,7 +1843,7 @@ checkGoalAndSave(goal);
 //saveGoal(); // [[],[0,[1,0,[2,[3,0,1],2]],2],[[1,0],[2,0]]]
 
 
-var landInt = getLand("../data/land_08_int.js");
+var landInt = getLand("./engine_test_lands/land_08_int.js");
 startNextGoal();
 var tmpWork = JSON.parse(JSON.stringify(state.work));
 try {
@@ -2300,10 +2300,10 @@ thms['axsb'] = saveGoal(); // [[],[0,[1,0,1],[2,0,2,1]],[]]
 
 
 
-var landOslash = getLand("../data/land_11_Oslash.js");
+var landOslash = getLand("./engine_test_lands/land_11_Oslash.js");
 // No goals. :(
 
-var landSect = getLand("../data/land_12_sect.js");
+var landSect = getLand("./engine_test_lands/land_12_sect.js");
 
 startNextGoal();
 state.work = applyFact(state.work, [],
@@ -2436,7 +2436,7 @@ state.work = applyFact(state.work, [],
 state.work = ground(state.work, sfbm('[[],[0,0,0],[]];["→"]'));
 checkGoalAndSave(goal); // [[],[0,[1,[2,0,[3]]],[4,1,[2,0,[5,1]]]],[[0,1]]]
 UNUSABLE_OK=false; //redisable anchors
-var landPlus = getLand("../data/land_13_plus.js");
+var landPlus = getLand("./engine_test_lands/land_13_plus.js");
 
 startNextGoal();
 
@@ -2845,7 +2845,7 @@ saveGoal(); // [[],[0,[1,0],[2,0,[1,[3]]]],[]]
 
 
 
-var landLe = getLand("../data/land_14_le.js");
+var landLe = getLand("./engine_test_lands/land_14_le.js");
 
 startNextGoal();
 state.work = applyFact(state.work, [],
