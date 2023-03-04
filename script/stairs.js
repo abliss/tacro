@@ -205,7 +205,8 @@
                 Ui.Game.state.url = "";
                 Ui.Game.setWorkPath([]);
                 Ui.Game.setAnchorPath();
-                Ui.Game.setWork(newWork, dumpStep);
+                Ui.Game.setWork(newWork);
+                Ui.Game.save(dumpStep);
                 Ui.redraw();
             };
             var pane = Ui.panes[Ui.panes.length-1];
@@ -296,7 +297,8 @@
                 Ui.Game.state.url = "";
                 Ui.Game.setWorkPath([]);
                 Ui.Game.setAnchorPath();
-                Ui.Game.setWork(newWork, dumpStep);
+                Ui.Game.setWork(newWork);
+                Ui.Game.save(dumpStep);
                 Ui.redraw();
             } catch (e) {
                 console.log("Error in applyFact: " + e);
@@ -371,6 +373,7 @@
             well.appendChild(box);
             Ui.workBox = box;
             Ui.Game.setWorkPath(Ui.Game.state.workPath);
+            Ui.Game.updateGroundButton();
         } catch (e) {
             Ui.message(e);
         }
@@ -461,7 +464,7 @@
         };
 
         Ui.document.getElementById("forward").onclick = Ui.forward = function() {
-            var childLogFp = Ui.Game.storage.local.getItem("childOf/" + Ui.Game.log.state);
+            var childLogFp = Ui.Game.storage.local.getItem("childOf/" + Ui.Game.log.parent);
             if (childLogFp) {
                 Ui.Game.loadLogFp(childLogFp);
             } else {
@@ -513,6 +516,7 @@
         this.Ui = Ui;
         Game.Fact = require('./fact.js');
         var Engine = require('./engine.js');
+        Game.Engine = Engine;
         Game.engine = new Engine();
         const Storage = require('./storage.js');
         Game.storage = new Storage(Game.engine.fingerprint, true, opts.scratchDir)
@@ -662,7 +666,8 @@
                 step.args.shift();
             }
         });
-        engine.canonicalize(work).verify();
+        Game.Engine.verifyFact(engine.canonicalize(work));
+        // TODO:should not be doing this on every step!
         engine.onAddFact(work);
         return {goalName};
     }
@@ -832,18 +837,9 @@
         const Game = this;
         const Ui = this.Ui;
         try {
-            return fact.verify();
+            return Game.Engine.verifyWork(fact);
         } catch (e) {
-            if (e.calculated && e.declared && e.context) {
-                // Caghni considers it an error for there to be too many freeness
-                // constraints declared. But for our purposes, it just represents an
-                // expected constraint in the goal which hasn't shown up in the
-                // proof yet. So just check that each calculated is also declared.
-                var dMap = {};
-                e.declared.forEach(function(d) { dMap[d] = true; });
-                e.calculated.forEach(function(c) { if (!dMap[c]) { throw e; } });
-                return e.context;
-            } else if ((fact.Tree.Cmd == "defthm") && (fact.Core[Game.Fact.CORE_HYPS].length > 0)) {
+            if ((fact.Tree.Cmd == "defthm") && (fact.Core[Game.Fact.CORE_HYPS].length > 0)) {
                 // TODO: The verifier is persnickety about defthms with
                 // hyps. E.g. the fresh goal of proving df-subst. For now, just skip
                 // this.
@@ -852,7 +848,32 @@
         }
     };
 
-    Game.prototype.setWork = function(work, optDumpStep) {
+    Game.prototype.updateGroundButton = function() {
+        const Game = this;
+        const Ui = this.Ui;
+        var ground = Ui.groundButton;
+        ground.setAttribute('disabled','disabled');
+        ground.className = "disabled";
+        ground.onclick = undefined;
+        for (var k in Game.reflexives) if (Game.reflexives.hasOwnProperty(k)) {
+            var idFact = Game.reflexives[k];
+            try {
+                // TODO: should not be using exceptions for this
+                var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
+                Game.engine.getMandHyps(workClone, [], idFact, [], null, true);
+                ground.removeAttribute('disabled');
+                ground.className = "enabled";
+                ground.onclick = Game.groundOut.bind(Game, idFact);
+                break;
+            } catch (e) {
+                // can't ground this way
+                // TODO: need some way to tell the user why. Especially for
+                // definition dummy var issues.
+            }
+        }
+    };
+
+    Game.prototype.setWork = function(work) {
         const Game = this;
         const Ui = this.Ui;
         var verified = Game.verifyWork(work);
@@ -875,26 +896,7 @@
         }
         Game.state.work = work;
         Game.state.workHash = Game.engine.fingerprint(work);
-        var ground = Ui.groundButton;
-        ground.setAttribute('disabled','disabled');
-        ground.className = "disabled";
-        ground.onclick = undefined;
-        for (var k in Game.reflexives) if (Game.reflexives.hasOwnProperty(k)) {
-            var idFact = Game.reflexives[k];
-            try {
-                // TODO: should not be using exceptions for this
-                var workClone = new Game.Fact(JSON.parse(JSON.stringify(work)));
-                Game.engine.getMandHyps(workClone, [], idFact, [], null, true);
-                ground.removeAttribute('disabled');
-                ground.className = "enabled";
-                ground.onclick = Game.groundOut.bind(Game, idFact);
-                break;
-            } catch (e) {
-                // can't ground this way
-                // TODO: need some way to tell the user why. Especially for
-                // definition dummy var issues.
-            }
-        }
+        Game.updateGroundButton();
         // TODO: might we need an extra var here?
         Game.state.specifyOptions.Vars = work.Skin.VarNames;
         Game.chat.setWork(work);
@@ -902,7 +904,6 @@
         for (var k in Ui.factToShooterBox) if (Ui.factToShooterBox.hasOwnProperty(k)) {
             Ui.factToShooterBox[k].box.tree.onchange();
         }
-        Game.save(optDumpStep);
     };
 
     Game.prototype.save = function(optDumpStep) {
@@ -911,12 +912,11 @@
         var stateKey = Game.storage.fpSave("state", Game.state);
         var stateFp = stateKey.local;
         if (stateFp != Game.log.state) {
-            var oldNow = Game.log.state;
             Game.log.state = stateFp;
             Game.log.step = optDumpStep;
             var logFp = Game.storage.fpSave("log", Game.log).local;
+            Game.storage.local.setItem("childOf/" + Game.log.parent, logFp);
             Game.log = {parent:logFp};
-            Game.storage.local.setItem("childOf/" + oldNow, logFp);
             Game.storage.local.setItem(Game.STATE_KEY, logFp);
             if (Game.storage.user) {
                 Game.storage.remote.child("users").child(Game.storage.user.uid).
@@ -980,7 +980,8 @@
         }
         Game.currentGoal = land.goals[0];
         Game.knowTerms(Game.currentGoal);
-        Game.setWork(Game.startWork(Game.currentGoal), {goal:Game.currentGoal});
+        Game.setWork(Game.startWork(Game.currentGoal));
+        Game.save({goal:Game.currentGoal});
         Game.setWorkPath([]);
         Game.setAnchorPath();
         Game.engine.resetDummies(Game.state.work);
@@ -991,7 +992,7 @@
         const Game = this;
         const Ui = this.Ui;
         Game.state = flat;
-        Game.setWork(new Game.Fact(Game.state.work), Game.state.step);
+        Game.setWork(new Game.Fact(Game.state.work));
         Game.setAnchorPath(flat.anchorPath);
         if (Game.currentLand() &&
             Game.currentLand().goals) {
@@ -1010,12 +1011,6 @@
                 Game.log = {parent:logFp};
                 Game.expireOldStates(Game.MAX_STATES, logObj);
                 Game.loadState(stateObj);
-                //if (cb) {cb();}
-                // TODO: PICKUP XXX HACK
-                Ui.window.setTimeout(function() {
-                    Game.setWork(new Game.Fact(Game.state.work), Game.state.step);
-                }, 10);
-
                 // TODO: should popstate? double-undo problem.
                 Ui.history.pushState(logFp, "state",
                                      "#s=" + logObj.state + "/" + Game.state.url);

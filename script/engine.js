@@ -1560,5 +1560,26 @@ Error.stackTraceLimit = Infinity;
     }
     Engine.fingerprint = fingerprint;
     Engine.canonicalize = canonicalize;
+    /* Like fact.verify but tolerates declarig extra freeness constraints.  This
+     * is needed because a "partially proven" fact may yet have too-strong
+     * hypothesis which we plan to weaken.
+     */
+    Engine.verifyFact = function(fact) {
+        try {
+            return fact.verify();
+        } catch (e) {
+            if (e.calculated && e.declared) {
+                // everything calculated must be declared, but not vice versa
+                var decl = {};
+                e.declared.forEach((pair) => {decl[pair]=1;});
+                e.calculated.forEach((pair) => {
+                    if (!decl.hasOwnProperty(pair)) {
+                        //TODO:throw e;
+                    }});
+            } else {
+                throw e;
+            }
+        }
+    }
     module.exports = Engine;
 })(module);

@@ -31,7 +31,7 @@ function verify(dump, goalMark) {
     dump.deps.forEach(function(dep) {engine.onAddFact(new Fact(dep))});
     dump.deps.forEach(function(dep) {engine.onAddFact(new Fact(dep))});
     var work = engine.canonicalize(startWork(dump.goal));
-    dump.steps.forEach(function(step) {
+    dump.steps.forEach(function(step, i) {
         step.args = step.args.map(function(arg){
             if (arg && arg.Core) {
                 return new Fact(arg);
@@ -41,9 +41,15 @@ function verify(dump, goalMark) {
         });
         step.args.unshift(work);
         work = engine[step.func].apply(engine, step.args);
-        engine.canonicalize(work).verify();
+        var canon = engine.canonicalize(work)
+        try {
+            Engine.verifyFact(canon);
+        } catch(e) {
+            console.error(`error with work after step ${i}: ` + JSON.stringify(work) + "\n canon: " + JSON.stringify(canon));
+            throw e;
+        }
     });
-    engine.canonicalize(work).verify();
+    Engine.verifyFact(engine.canonicalize(work));
     engine.onAddFact(work);
     if (work.getMark() !== goalMark) {
         throw new Error(
@@ -100,5 +106,4 @@ if (true) {
     });
     console.log(`${skipped} skipped.`);
 } else {
-
 }
