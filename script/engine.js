@@ -91,12 +91,12 @@ Error.stackTraceLimit = Infinity;
             if (varsSeen[termVar] && !bindingVars[termVar]) {
                 freeList.slice(1).forEach(function(v) {
                     if (varsSeen[v]) {
-                        var bVar = mapExp(v)
-                        termVar = mapExp(termVar);
-                        if (bVar == termVar) {
-                            throw new Error("Freeness violation! bVar=" + bVar);
+                        var mbVar = mapExp(v)
+                        var mTermVar = mapExp(termVar);
+                        if (mbVar == mTermVar) {
+                            throw new Error("Freeness violation! bVar=" + mbVar);
                         }
-                        out.ensureFree(termVar, bVar);
+                        out.ensureFree(mTermVar, mbVar);
                     }
                 });
             }
