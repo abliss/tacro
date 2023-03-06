@@ -421,6 +421,24 @@
             Ui.document.getElementById("message").innerText = msg;
         }
     };
+    Ui.prototype.downloadDump = function(goalName, dump) {
+        const Ui = this;
+        delete dump.walkName;
+        const dumpText = JSON.stringify(dump);
+        if (typeof(Blob)!=='undefined') {
+            var msg = Ui.document.createElement('a');
+            msg.href = URL.createObjectURL(new Blob([dumpText], {type: 'text/plain'}));
+            msg.innerText = "download solution";
+            msg.download=`tacro-${goalName}.txt`;
+            Ui.document.getElementById("download").innerText = "";
+            Ui.document.getElementById("download").appendChild(msg);
+        } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(dumpText)
+                .then(() => { Ui.message("Dump copied"); })
+                .catch((e) => { Ui.message("Couldn't copy: " + e); });;
+        }
+    };
+
     Ui.prototype.startup = function(opts) {
         const Ui = this;
         Ui.Game = new Game(Ui, opts);
@@ -681,6 +699,7 @@
                           //console.log("Verified dump.")
                       } catch (e) {
                           Ui.message("dump verify failed: \n" + dump.walkName + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
+                          Ui.downloadDump("broken", dump);
                       }
                   });
     };
@@ -692,7 +711,7 @@
             // Make a protective clone in case ground() mutates but verify fails.
             var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
             var thm = Game.engine.ground(workClone, fact);
-            thm.verify();
+            Game.Engine.verifyFact(thm);
             if (Game.currentGoal == null || thm == null) {
                 console.warn("null goal " + JSON.stringify(thm));
             } else {
@@ -712,24 +731,10 @@
                           obj.steps.push(finalStep);
                           try {
                               const {goalName} = Game.verifySolution(obj);
-                              console.log("verified ground " + goalName);
-                              var out = JSON.stringify(obj);
-                              if (typeof(Blob)!=='undefined') {
-                                  var msg = Ui.document.createElement('a');
-                                  msg.href = URL.createObjectURL(new Blob([out], {type: 'text/plain'}));
-                                  msg.innerText = "download solution";
-                                  msg.download=`tacro-${goalName}.txt`;
-                                  Ui.message(msg);
-                                  msg.click();
-                              } else if (navigator.clipboard) {
-                                  navigator.clipboard.writeText(out)
-                                      .then(() => { Ui.message("Dump copied"); })
-                                      .catch((e) => { Ui.message("Couldn't copy: " + e); });;
-                              }
+                              Ui.downloadDump(goalName, obj);
                           } catch (e) {
                               Ui.message("dump verify failed: " + "\n" + JSON.stringify(obj) + "\n" + e + "\n" + e.stack);
                           }}
-
                       );
             var newFactFp = Ui.addToShooter(thm);
             Game.currentLand().thms.push(newFactFp.local);

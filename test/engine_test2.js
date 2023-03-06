@@ -21,7 +21,7 @@ function startWork(fact) {
 }
 
 
-function verify(dump, goalMark) {
+function verify(dump, goalMark, goalFp) {
     var engine = new Engine();
         // TODO: the engine won't discover pushup theorems if they are added
         // before their respective detachers. Maybe we should have the gamestate
@@ -41,8 +41,9 @@ function verify(dump, goalMark) {
         });
         step.args.unshift(work);
         work = engine[step.func].apply(engine, step.args);
-        var canon = engine.canonicalize(work)
+        var canon;
         try {
+            canon = engine.canonicalize(work)
             Engine.verifyFact(canon);
         } catch(e) {
             console.error(`error with work after step ${i}: ` + JSON.stringify(work) + "\n canon: " + JSON.stringify(canon));
@@ -55,7 +56,7 @@ function verify(dump, goalMark) {
         throw new Error(
             `mark mismatch: ${work.getMark()} !== ${goalMark}`);
     }
-    console.log(`${score}: Checked: ${work.getMark()}`);
+    console.log(`${score}: Checked: ${work.getMark()} ${goalFp}`);
 }
 
 function getLand(filename) {
@@ -89,7 +90,7 @@ function check(land) {
                     throw new Error("unknown mark " + mark);
                 }
             });
-            verify(soln, goalMark);
+            verify(soln, goalMark, goalFp);
         }
         marks[goalMark] = 1;
         score++;
@@ -97,7 +98,15 @@ function check(land) {
     });
 }
 
-if (true) {
+var broken;
+try {
+    broken = Fs.readFileSync(`solutions/tacro-broken.txt`,'utf8');
+} catch (e) {
+    // no broken file
+}
+if (broken) {
+    verify(JSON.parse(broken));
+} else {
     Fs.readdirSync("../data/").forEach((filename)=>{
         console.log("==== " + filename + " ====");
         if (filename.startsWith("land_")) {
@@ -105,5 +114,4 @@ if (true) {
         }
     });
     console.log(`${skipped} skipped.`);
-} else {
 }

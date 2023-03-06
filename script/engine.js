@@ -10,10 +10,22 @@ var Fact = require('./fact.js'); //XXX
 // hope to "ground" the workspace in a known Fact, leaving us with a completed
 // zero-hypothesis theorem.
 Error.stackTraceLimit = Infinity;
+
+// Given a Skin.TermNames and an expression, replace each term index with its
+// string. Makes a pretty stringify for debugging.
+function subTerms(terms,exp) {
+    if (Array.isArray(exp)) {
+        var op = exp.shift();
+        exp = exp.map(subTerms.bind(null,terms));
+        exp.unshift(terms[op]);
+        return exp
+    } else {
+        return exp
+    }
+}
 (function(module) {
     // Enable for logs
     var DEBUG = false;
-
     function fingerprint(obj) {
         var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-";
         var str;
@@ -1412,8 +1424,9 @@ Error.stackTraceLimit = Infinity;
                             if (!drop) throw new Error("No drop by mark " + mark);
                             eachFreeVar([top[2][1]], work.FreeMaps,
                                         function(newV, bound) {
-                                            // TODO: what is bound?
-                                            work.ensureFree(newV,x);
+                                            if (!(bound[x] > 0)) {
+                                                work.ensureFree(newV,x);
+                                            }
                                         });
                             // TODO: check anchor for freeness constraint
                             stepsToInsert.push(
