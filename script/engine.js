@@ -630,12 +630,13 @@ function subTerms(terms,exp) {
             if ((typeof workOrExp == 'number') || Array.isArray(workOrExp)) {
                 return replaceDummies(workOrExp);
             } else if (workOrExp.ensureFree) {
-                var oldFreeLists = workOrExp.Core[Fact.CORE_FREE];
+                var work = workOrExp;
+                var oldFreeLists = work.Core[Fact.CORE_FREE];
                 var freePairsToEnsure = [];
                 oldFreeLists.forEach(function(freeList) {
                     var oldTv = freeList[0];
                     var newTerm = replaceDummies(oldTv);
-                    eachVarOnce([newTerm], function(newTermVar, pathFromRoot) {
+                    eachFreeVar([newTerm], work.FreeMaps, function(newTermVar, bound, pathFromRoot, root) {
                         freeList.slice(1).forEach(function(bv) {
                             var newBV = replaceDummies(bv);
                             if (Array.isArray(newBV)) {
@@ -645,7 +646,7 @@ function subTerms(terms,exp) {
                                 throw new Error("Freeness violation! Matched binding var " + bv + " to " + newBV + ";" +
                                                 " matched term var " + oldTv + " at zpath " + JSON.stringify(pathFromRoot)
                                                 + " in " + JSON.stringify(newTerm) + " to termVar " + newTermVar);
-                            } else {
+                            } else if (!(bound[newBV]>0)) {
                                 freePairsToEnsure.push([newTermVar, newBV]);
                             }
                         });
