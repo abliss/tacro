@@ -84,15 +84,14 @@ function check(land) {
             }
         });
         if (solns.length == 0) {
-            console.log(`${score}: Skipping ${goalMark}`);
+            console.log(`${score}: Skipping ${goalMark} ${goalFp}`);
             skipped++;
         } else {
             solns.forEach(function(soln, solnNum) {
                 try {
                     var soln = eval("("+soln+")");
                     soln.deps.forEach((dep)=>{
-                        var mark = (new Fact(dep).getMark());
-                        if (!marks[mark]) {
+                        var mark = He.decode((new Fact(dep).getMark()));                        if (!marks[mark]) {
                             throw new Error("unknown mark " + mark);
                         }
                     });
