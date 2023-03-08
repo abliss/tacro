@@ -1,0 +1,20 @@
+({
+    name:"&sect;",
+    depends:["&Oslash;"],  
+    axioms:[
+        {Core:[[],[0,[0,[1,[2,[3],[4,0]]],1],1],[]],
+         Skin:{TermNames:["&rarr;","&not;","&equals;","&Oslash;","&sect;"]},
+         FreeMaps:[[],[],[],[],[]]},
+        {Core:[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]],
+         Skin:{TermNames:["&rarr;","&equals;","&sect;"]},
+         FreeMaps:[[],[],[]]},
+        {Core:[[],[0,[1,[2,0],[2,1]],[1,0,1]],[]],
+         Skin:{TermNames:["&rarr;","&equals;","&sect;"]},
+         FreeMaps:[[],[],[]]},
+    ],
+    goals:[
+        {Core:[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]],
+         Skin:{TermNames:["&harr;","&equals;","&sect;"]},
+         FreeMaps:[[],[],[]]},
+    ],
+})

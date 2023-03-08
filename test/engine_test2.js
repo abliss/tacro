@@ -21,7 +21,7 @@ function startWork(fact) {
 }
 
 
-function verify(dump, goalMark, goalFp) {
+function verify(dump, goalMark, goalFp, solnNum) {
     var engine = new Engine();
         // TODO: the engine won't discover pushup theorems if they are added
         // before their respective detachers. Maybe we should have the gamestate
@@ -56,7 +56,8 @@ function verify(dump, goalMark, goalFp) {
         throw new Error(
             `mark mismatch: ${work.getMark()} !== ${goalMark}`);
     }
-    console.log(`${score}: Checked: ${work.getMark()} ${goalFp}`);
+    solnNum = (solnNum > 0 ? "_"+solnNum : "");
+    console.log(`${score}: Checked: ${work.getMark()} ${goalFp}${solnNum}`);
 }
 
 function getLand(filename) {
@@ -75,26 +76,35 @@ function check(land) {
         goal.Core[Fact.CORE_HYPS]=[]; // remove hyps from defthms
         var goalMark = He.decode((new Fact(goal)).getMark());
         var goalFp = Engine.fingerprint(goalMark);
-        var soln;
-        try {
-            soln = Fs.readFileSync(`solutions/tacro-${goalFp}.txt`,'utf8');
-        } catch (e) {
+        var solns = [];
+        ["","_1"].forEach((suffix) => {
+            try {
+                solns.push(Fs.readFileSync(`solutions/tacro-${goalFp}${suffix}.txt`,'utf8'));
+            } catch (e) {
+            }
+        });
+        if (solns.length == 0) {
             console.log(`${score}: Skipping ${goalMark}`);
             skipped++;
-        }
-        if (soln) {    
-            var soln = eval("("+soln+")");
-            soln.deps.forEach((dep)=>{
-                var mark = (new Fact(dep).getMark());
-                if (!marks[mark]) {
-                    throw new Error("unknown mark " + mark);
+        } else {
+            solns.forEach(function(soln, solnNum) {
+                try {
+                    var soln = eval("("+soln+")");
+                    soln.deps.forEach((dep)=>{
+                        var mark = (new Fact(dep).getMark());
+                        if (!marks[mark]) {
+                            throw new Error("unknown mark " + mark);
+                        }
+                    });
+                    verify(soln, goalMark, goalFp, solnNum);
+                } catch (e) {
+                    e.message = `Checking ${goalFp} ${solnNum} ` + e.message;
+                    throw e;
                 }
             });
-            verify(soln, goalMark, goalFp);
         }
-        marks[goalMark] = 1;
+        marks[goalMark]=1;
         score++;
-        
     });
 }
 

@@ -12,5 +12,8 @@
         {Core:[[],[0,[0,0,1],[0,0,[0,2,1]]],[]],
          Skin:{TermNames:["&rarr;"]},
          FreeMaps:[[]]},
+        {Core:[[],[0,0,[0,1,1]],[]],
+         Skin:{TermNames:["&rarr;"]},
+         FreeMaps:[[]]},
     ],
 })

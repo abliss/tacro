@@ -712,6 +712,17 @@
             var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
             var thm = Game.engine.ground(workClone, fact);
             Game.Engine.verifyFact(thm);
+            var finalStep = {func: "ground", args:[Game.stripFact(fact)]};
+            Game.dump(Game.log, thm,
+                      function(obj) {
+                          obj.steps.push(finalStep);
+                          try {
+                              const {goalName} = Game.verifySolution(obj);
+                              Ui.downloadDump(goalName, obj);
+                          } catch (e) {
+                              Ui.message("dump verify failed: " + "\n" + JSON.stringify(obj) + "\n" + e + "\n" + e.stack);
+                          }}
+                     );
             if (Game.currentGoal == null || thm == null) {
                 console.warn("null goal " + JSON.stringify(thm));
             } else {
@@ -725,17 +736,6 @@
                                     + " found " + actual)
                 };
             }
-            var finalStep = {func: "ground", args:[Game.stripFact(fact)]};
-            Game.dump(Game.log, thm,
-                      function(obj) {
-                          obj.steps.push(finalStep);
-                          try {
-                              const {goalName} = Game.verifySolution(obj);
-                              Ui.downloadDump(goalName, obj);
-                          } catch (e) {
-                              Ui.message("dump verify failed: " + "\n" + JSON.stringify(obj) + "\n" + e + "\n" + e.stack);
-                          }}
-                      );
             var newFactFp = Ui.addToShooter(thm);
             Game.currentLand().thms.push(newFactFp.local);
             if (Game.storage.user) {
