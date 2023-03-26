@@ -21,7 +21,7 @@
        // the conclusion needed no hypotheses
        "Skin":{"Name":"df-min","TermNames":
                ["&rarr;","&exist;","&and;","&equals;","min","&forall;","&le;","&upsilon;","&sect;","&not;"]},
-       "FreeMaps":[[],[[]],[],[[]],[],[[]],[],[[]],[],[]],
+       "FreeMaps":[[],[[]],[],[],[[]],[[]],[],[[]],[],[]],
        Tree:{Cmd:"defthm",Definiendum: 5}}
        
     ],
