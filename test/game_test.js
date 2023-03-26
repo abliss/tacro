@@ -98,8 +98,8 @@ async function test3() {
         scratchDir,
     });
     await sleep(2);
-    ui.Game.cheat(7);
-    await sleep(2);
+    ui.Game.cheat(8);
+    await sleep(16);
     var ax1Box = ui.factToShooterBox[ax1Mark].box;
     var ax3Box = ui.factToShooterBox['[[],[0,[0,[1,0],[1,1]],[0,1,0]],[]];["→","¬"]'].box;
     await specify(ax3Box, [1,0], 0, 0);

@@ -11,9 +11,11 @@ function startWork(fact) {
     if (work.Core[Fact.CORE_HYPS].length == 0) {
         work.setHyps([work.Core[Fact.CORE_STMT]]);
         work.FreeMap = fact.FreeMaps.slice(0, work.getCoreTermNames().length - 1);
-        work.Skin.HypNames = ["Hyps.0"];
-        work.setProof(["Hyps.0"]);
+
     }
+    work.Skin.HypNames = ["Hyps.0"];
+    work.setProof(["Hyps.0"]);
+
     if (!work.Tree.Cmd) {
         work.setCmd("thm");
     }
@@ -40,14 +42,16 @@ function verify(dump, goalMark, goalFp, solnNum) {
             }
         });
         step.args.unshift(work);
-        work = engine[step.func].apply(engine, step.args);
         var canon;
         try {
+            work = engine[step.func].apply(engine, step.args);
             canon = engine.canonicalize(work)
             Engine.verifyFact(canon);
         } catch(e) {
-            console.error(`error with work after step ${i}: ` + JSON.stringify(work) + "\n canon: " + JSON.stringify(canon));
-            throw e;
+            if (!e.hasOwnProperty("definiens")) {
+                console.error(`error with work after step ${i}: ` + JSON.stringify(work.Corel) + "\n canon: " + JSON.stringify(canon));
+                throw e;
+            }
         }
     });
     Engine.verifyFact(engine.canonicalize(work));
@@ -106,6 +110,10 @@ function check(land) {
         score++;
     });
 }
+
+console.log(JSON.stringify(Engine.subTerms(["&rarr;","&exist;","&and;","&equals;","min","&forall;","&le;","&upsilon;","&sect;","&not;"].map(He.decode),
+                [7,2,[5,0,[0,[6,[8,0],2],[9,1]]]])))
+               
 
 var broken;
 try {

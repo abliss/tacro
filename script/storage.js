@@ -42,9 +42,120 @@
         var thatStorage = this;
         if (typeof localStorage === "undefined" || localStorage === null) {
             var LocalStorage = require('node-localstorage').LocalStorage;
-            this.local = new LocalStorage(optScratchDir||'./scratch');
+            var localStorage = new LocalStorage(optScratchDir||'./scratch');
+            this.local = {
+                getItem: function(k,c) {c(localStorage.getItem(k));},
+                removeItem: function(k,c) {localStorage.removeItem(k);
+                                           if (c) c()},
+                clear: localStorage.clear,
+                setItem:  function(k,v,c) {localStorage.setItem(k,v);
+                                           if (c) c()},
+            };
         } else {
-            this.local = localStorage;
+            // https://raw.githubusercontent.com/mozilla-b2g/gaia/master/shared/js/async_storage.js
+            this.local = (function() {
+                'use strict';
+
+                var DBNAME = 'asyncStorage';
+                var DBVERSION = 1;
+                var STORENAME = 'keyvaluepairs';
+                var db = null;
+
+                function withDatabase(f) {
+                    if (db) {
+                        f();
+                    } else {
+                        var openreq = indexedDB.open(DBNAME, DBVERSION);
+                        openreq.onerror = function withStoreOnError() {
+                            console.error('asyncStorage: can\'t open database:',
+                                          openreq.error.name);
+                        };
+                        openreq.onupgradeneeded = function withStoreOnUpgradeNeeded() {
+                            // First time setup: create an empty object store
+                            openreq.result.createObjectStore(STORENAME);
+                        };
+                        openreq.onsuccess = function withStoreOnSuccess() {
+                            db = openreq.result;
+                            f();
+                        };
+                    }
+                }
+
+                function withStore(type, callback, oncomplete) {
+                    withDatabase(function() {
+                        var transaction = db.transaction(STORENAME, type);
+                        if (oncomplete) {
+                            transaction.oncomplete = oncomplete;
+                        }
+                        callback(transaction.objectStore(STORENAME));
+                    });
+                }
+
+                function getItem(key, callback) {
+                    var req;
+                    withStore('readonly', function getItemBody(store) {
+                        req = store.get(key);
+                        req.onerror = function getItemOnError() {
+                            console.error('Error in asyncStorage.getItem(): ', req.error.name);
+                        };
+                    }, function onComplete() {
+                        var value = req.result;
+                        if (value === undefined) {
+                            value = null;
+                        }
+                        callback(value);
+                    });
+                }
+
+                function setItem(key, value, callback) {
+                    withStore('readwrite', function setItemBody(store) {
+                        var req = store.put(value, key);
+                        req.onerror = function setItemOnError() {
+                            console.error('Error in asyncStorage.setItem(): ', req.error.name);
+                        };
+                    }, callback);
+                }
+
+                function removeItem(key, callback) {
+                    withStore('readwrite', function removeItemBody(store) {
+                        var req = store.delete(key);
+                        req.onerror = function removeItemOnError() {
+                            console.error('Error in asyncStorage.removeItem(): ', req.error.name);
+                        };
+                    }, callback);
+                }
+
+                function clear(callback) {
+                    withStore('readwrite', function clearBody(store) {
+                        var req = store.clear();
+                        req.onerror = function clearOnError() {
+                            console.error('Error in asyncStorage.clear(): ', req.error.name);
+                        };
+                    }, callback);
+                }
+
+                var writeQueue = [];
+                function onWriteComplete() {
+                    var args = writeQueue.shift();
+                    var callback = args[2];
+                    if (callback) {callback();}
+                    if (writeQueue.length > 0) {
+                        var args = writeQueue[0];
+                        setItem(args[0], args[1], onWriteComplete);
+                    }
+                }
+                return {
+                    getItem: getItem,
+                    removeItem: removeItem,
+                    clear: clear,
+                    setItem: function(k,v,c) {
+                        writeQueue.push([k,v,c]);
+                        if (writeQueue.length == 1) {
+                            setItem(k, v, onWriteComplete);
+                        }
+                    }
+                };
+            }());
         }
         this.fpRm = function(kind, fp) {
             var key = "fp/" + kind + "/" + fp;
@@ -83,13 +194,15 @@
         // storage.fpSave
         this.fpLoad = function(kind, fp, cb) {
             var key = "fp/" + kind + "/" + fp;
-            var str = this.local.getItem(key);
-            if (!str) {
-                console.log("Key not found: " + key);
-                return;
-            }
-            var obj = JSON.parse(str);
-            nextTick(cb.bind(null, obj));
+            this.local.getItem(
+                key, function(str) {
+                    if (!str) {
+                        console.log("Key not found: " + key);
+                        return;
+                    }
+                var obj = JSON.parse(str);
+                nextTick(cb.bind(null, obj));
+                });
         };
 
 

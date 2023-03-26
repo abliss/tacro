@@ -445,7 +445,7 @@
         Ui.opts = opts || {};
         var gotoMatch = Ui.window.location.search.match(/goto=(\d+)/);
         if (gotoMatch) {
-            localStorage.clear();
+            Ui.Game.storage.local.clear();
         }
         Ui.window.addEventListener('popstate', function(ev) {
             console.log("popstate to " + ev.state);
@@ -482,51 +482,56 @@
         };
 
         Ui.document.getElementById("forward").onclick = Ui.forward = function() {
-            var childLogFp = Ui.Game.storage.local.getItem("childOf/" + Ui.Game.log.parent);
-            if (childLogFp) {
-                Ui.Game.loadLogFp(childLogFp);
-            } else {
-                Ui.document.getElementById("forward").style.visibility="hidden";
-            }
+            Ui.Game.storage.local.getItem(
+                "childOf/" + Ui.Game.log.parent, function(childLogFp){
+                    if (childLogFp) {
+                        Ui.Game.loadLogFp(childLogFp);
+                    } else {
+                        Ui.document.getElementById("forward").style.visibility="hidden";
+                    }
+                });
             return false;
         };
 
-        var logFp = Ui.Game.storage.local.getItem(Ui.Game.STATE_KEY);
-        if (logFp) {
-            // restore
-            Ui.Game.loadLogFp(logFp, function() {
-                Ui.Game.state.lands.forEach(function(land) {
-                    land.thms.forEach(function(thmFp) {
-                        Ui.Game.storage.fpLoad("fact", thmFp, function(thmObj) {
-                            Ui.addToShooter(thmObj, land);
-                            Ui.redraw();
+        Ui.Game.storage.local.getItem(
+            Ui.Game.STATE_KEY, function(logFp) {
+                if (logFp) {
+                    // restore
+                    Ui.Game.loadLogFp(logFp, function() {
+                        Ui.Game.state.lands.forEach(function(land) {
+                            land.thms.forEach(function(thmFp) {
+                                Ui.Game.storage.fpLoad("fact", thmFp, function(thmObj) {
+                                    Ui.addToShooter(thmObj, land);
+                                    Ui.redraw();
+                                });
+                            });
                         });
+                        Ui.Game.storage.local.getItem(
+                            "my-checked-lands", function(lands) {
+                                Ui.Game.loadLands(JSON.parse(lands));});
                     });
-                });
-                Ui.Game.loadLands(JSON.parse(Ui.Game.storage.local.getItem("my-checked-lands")));
+                } else {
+                    //init
+                    Ui.Game.state = {
+                        lands: [],
+                        url:"",
+                        specifyOptions: {
+                            Vars:[],
+                            Terms:[]
+                        },
+                        knownTerms: {},
+                    };
+                    Ui.Game.storage.remoteGet("checked/lands", function(lands) {
+                        Ui.Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
+                        Ui.Game.loadLands(lands);
+                        if (gotoMatch) {
+                            Ui.Game.cheat(Number(gotoMatch[1]));
+                            Ui.window.location.search = "";
+                        }
+                    });
 
-            });
-        } else {
-            //init
-            Ui.Game.state = {
-                lands: [],
-                url:"",
-                specifyOptions: {
-                    Vars:[],
-                    Terms:[]
-                },
-                knownTerms: {},
-            };
-            Ui.Game.storage.remoteGet("checked/lands", function(lands) {
-                Ui.Game.storage.local.setItem("my-checked-lands", JSON.stringify(lands));
-                Ui.Game.loadLands(lands);
-                if (gotoMatch) {
-                    Ui.Game.cheat(Number(gotoMatch[1]));
-                    Ui.window.location.search = "";
                 }
             });
-
-        }
     };
 
     function Game(Ui, opts) {
@@ -547,7 +552,7 @@
                 if (match = msg.match(/^\//)) {
                     try {
                         function clear() {
-                            localStorage.clear();
+                            Ui.Game.storage.local.clear();
                         }
 
                         Ui.message(eval(msg.substring(1)));
@@ -729,8 +734,17 @@
                 // NOTE: we used to assert that the Cores matched, but then some
                 // special goal start off with a Hyp, and the grounded-out version
                 // doesn't have any Hyps. So just assert the Stmt and Dvs match.
-                var expected = JSON.stringify(Game.currentGoal.Core.slice(1));
-                var actual = JSON.stringify(thm.Core.slice(1));
+
+                // TODO:do something more principled here. Want to be tolerant
+                // of defthms where the oder of ops in the conc are different
+                // from the order of ops in the presence of hyps.
+                var tmp = new Game.Fact(Game.currentGoal);
+                tmp.Core[0] = [];
+                var expected = JSON.stringify(Game.engine.canonicalize(tmp).Core.slice(1));
+                var tmp = new Game.Fact(thm);
+                delete tmp.Tree.Deps;
+                delete tmp.Tree.Proof;
+                var actual = JSON.stringify(Game.engine.canonicalize(tmp).Core.slice(1));
                 if (expected != actual) {
                     throw new Error("Core mismatch! Wanted " + expected
                                     + " found " + actual)
@@ -844,7 +858,7 @@
         try {
             return Game.Engine.verifyWork(fact);
         } catch (e) {
-            if ((fact.Tree.Cmd == "defthm") && (fact.Core[Game.Fact.CORE_HYPS].length > 0)) {
+            if (e.hasOwnProperty("definiens")) {
                 // TODO: The verifier is persnickety about defthms with
                 // hyps. E.g. the fresh goal of proving df-subst. For now, just skip
                 // this.
@@ -1156,18 +1170,35 @@
     Game.prototype.expireOldStates = function(maxStates, logObj) {
         const Game = this;
         const Ui = this.Ui;
-        if (logObj) {
-            var parentFp = logObj.parent;
-            var stateFp = logObj.state;
-            if (maxStates <= 0) {
-                console.info("removing state " + stateFp);
-                Game.storage.fpRm("log", parentFp);
-                Game.storage.fpRm("state", stateFp);
+        const reachable = {};
+        function recurse(maxStates, logObj) {
+            if (logObj) {
+                var parentFp = logObj.parent;
+                var stateFp = logObj.state;
+                if (maxStates <= 0) {
+                    console.info("removing state " + stateFp);
+                    Game.storage.fpRm("log", parentFp);
+                    Game.storage.fpRm("state", stateFp);
+                }
+                if (parentFp) {
+                    // TODO XXX HACK
+                    reachable["fp/log/"+parentFp]=1;
+                    reachable["fp/state/"+stateFp]=1;
+                    Game.storage.fpLoad("log", parentFp,
+                                        recurse.bind(Game, maxStates-1));
+                }
             }
-            if (parentFp) {
-                Game.storage.fpLoad("log", parentFp,
-                                    Game.expireOldStates.bind(Game, maxStates-1));
+        }
+        recurse(maxStates, logObj);
+        if(false) {
+            var collected = 0;
+            for (let key of Object.keys(Game.storage.local)) {
+                if (key.match(/fp\/(log|state)/) && !reachable[key]) {
+                    //Game.storage.local.removeItem(key);
+                    collected++;
+                }
             }
+            Ui.message(`collected ${collected} keys`);
         }
     };
 

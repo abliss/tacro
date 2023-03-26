@@ -34,6 +34,7 @@
         {"Core":[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]],"Skin":{"TermNames":["&harr;","&le;","&plus;"]},"FreeMaps":[[],[],[]]},
         {"Core":[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]],"Skin":{"TermNames":["&harr;","&le;","&sect;"]},"FreeMaps":[[],[],[]]},
         {"Core":[[],[0,[1,[2,0,1]],[2,[3,1],0]],[]],"Skin":{"TermNames":["&rarr;","&not;","&le;","&sect;"]},"FreeMaps":[[],[],[],[]]},
+        {"Core":[[],[0,[1,[2,0,1]],[2,[3,1],0]],[]],"Skin":{"TermNames":["&harr;","&not;","&le;","&sect;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[2,[3,0,1],[3,1,0]]],[]],"Skin":{"TermNames":["&harr;","&equals;","&and;","&le;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,[2]],[3,0,[2]]],[]],"Skin":{"TermNames":["&harr;","&le;","&Oslash;","&equals;"]},"FreeMaps":[[],[],[],[]]},
 

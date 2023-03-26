@@ -114,20 +114,24 @@ function subTerms(terms,exp) {
             }
         });
 
-        out.setProof(work.Tree.Proof.map(mapExp));
-        if (work.Tree.Proof.length == 0) {
-            out.setCmd("stmt");
-        } else if (typeof(work.Tree.Definiendum) == 'number') {
+        if (work.Tree.Proof) {
+            out.setProof(work.Tree.Proof.map(mapExp));
+        }
+        if (typeof(work.Tree.Definiendum) == 'number') {
             out.setCmd("defthm");
+        } else if (!(work?.Tree?.Proof?.length > 0)) {
+            out.setCmd("stmt");
         } else {
             out.setCmd("thm");
         }
         
         out.setName(fingerprint(out.getMark()));
-        out.Tree.Deps = work.Tree.Deps.map(function(d) {
-            return [clone(d[0]), d[1].map(mapTerm)];
-        });
-        out.Skin.DepNames = out.Tree.Deps.map(fingerprint);
+        if (work.Tree.Deps) {
+            out.Tree.Deps = work.Tree.Deps.map(function(d) {
+                return [clone(d[0]), d[1].map(mapTerm)];
+            });
+            out.Skin.DepNames = out.Tree.Deps.map(fingerprint);
+        }
         if (work.Tree.Definiendum != undefined) {
             out.Tree.Definiendum = mapTerm(work.Tree.Definiendum);
         }
@@ -561,6 +565,9 @@ function subTerms(terms,exp) {
                     var freeMap = freeMaps[exp[0]];
                     var bindingVar;
                     var nonbindingArgNum;
+                    if (!freeMap) {
+                        throw new Error("no freemap for " + exp[0]);
+                    }
                     freeMap.forEach((bindingList,i) => {
                         if (Array.isArray(bindingList)) {
                             if (bindingVar != undefined) {
@@ -1595,5 +1602,6 @@ function subTerms(terms,exp) {
             }
         }
     }
+    Engine.subTerms = subTerms;
     module.exports = Engine;
 })(module);
