@@ -42,13 +42,13 @@
         var thatStorage = this;
         if (typeof localStorage === "undefined" || localStorage === null) {
             var LocalStorage = require('node-localstorage').LocalStorage;
-            var localStorage = new LocalStorage(optScratchDir||'./scratch');
+            var ls = new LocalStorage(optScratchDir||'./scratch');
             this.local = {
-                getItem: function(k,c) {c(localStorage.getItem(k));},
-                removeItem: function(k,c) {localStorage.removeItem(k);
+                getItem: function(k,c) {c(ls.getItem(k));},
+                removeItem: function(k,c) {ls.removeItem(k);
                                            if (c) c()},
-                clear: localStorage.clear,
-                setItem:  function(k,v,c) {localStorage.setItem(k,v);
+                clear: ls.clear,
+                setItem:  function(k,v,c) {ls.setItem(k,v);
                                            if (c) c()},
             };
         } else {
