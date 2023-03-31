@@ -1,0 +1,42 @@
+({
+    name:"&times;",
+    depends:["min"],
+    axioms:[
+        {Core:[[],[0,[1,0,1],[0,[1,2,3],[1,[2,0,2],[2,1,3]]]],[]],
+         Skin:{TermNames:["&rarr;","&equals;","&times;"]},
+         FreeMaps:[[],[],[]]},
+        {Core:[[],[0,[1,0,[2]],[2]],[]],
+         Skin:{TermNames:["&equals;","&times;","&Oslash;"]},
+         FreeMaps:[[],[],[]]},
+        {Core:[[],[0,[1,0,[2,1]],[3,[1,0,1],0]],[]],
+         Skin:{TermNames:["&equals;","&times;","&sect;","&plus;"]},
+         FreeMaps:[[],[],[],[]]},
+    ],
+    goals:[
+        {"Core":[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]],
+         "Skin":{"TermNames":["&rarr;","&equals;","&times;"]},
+         "FreeMaps":[[],[],[]]},
+        {"Core":[[],[0,[1,0,1],[1,[2,0,2],[2,1,2]]],[]],
+         "Skin":{"TermNames":["&rarr;","&equals;","&times;"]},
+         "FreeMaps":[[],[],[]]},
+/*
+        {Core:[[],[0,[1,[2],0],[2]],[]],
+         Skin:{TermNames:["&equals;","&times;","&Oslash;"]},
+         FreeMaps:[[],[],[]]},
+*/
+        {Core:[[],[0,[1,0,1],[1,1,0]],[]],
+         Skin:{TermNames:["&equals;","&times;"]},
+         FreeMaps:[[],[]]},
+        {"Core":[[],[0,[1,[1,0,1],2],[1,0,[1,1,2]]],[]],
+         "Skin":{"TermNames":["&equals;","&times;"]},
+         "FreeMaps":[[],[]]},
+
+        {"Core":[[],[0,[1,[2,0,[3,1]],[2,2,[3,1]]],[1,0,2]],[]],"Skin":{"TermNames":["&harr;","&equals;","&plus;","&sect;"]},"FreeMaps":[[],[],[],[]]},
+        {"Core":[[],[0,0,[1,0,[2,[3]]]],[]],"Skin":{"TermNames":["&equals;","&times;","&sect;","&Oslash;"]},"FreeMaps":[[],[],[],[]]},
+        {"Core":[[],[0,[1,[2,[3,0],1],[4]],[1,1,[4]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&times;","&sect;","&Oslash;"]},"FreeMaps":[[],[],[],[]]},
+
+        {"Core":[[],[0,[1,[0,[2,1,2]]],[2,[1,0,1],[1,0,2]]],[]],"Skin":{"TermNames":["&equals;","&times;","&plus;"]},"FreeMaps":[[],[],[]]},
+
+        {"Core":[[],[0,[1,0,1],[1,[2,2,0],[2,2,1]]],[]],"Skin":{"TermNames":["&rarr","&le;","&times;"]},"FreeMaps":[[],[],[]]},
+    ],
+})

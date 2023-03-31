@@ -567,8 +567,8 @@
         );
         Game.log = {};
         Game.state;
-        Game.MAX_STATES=100;
-        Game.STATE_KEY = "lastState-v13";
+        Game.MAX_STATES=1000;
+        Game.STATE_KEY = "lastState-v14";
         Game.urlNum = 0;
         Game.landMap = {};
         Game.landDepMap = {}; // XXX

@@ -51,9 +51,9 @@
         {Core:[[],[0,0,0],[]],
          Skin:{TermNames:["&harr;"]},
          FreeMaps:[[]]},
-        {Core:[[],[0,0,[1,[0,1,1],0]],[]],
-         Skin:{TermNames:["&harr;","&and;"]},
-         FreeMaps:[[],[]]},
+        {Core:[[],[0,0,[1,[2,1,1],0]],[]],
+         Skin:{TermNames:["&harr;","&and;","&rarr;"]},
+         FreeMaps:[[],[],[]]},
 
         {Core:[[],[0,[0,0,[1,1,2]],[1,[0,0,1],[0,0,2]]],[]],
          Skin:{TermNames:["&rarr;","&harr;"]},
