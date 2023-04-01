@@ -443,7 +443,7 @@
         const Ui = this;
         Ui.Game = new Game(Ui, opts);
         Ui.opts = opts || {};
-        var gotoMatch = Ui.window.location.search.match(/goto=(\d+)/);
+        var gotoMatch = Ui.window.location.hash.match(/goto=(\d+)/);
         if (gotoMatch) {
             Ui.Game.storage.local.clear();
         }

@@ -13,6 +13,9 @@
         {Core:[[],[0,0,0],[]],
          Skin:{TermNames:["&equals;"]},
          FreeMaps:[[]]},
+        {Core:[[],[0,[0,[1,0,0],1],1],[]],
+         Skin:{TermNames:["&rarr;","&equals;"]},
+         FreeMaps:[[],[]]},
         {Core:[[],[0,[1,0,1],[0,[1,0,2],[1,2,1]]],[]],
          Skin:{TermNames:["&rarr;","&equals;"]},
          FreeMaps:[[],[]]},
@@ -31,9 +34,6 @@
         {Core:[[],[0,[0,[1,0,[2,0,1]],2],2],[[1,0]]],
                Skin:{TermNames:["&rarr;","&exist;","&equals;"]},
          FreeMaps:[[],[[]],[]]},
-        {Core:[[],[0,[0,[1,0,0,],1],1],[]],
-               Skin:{TermNames:["&rarr;","&equals;"]},
-         FreeMaps:[[],[]]},
 
         {"Core":[[],[0,[1,0,[1,1,[0,[2,0,1],[0,2,3]]]],[0,[1,0,2],[1,1,3]]],[[2,1],[3,0]]],"Skin":{"TermNames":["&rarr;","&forall;","&equals;","&exist;","&and;","&harr;"]},"FreeMaps":[[],[[]],[],[[]],[],[]]}
         ,
