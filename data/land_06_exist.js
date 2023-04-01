@@ -23,7 +23,7 @@
          Skin:{TermNames:["&rarr;","&forall;","&harr;","&exist;"]},
          FreeMaps:[[],[[]],[],[[]]]},
         {Core:[[],[0,[1,0,1],1],[[1,0]]],
-         Skin:{TermNames:["&rarr;","&exist;"]},
+         Skin:{TermNames:["&harr;","&exist;"]},
          FreeMaps:[[],[[]]]},
     ],
 })
