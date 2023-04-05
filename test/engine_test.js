@@ -3144,7 +3144,7 @@ saveGoal(); // [0,[1,[2,0,1]],[2,[3,1],0]]
 //X
 /*
 function p() { 
-jq -c '{Core, Skin:.Skin | {Name,TermNames}, FreeMaps}' | sed 's/"<->"/"\&harr;"/; s/"="/"\&equals;"/; s/"+"/"\&plus;"/; s/"0"/"\&Oslash;"/; s/"->"/"\&rarr;"/; s/"S"/"\&sect;"/; s/"E."/"\&exist;"/; s/"A."/"\&forall;"/; s/"<="/"\&le;"/; s/"-."/"\&not;"/; s@"/\\\\"@"\&and;"@; s@"\\\\/"@"\&or;"@'
+jq -c '{Core, Skin:.Skin | {Name,TermNames}, FreeMaps}' | sed 's/"<->"/"\&harr;"/; s/"="/"\&equals;"/; s/"+"/"\&plus;"/; s/"0"/"\&Oslash;"/; s/"->"/"\&rarr;"/; s/"S"/"\&sect;"/; s/"E."/"\&exist;"/; s/"A."/"\&forall;"/; s/"<="/"\&le;"/; s/"-."/"\&not;"/; s@"/\\\\"@"\&and;"@; s@"\\\\/"@"\&or;"@;s@"\*"@"\&times;"@;s@"<,>"@"\&sbquo;"@'
 }
 
 */
