@@ -2,7 +2,7 @@
     name:"&forall;",
     depends:["&or;"],  
     axioms:[
-        {Core:[[0],[0,1,0],[]], // generifym
+        {Core:[[0],[0,1,0],[]], // generify 
          Skin:{TermNames:["&forall;"]},
          FreeMaps:[[[]]]},
         {Core:[[],[0,[1,0,1],1],[]],

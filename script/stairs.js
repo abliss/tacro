@@ -182,37 +182,7 @@
             Ui.message("New root unlocked: " + newTool);
             Ui.registerNewTool(newTool);
         }
-        switch (factData.Core[Ui.Game.Fact.CORE_HYPS].length) {
-        case 0:
-            break;
-        case 1: {
-            var box = Ui.makeThmBox({
-                fact:fact,
-                exp:fact.Core[Ui.Game.Fact.CORE_STMT],
-                size:Ui.shooterTreeWidth,
-                onmouseover: Ui.workPathHighlighter.bind(Ui),
-                onchange: onchange,
-                editable:true,
-            });
-            // TODO: display hyp somehow
-            box.className += " shooter";
-            box.onclick = function() {
-                var varMap = box.tree.getVarMap(Ui.Game.state.work);
-                var dumpStep = {func: "applyInference",
-                                args: [Ui.Game.stripFact(fact), varMap]};
-                var newWork = Ui.Game.engine.applyInference(Ui.Game.state.work, fact, varMap);
-                Ui.message("");
-                Ui.Game.state.url = "";
-                Ui.Game.setWorkPath([]);
-                Ui.Game.setAnchorPath();
-                Ui.Game.setWork(newWork);
-                Ui.Game.save(dumpStep);
-                Ui.redraw();
-            };
-            var pane = Ui.panes[Ui.panes.length-1];
-            pane.pane.insertBefore(box, pane.pane.firstChild);
-        }
-        default:
+        if (factData.Core[Ui.Game.Fact.CORE_HYPS].length > 0) {
             console.log("Skipping inference: " + JSON.stringify(fact.Core));
             return factFp;
         }
