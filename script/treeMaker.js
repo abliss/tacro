@@ -1,6 +1,7 @@
 !function(d3) {
     var NODE_SIZE = 3 // XXX Sync with stairs.less
-    ,RADIUS = NODE_SIZE * (3/8) //XXX
+    ,FACTOR=(3/8)
+    ,RADIUS = NODE_SIZE * FACTOR //XXX
     ,UNIT = "vw"
     ,optGroupLabels = {
         'Vars' : 'Train',
@@ -82,7 +83,14 @@
         } else {
             var varNum = this.exp;
             var text = root.fact.Skin.VarNames[varNum];
-            this.div.className += " name" + varNum;
+            root.fact.Core[Fact.CORE_FREE].forEach(freeList => {
+                if (freeList[0] === varNum) {
+                    text += "&notni;"+freeList.slice(1).map(v=>root.fact.Skin.VarNames[v]).join("");
+                    this.freeListLen = freeList.length -1
+
+                }
+            });            
+            this.div.className += " name" + varNum;            
             this.span = this.div.appendChild(this.makeVar(text));
             if (root.getSpecifyOptions) {
                 // Editable: wire up select element
@@ -279,9 +287,10 @@
             parentRect = {left:Infinity, right:-Infinity,
                           bottom:-Infinity, top: Infinity};
         }
+        var width = NODE_SIZE * (node.freeListLen ? 1+node.freeListLen : 1);
         var myRect = {top: node.y - NODE_SIZE / 2,
-                      left: node.x - NODE_SIZE / 2,
-                      right:node.x + NODE_SIZE / 2,
+                      left: node.x - width / 2,
+                      right:node.x + width / 2,
                       bottom:node.y + NODE_SIZE / 2};
         if (node.children) {
             myRect = node.children.reduce(measureDivs, myRect);
@@ -304,9 +313,8 @@
         node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
         node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
         node.span.style['font-size'] =0.5 * NODE_SIZE * scale + UNIT;
-        node.span.style.width =
-            node.span.style.height =
-            scale * RADIUS * 2 + UNIT;
+        node.span.style['min-width'] =scale * RADIUS * 2 + UNIT;
+        node.span.style.height = scale * RADIUS * 2 + UNIT;
         if (node.children) {
             // term nodes sized and positioned here.
             node.span.style.left = scale * (node.x - RADIUS - node.divRect.left) + UNIT;
