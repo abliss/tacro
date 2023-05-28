@@ -83,7 +83,10 @@
         } else {
             var varNum = this.exp;
             var text = root.fact.Skin.VarNames[varNum];
-            root.fact.Core[Fact.CORE_FREE].forEach(freeList => {
+            //TODO: fix modules
+            const FactCoreFree = 2;
+
+            root.fact.Core[FactCoreFree].forEach(freeList => {
                 if (freeList[0] === varNum) {
                     text += "&notni;"+freeList.slice(1).map(v=>root.fact.Skin.VarNames[v]).join("");
                     this.freeListLen = freeList.length -1

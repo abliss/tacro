@@ -34,7 +34,7 @@
             };
             Ui.window= {
                 addEventListener: function(){},
-                location: {search: ""},
+                location: {search: "",hash:""},
                 requestAnimationFrame:function(){},
                 setTimeout:setTimeout,
             };
@@ -380,7 +380,8 @@
 
     Ui.prototype.message = function(msg) {
         const Ui = this;
-        if (msg) {console.log("Tacro: " + JSON.stringify(msg));}
+        if (!msg) return;
+        console.log("Tacro: " + JSON.stringify(msg));
         if (msg.stack) {
             console.log(msg.stack);
         }
@@ -913,7 +914,7 @@
             }
             Ui.history.pushState(logFp, Game.STATE_KEY, "#s=" + stateFp + "/" + Game.state.url);
         }
-        Game.verifyDump(Game.log);
+        Game.verifyDump();
     };
     var walkName = 0;
     Game.prototype.dump = function(logObj1, finishedFact, callback) {
@@ -982,6 +983,7 @@
         const Ui = this.Ui;
         Game.state = flat;
         Game.setWork(new Game.Fact(Game.state.work));
+        Game.engine.resetDummies(Game.state.work);
         Game.setAnchorPath(flat.anchorPath);
         if (Game.currentLand() &&
             Game.currentLand().goals) {

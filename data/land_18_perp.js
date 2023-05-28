@@ -12,10 +12,11 @@
          "FreeMaps":[[],[[]],[],[],[],[]],
          Tree:{Cmd:"defthm",Definiendum: 5}
         },
+        {"Core":[[],[0,[1,0,1],[0,[2,0,[3,1,2]],[2,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&perp;","&vert;","&times"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[2,[3,0,2],[3,1,2]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&harr;","&perp;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[2,[3,2,0],[3,2,1]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&harr;","&perp;"]},"FreeMaps":[[],[],[],[]]},
-        {"Core":[[],[0,[1,0,1],[1,1,0]],[]],"Skin":{"TermNames":["&rarr;","&perp;"]},"FreeMaps":[[],[]]},
-        {"Core":[[],[0,[1,0,1],[1,1,0]],[]],"Skin":{"TermNames":["&harr;","&perp;"]},"FreeMaps":[[],[]]},
+        {"Core":[[],[0,[1,[2,0],1],[1,1,[2,0]]],[]],"Skin":{"TermNames":["&rarr;","&perp;","&sect;"]},"FreeMaps":[[],[],[]]},
+        {"Core":[[],[0,[1,[2,0],[2,1]],[1,[2,1],[2,0]]],[]],"Skin":{"TermNames":["&harr;","&perp;","&sect;"]},"FreeMaps":[[],[],[]]},
 
         {"Core":[[],
                  [0,[1,0,[1,1,[0,2,[0,3,[2,0,1]]]]],
