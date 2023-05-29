@@ -18,6 +18,7 @@
     function Node(parent, exp, argNumFromZero, opts) {
         this.exp = exp;
         this.div = document.createElement("div");
+        this.div.treeMakerNode = this;
         this.children = [];
         this.height = 0;
         this.div.className = Array.isArray(exp) ? "term" : "var";
@@ -72,6 +73,7 @@
 
     // Must be called after the root has been set up.
     Node.prototype.decorate = function() {
+        var node = this;
         var root = this.root;
         root.spanMap[this.path] = this.div;
         this.div.className += ' depth' + this.depth;
@@ -83,18 +85,21 @@
         } else {
             var varNum = this.exp;
             var text = root.fact.Skin.VarNames[varNum];
+            var freeListText = "";
             //TODO: fix modules
             const FactCoreFree = 2;
-
             root.fact.Core[FactCoreFree].forEach(freeList => {
                 if (freeList[0] === varNum) {
-                    text += "&notni;"+freeList.slice(1).map(v=>root.fact.Skin.VarNames[v]).join("");
-                    this.freeListLen = freeList.length -1
-
+                    freeListText = "&notni;" + freeList.slice(1).map(
+                        v=>root.fact.Skin.VarNames[v]).join("");
                 }
-            });            
+            });
             this.div.className += " name" + varNum;            
             this.span = this.div.appendChild(this.makeVar(text));
+            this.span.className += " makeVar";
+            this.freeListSpan = this.div.appendChild(document.createElement("span"));
+            this.freeListSpan.innerHTML = freeListText;
+            this.freeListSpan.className += " freeList";
             if (root.getSpecifyOptions) {
                 // Editable: wire up select element
                 if (!root.varMap.hasOwnProperty(varNum)) {
@@ -290,7 +295,7 @@
             parentRect = {left:Infinity, right:-Infinity,
                           bottom:-Infinity, top: Infinity};
         }
-        var width = NODE_SIZE * (node.freeListLen ? 1+node.freeListLen : 1);
+        var width = NODE_SIZE;
         var myRect = {top: node.y - NODE_SIZE / 2,
                       left: node.x - width / 2,
                       right:node.x + width / 2,
@@ -309,14 +314,14 @@
     }
 
     function positionDivs(origin, scale, node, index) {
-        node.div.style.width = scale * (node.divRect.right - node.divRect.left) + UNIT;
+        node.div.style.width = (scale * (node.divRect.right - node.divRect.left)) + UNIT;
         node.div.style.height = scale * (node.divRect.bottom - node.divRect.top) + UNIT;
         // TODO:imperfect. Sync 100 with css.
         node.div.style["z-index"] = 100 - node.height;
         node.div.style.left = scale * (node.divRect.left - origin.left) + UNIT;
         node.div.style.top = scale * (node.divRect.top - origin.top) + UNIT;
         node.span.style['font-size'] =0.5 * NODE_SIZE * scale + UNIT;
-        node.span.style['min-width'] =scale * RADIUS * 2 + UNIT;
+        node.span.style.width =scale * RADIUS * 2 + UNIT;
         node.span.style.height = scale * RADIUS * 2 + UNIT;
         if (node.children) {
             // term nodes sized and positioned here.

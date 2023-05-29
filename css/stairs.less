@@ -160,9 +160,6 @@ body, html {
     -webkit-appearance: none;
     -moz-appearance: none;
 }
-.termbox .select.freeList {
-    width:inherit;
-}
 .termbox .placeholder {
     display:none;
 }
@@ -255,6 +252,18 @@ body.enableAllTools .termbox .applyButton {
 }
 .termbox span {
     background-color: white;
+}
+.termbox span.freeList {
+    background-color: gray;
+    display:none;
+    margin-left:1em;
+}
+
+.termbox .selected>span.freeList {
+    display:inline-block;
+}
+.termbox div:hover>span.freeList {
+    display:inline-block;
 }
 
 .termbox>.cmd_stmt {
