@@ -2,8 +2,7 @@
     name:"tut2",
     depends:[],
     // 0 hyp theorems are displayed in the user's toolbox.
-    // 1 hyp theorems get buttons.
-    // 2+hyp theorems are not displayed, but ax-mp is special.
+    // 1+ hyp are not displayed, but ax-mp is special.
     axioms:[
         // NB: instead of the usual Simp+Frege basis for positive propositional
         // calculus,we use one of Hilbert's because it provides the necessary

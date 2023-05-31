@@ -110,10 +110,11 @@ function check(land) {
         score++;
     });
 }
-
+/*
 console.log(JSON.stringify(Engine.subTerms(["&rarr;","&exist;","&and;","&equals;","min","&forall;","&le;","&upsilon;","&sect;","&not;"].map(He.decode),
                 [7,2,[5,0,[0,[6,[8,0],2],[9,1]]]])))
-               
+*/
+
 
 var broken;
 try {

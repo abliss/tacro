@@ -26,6 +26,7 @@
         //{"Core":[[],[0,[1,0,1],[2,[3,0,1],[3,1,0]]],[]],"Skin":{"TermNames":["&harr;","&equals;","&and;","&vert;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,[2],0],[3,[2],0]],[]],"Skin":{"TermNames":["&harr;","&vert;","&Oslash;","&equals;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[0,[1,2,3],[1,[2,0,2],[2,1,3]]]],[]],"Skin":{"TermNames":["&rarr;","&vert;","&times;"]},"FreeMaps":[[],[],[]]},
-        {"Core":[[],[0,[1,0,1],[0,[1,0,[2,1,2]],[1,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&vert;","&plus;"]},"FreeMaps":[[],[],[]]}, 
+        {"Core":[[],[0,[1,0,1],[0,[1,0,[2,1,2]],[1,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&vert;","&plus;"]},"FreeMaps":[[],[],[]]},
+        {"Core":[[],[0,[1,[2,[2,0]],[2,[3]]],1],[]],"Skin":{"TermNames":["&rarr;","&vert;","&sect;","&Oslash;"]},"FreeMaps":[[],[],[],[]]}, 
     ],
 })

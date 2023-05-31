@@ -114,10 +114,10 @@ function subTerms(terms,exp) {
             }
         });
 
-        if (work.Tree.Proof) {
+        if (work?.Tree?.Proof) {
             out.setProof(work.Tree.Proof.map(mapExp));
         }
-        if (typeof(work.Tree.Definiendum) == 'number') {
+        if (typeof(work?.Tree?.Definiendum) == 'number') {
             out.setCmd("defthm");
         } else if (!(work?.Tree?.Proof?.length > 0)) {
             out.setCmd("stmt");
@@ -126,13 +126,13 @@ function subTerms(terms,exp) {
         }
         
         out.setName(fingerprint(out.getMark()));
-        if (work.Tree.Deps) {
+        if (work.Tree?.Deps) {
             out.Tree.Deps = work.Tree.Deps.map(function(d) {
                 return [clone(d[0]), d[1].map(mapTerm)];
             });
             out.Skin.DepNames = out.Tree.Deps.map(fingerprint);
         }
-        if (work.Tree.Definiendum != undefined) {
+        if (work.Tree?.Definiendum != undefined) {
             out.Tree.Definiendum = mapTerm(work.Tree.Definiendum);
         }
 
