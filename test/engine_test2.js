@@ -76,7 +76,7 @@ function check(land) {
         marks[mark] = 1;
     });
 
-    land.goals.forEach((goal)=>{
+    land.goals.forEach((goal, stepNum)=>{
         goal.Core[Fact.CORE_HYPS]=[]; // remove hyps from defthms
         var goalMark = He.decode((new Fact(goal)).getMark());
         var goalFp = Engine.fingerprint(goalMark);
@@ -101,7 +101,7 @@ function check(land) {
                     });
                     verify(soln, goalMark, goalFp, solnNum);
                 } catch (e) {
-                    e.message = `Checking ${goalFp} ${solnNum} ` + e.message;
+                    e.message = `Checking ${goalFp} ${solnNum} step ${stepNum}` + e.message;
                     throw e;
                 }
             });
