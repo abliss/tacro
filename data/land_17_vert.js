@@ -16,7 +16,7 @@
         // only needed in euclidlem?
         // {"Core":[[],[0,0,[1]],[]],"Skin":{"TermNames":["&vert;","&Oslash;"]},"FreeMaps":[[],[]]},
         {"Core":[[],[0,0,0],[]],"Skin":{"TermNames":["&vert;"]},"FreeMaps":[[]]},
-        {"Core":[[],[0,[0,[1,0,0],1],1],[]],"Skin":{"TermNames":["&rarr;","&vert;"]},"FreeMaps":[[],[]]},
+        {"Core":[[],[0,0,[1,1,1]],[]],"Skin":{"TermNames":["&rarr;","&vert;"]},"FreeMaps":[[],[]]},
         {"Core":[[],[0,[1,0,1],[2,[3,0,2],[3,1,2]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&harr;","&vert;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[2,[3,2,0],[3,2,1]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&harr;","&vert;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[0,[1,1,2],[1,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&vert;"]},"FreeMaps":[[],[]]},

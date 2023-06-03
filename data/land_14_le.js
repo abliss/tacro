@@ -25,7 +25,7 @@
         {"Core":[[],[0,0,[1,0,1]],[]],"Skin":{"TermNames":["&le;","&plus;"]},"FreeMaps":[[],[]]},
         {"Core":[[],[0,[1],0],[]],"Skin":{"TermNames":["&le;","&Oslash;"]},"FreeMaps":[[],[]]},
         {"Core":[[],[0,0,0],[]],"Skin":{"TermNames":["&le;"]},"FreeMaps":[[]]},
-        {"Core":[[],[0,[0,[1,0,0],1],1],[]],"Skin":{"TermNames":["&rarr;","&le;"]},"FreeMaps":[[],[]]},
+        {"Core":[[],[0,0,[1,1,1]],[]],"Skin":{"TermNames":["&rarr;","&le;"]},"FreeMaps":[[],[]]},
         {"Core":[[],[0,[1,0,1],[2,[3,0,2],[3,1,2]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&harr;","&le;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[2,[3,2,0],[3,2,1]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&harr;","&le;"]},"FreeMaps":[[],[],[],[]]},
         {"Core":[[],[0,[1,0,1],[0,[1,1,2],[1,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&le;"]},"FreeMaps":[[],[]]},

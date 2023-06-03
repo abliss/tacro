@@ -1,6 +1,6 @@
 ({
     name:"&forall;",
-    depends:["&or;"],  
+    depends:["&harr;"],  
     axioms:[
         {Core:[[0],[0,1,0],[]], // generify 
          Skin:{TermNames:["&forall;"]},

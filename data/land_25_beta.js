@@ -19,7 +19,7 @@
            {"Core":[[],
                     [0,0,[0,1,[1,2,[2,[3,2,3],[4,[5,0,1,2],4]]]]],
                     [[3,0,1,2],[4,0,1]]],
-            "Skin":{"TermNames":["&exists;","&forall;","&rarr;","&le;","&equals;","&beta;"]},
+            "Skin":{"TermNames":["&exist;","&forall;","&rarr;","&le;","&equals;","&beta;"]},
             "FreeMaps":[[[]],[[]],[],[],[],[]]},
     ]
 })

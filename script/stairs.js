@@ -29,6 +29,7 @@
                 createElement:function() {return new Node();},
                 getElementById:function() {return new Node();},
                 createTextNode:function() {return new Node();},
+                addEventListener: function(){},
                 head: new Node(),
                 body: new Node(),
             };
@@ -464,6 +465,21 @@
             return false;
         };
 
+        var keysPressed = [];
+        Ui.document.addEventListener ('keydown', (event)=> {
+            keysPressed.push(event.key);
+            switch (keysPressed.join("")) {
+            case 'goto':
+                var gotoNum = Number(window.prompt("erase all and goto:"));
+                if (!Number.isNaN(gotoNum) && gotoNum > 0) {
+                    Ui.Game.storage.local.clear();
+                    Ui.window.location=("/?t="+Date.now()+"#goto="+gotoNum);
+                }
+            }
+            if (keysPressed.length >= 4) {
+                keysPressed.shift();
+            }
+        } );
         Ui.Game.storage.local.getItem(
             Ui.Game.STATE_KEY, function(logFp) {
                 if (logFp) {

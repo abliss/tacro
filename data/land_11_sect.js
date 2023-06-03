@@ -2,8 +2,8 @@
     name:"&sect;",
     depends:["&Oslash;"],  
     axioms:[
-        {Core:[[],[0,[0,[1,[2,[3],[4,0]]],1],1],[]],
-         Skin:{TermNames:["&rarr;","&not;","&equals;","&Oslash;","&sect;"]},
+        {Core:[[],[0,[1,[2],[3,0]],1],[]],
+         Skin:{TermNames:["&rarr;","&equals;","&Oslash;","&sect;"]},
          FreeMaps:[[],[],[],[],[]]},
         {Core:[[],[0,[1,0,1],[1,[2,0],[2,1]]],[]],
          Skin:{TermNames:["&rarr;","&equals;","&sect;"]},
