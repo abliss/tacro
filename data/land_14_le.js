@@ -46,5 +46,13 @@
                    [2,0,1]],[[1,2]]],
          Skin:{TermNames:["&rarr;","&and;","&forall;","&equals;","&Oslash;","&le;","&sect;"]},
          FreeMaps:[[],[],[[]],[],[],[],[]]},
+
+{"Core":[[],[0,[1,[2,0,1]],[3,[2,0,[0,[4,[5,0],[6,2,[2,0,[0,[4,[5,0],2],1]]]],1]],[7,0,[3,[8,0,[6,2,[2,0,[0,[4,[5,0],2],1]]]],[1,1]]]]],[[1,2]]],"Skin":{"Name":"L6Mtw.","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2"],"TermNames":["&rarr;","&not;","&forall;","&and;","&le;","&sect;","&upsilon;","&exist;","&equals;"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[],[[]],[],[],[],[[]],[[]],[]]}
+
+        ,
+        {"Core":[[],[0,[1,[2,0,1]],[3,[4,2,[2,0,[0,[3,[5,0],2],1]]],[4,3,[2,0,[0,[3,[5,0],3],1]]]]],[[1,2,3]]],"Skin":{"Name":"ohS5HB","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2","V3"],"TermNames":["&rarr;","&not;","&forall;","&le;","&upsilon;","&sect;"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[],[[]],[],[[]],[]]}
+
+
     ],
+
 })
