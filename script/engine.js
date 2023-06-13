@@ -95,9 +95,20 @@ function subTerms(terms,exp) {
 
         // Remove freelist entries where the first var is a binding var.
         var bindingVars = {};
-        work.Core[Fact.CORE_FREE].forEach(function(freeList) {
-            freeList.slice(1).forEach(function(v) {bindingVars[v] = true;});
-        });
+        // overlaps with fact.js visitVars. share?
+        function scanForBindingVars(exp) {
+            if (Array.isArray(exp)) {
+                exp.slice(1).forEach(scanForBindingVars.bind(null));
+                var freeMap = work.FreeMaps[exp[0]];
+                freeMap.forEach(function(bindingList, argNum) {
+                    if (Array.isArray(bindingList)) {
+                        var arg = exp[argNum + 1];
+                        bindingVars[arg] = true;
+                    }
+                });
+            }
+        }
+        scanForBindingVars(work.Core[Fact.CORE_STMT]);
         work.Core[Fact.CORE_FREE].forEach(function(freeList) {
             var termVar = freeList[0];
             if (varsSeen[termVar] && !bindingVars[termVar]) {

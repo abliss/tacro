@@ -54,7 +54,9 @@ function verify(dump, goalMark, goalFp, solnNum) {
             }
         }
     });
-    Engine.verifyFact(engine.canonicalize(work));
+    
+    work = engine.canonicalize(work);
+    Engine.verifyFact(work);
     engine.onAddFact(work);
     if (work.getMark() !== goalMark) {
         throw new Error(
