@@ -435,10 +435,10 @@
                 }
                 var specifyOption = node.optionValues[node.span.value];
                 if (specifyOption.group == 'Terms') {
-                    var arr = node.children.map(getSpecifiedExp);
+                    var arr = node.children ? node.children.map(getSpecifiedExp) : [];
                     var value = specifyOption.value;
                     arr.unshift(work.nameTerm(value.text, value.freeMap));
-                    return arr;                                              
+                    return arr;
                 } else {
                     return specifyOption.optNum;
                 }

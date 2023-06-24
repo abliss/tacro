@@ -274,7 +274,7 @@
             } catch (e) {
                 console.log("Error in applyFact: " + e);
                 console.log(e.stack);
-                Ui.message(e);
+                Ui.message(e + " " + e.stack);
             }
         }
 

@@ -677,18 +677,18 @@ Error.stackTraceLimit = Infinity;
                         });
                     });
                 });
-                workOrExp.setFree([]);
-                // NOW we mutate the work. TOD: Still seems a bit early.
-                freePairsToEnsure.forEach(pair => workOrExp.ensureFree(pair[0], pair[1]));
+                work.setFree([]);
+                // NOW we mutate the work. TODO: Still seems a bit early.
+                freePairsToEnsure.forEach(pair => work.ensureFree(pair[0], pair[1]));
 
-                workOrExp.Core[Fact.CORE_STMT] = replaceDummies(
-                    workOrExp.Core[Fact.CORE_STMT])
-                workOrExp.Core[Fact.CORE_HYPS] =
-                    workOrExp.Core[Fact.CORE_HYPS].map(replaceDummies);
-                workOrExp.Tree.Proof =
-                    workOrExp.Tree.Proof.map(replaceDummies);
+                work.Core[Fact.CORE_STMT] = replaceDummies(
+                    work.Core[Fact.CORE_STMT])
+                work.Core[Fact.CORE_HYPS] =
+                    work.Core[Fact.CORE_HYPS].map(replaceDummies);
+                work.Tree.Proof =
+                    work.Tree.Proof.map(replaceDummies);
 
-                return workOrExp;
+                return work;
             } else {
                 throw new Error("Not work or exp: " + workOrExp);
             }
