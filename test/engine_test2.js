@@ -49,7 +49,9 @@ function verify(dump, goalMark, goalFp, solnNum) {
             //Engine.verifyFact(canon);
         } catch(e) {
             if (!e.hasOwnProperty("definiens")) {
-                console.error(`error with work after step ${i}: ` + JSON.stringify(work.Corel) + "\n canon: " + JSON.stringify(canon));
+                delete work.Tree.Proof;
+                delete work.Tree.Deps;
+                console.error(`error with work after step ${i}: ` + JSON.stringify(work));
                 throw e;
             }
         }
@@ -117,7 +119,22 @@ function check(land) {
 console.log(JSON.stringify(Engine.subTerms(["&rarr;","&exist;","&and;","&equals;","min","&forall;","&le;","&upsilon;","&sect;","&not;"].map(He.decode),
                 [7,2,[5,0,[0,[6,[8,0],2],[9,1]]]])))
 */
-
+if (false) {
+console.log(JSON.stringify(Engine.canonicalize(new Fact({"Core":[ [
+            ],
+                 [0,
+                  [1,0,[7,1,[2,[8,[9,1],0],
+                             [2,[3,[4,[3,[5,1,2]],[0,1,[6]]]],
+                              [     4,   [5,1,2], [3,2]    ]] 
+                  ]]],[10,1,2]],
+                 [[2,0]]],
+       // don't forget: to verify, the terms should be numbered as if
+       // the conclusion needed no hypotheses
+       "Skin":{"Name":"df-min","TermNames":
+               ["&equals;","&upsilon;","&rarr;","&not;","&and;","&exist;","&Oslash;","&forall;","&le;","&sect;","min"]},
+       "FreeMaps":[[],[[]],[],[],[],[[]],[],[[]],[],[],[[]]],
+                                                         Tree:{Cmd:"defthm",Definiendum: 10}}))));
+}
 
 var broken;
 try {

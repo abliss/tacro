@@ -11,21 +11,30 @@ var Fact = require('./fact.js'); //XXX
 // zero-hypothesis theorem.
 Error.stackTraceLimit = Infinity;
 
-// Given a Skin.TermNames and an expression, replace each term index with its
-// string. Makes a pretty stringify for debugging.
-function subTerms(terms,exp) {
-    if (Array.isArray(exp)) {
-        var op = exp.shift();
-        exp = exp.map(subTerms.bind(null,terms));
-        exp.unshift(terms[op]);
-        return exp
-    } else {
-        return exp
-    }
-}
 (function(module) {
     // Enable for logs
     var DEBUG = false;
+
+    function clone(obj) {
+        return JSON.parse(JSON.stringify(obj)); // TODO:slow
+    }
+
+    // Given a Skin.TermNames and an expression, replace each term index with its
+    // string. Makes a pretty stringify for debugging.
+    function subTerms(terms,exp) {
+        function recurse(exp) {
+            if (Array.isArray(exp)) {
+                var op = exp.shift();
+                exp = exp.map(subTerms.bind(null,terms));
+                exp.unshift(terms[op]);
+                return exp
+            } else {
+                return exp
+            }
+        }
+        return recurse(clone(exp));
+    }
+    
     function fingerprint(obj) {
         var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-";
         var str;
@@ -178,10 +187,6 @@ function subTerms(terms,exp) {
         return n;
     }
 
-    function clone(obj) {
-        return JSON.parse(JSON.stringify(obj)); // TODO:slow
-    }
-
     // NB: not the same as orcat's xpath definition. Pass 0 to get the term.
     function zpath(exp, path) {
         var a = exp, l = path.length, i = 0;
@@ -305,7 +310,18 @@ function subTerms(terms,exp) {
             return out;
         }
         
-        
+        function checkInvariant(pusp) {
+            if (DEBUG) {
+                console.log("Check invariant: " + JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
+                console.log("  pusp: ", JSON.stringify(pusp));
+            }
+            if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
+                JSON.stringify(zpath(pusp.goal, pusp.goalPath))) {
+                throw new Error("Invariant broken!"
+                                + JSON.stringify(zpath(pusp.tool, pusp.toolPath)) + " != "
+                                + JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
+            }
+        }       
         // A data structure for keeping in the scheme.
         // goalArrow wraps a goalOpArity-arg term.
         // goalArg is in 1...goalOpArity, specifying which argchild the goal is
@@ -342,16 +358,7 @@ function subTerms(terms,exp) {
                 }
             }
 
-            function checkInvariant(pusp) {
-                if (DEBUG) {
-                    console.log("Check invariant: " + JSON.stringify(zpath(pusp.goal, pusp.goalPath)));
-                    console.log("  pusp: ", JSON.stringify(pusp));
-                }
-                if (JSON.stringify(zpath(pusp.tool, pusp.toolPath)) !=
-                    JSON.stringify(zpath(pusp.goal, pusp.goalPath))) {
-                    throw new Error("Invariant broken!");
-                }
-            }
+
 
             /** 
              * Apply a distribute to the anchored tool, and detach the anchor from
@@ -769,6 +776,12 @@ function subTerms(terms,exp) {
                 varMap[factVarName] = workExp;
             }
             function recurse(workSubExp, factSubExp, factSubPath, alreadyMapped) {
+                if (alreadyMapped && !Array.isArray(factSubExp) &&
+                    dummyMap.hasOwnProperty(factSubExp)) {
+                    var newExp = dummyMap[factSubExp];
+                    if (newExp === factSubExp) throw new Error("dummyloop");
+                    return recurse(workSubExp, newExp, factSubPath, alreadyMapped);
+                }
                 if (!alreadyMapped && !Array.isArray(factSubExp) &&
                     (varMap[factSubExp] != undefined)) {
                     return recurse(workSubExp, varMap[factSubExp], factSubPath, true);
@@ -808,6 +821,13 @@ function subTerms(terms,exp) {
                     if (alreadyMapped) {
                         if (!nonDummy[factSubExp]) {
                             if (factSubExp !== workSubExp) {
+                                if (dummyMap.hasOwnProperty(factSubExp)) {
+                                    throw new Error("Would overwrite dummy map of " +
+                                                    factSubExp + " from " +
+                                                    dummyMap[factSubExp] + " to " +
+                                                    workSubExp
+                                                   );
+                                }
                                 dummyMap[factSubExp] = workSubExp;
                             }
                         } else if (Array.isArray(workSubExp)) {
@@ -920,7 +940,6 @@ function subTerms(terms,exp) {
                     pu = scheme.queryPushUp([goalOp, goalArg, myToolOp, myToolArg]);
                     if (DEBUG && (JSON.stringify([goalOp, goalArg, myToolOp, myToolArg]) ==
                                   '["&exist;",2,"&harr;",1]')) {
-                        console.log("XXXX Found distribute: " + (pu.grease ? 1 : 0));
                     }
                     myToolArg = (pu.isCovar ? 2 : 1);
                 }

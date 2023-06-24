@@ -713,6 +713,7 @@
                               Ui.downloadDump(goalName, obj);
                           } catch (e) {
                               Ui.message("dump verify failed: " + "\n" + JSON.stringify(obj) + "\n" + e + "\n" + e.stack);
+                              Ui.downloadDump("broken", obj);
                           }}
                      );
             if (Game.currentGoal == null || thm == null) {
