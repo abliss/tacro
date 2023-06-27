@@ -34,7 +34,20 @@ Error.stackTraceLimit = Infinity;
         }
         return recurse(clone(exp));
     }
-    
+
+    function sexp(exp) {
+        if (Array.isArray(exp)) {
+            return '(' + exp.map(sexp).join(' ') + ')';
+        } else {
+            var s = ""+exp;
+            return s.
+                replace("\\","\\\\").
+                replace(" ", "\\ ").
+                replace("(","\\(").
+                replace(")","\\)");
+        }
+    }
+
     function fingerprint(obj) {
         var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-";
         var str;
@@ -765,7 +778,7 @@ Error.stackTraceLimit = Infinity;
                         throw new Error(
                             "Freeness Violation:\n  Found var " + newVar +
                                 " (was " + freeVar +")\n free in exp " +
-                                JSON.stringify(newExp) +
+                                sexp(subTerms(work.Skin.TermNames, newExp)) +
                                 " (was " + freeList[0] +") at zpath " + 
                                 JSON.stringify(varsAppearing[newVar]));
                     }
