@@ -587,7 +587,7 @@ Error.stackTraceLimit = Infinity;
         function eachFreeVar(exps, freeMaps, cb) {
             // var -> number of levels bound
             var bound = {};
-            function visit(exp, path, root) {
+            function visit(exp, path, root){ 
                 if (!Array.isArray(exp)) {
                     if (!bound[exp]) {
                         cb(exp, clone(bound), path, root);
@@ -595,7 +595,7 @@ Error.stackTraceLimit = Infinity;
                 } else {
                     var freeMap = freeMaps[exp[0]];
                     var bindingVar;
-                    var nonbindingArgNum;
+                    var nonbindingArgNums=[];
                     if (!freeMap) {
                         throw new Error("no freemap for " + exp[0]);
                     }
@@ -605,12 +605,8 @@ Error.stackTraceLimit = Infinity;
                                 throw new Error("TODO: I don't yet support a term with multiple binding vars: " + exp[0]);
                             }
                             bindingVar = exp[i+1];
-                            if (bindingList.length > 1) {
-                                throw new Error("TODO: I don't yet support a bindingList with multiple entries: " + bindingList);
-                            } else if (bindingList.length == 1) {
-                                // TODO: test this codepath with [/]
-                                nonbindingArgNum = bindingList[0];
-                            }
+                            // TODO: test this codepath with [/]
+                            nonbindingArgNums = bindingList;
                             if (!bound.hasOwnProperty(bindingVar)) {
                                 bound[bindingVar] = 0;
                             }
@@ -618,9 +614,9 @@ Error.stackTraceLimit = Infinity;
                     });
                     exp.slice(1).forEach((x, i) => {
                         path.push(i+1);
-                        if (i != nonbindingArgNum) bound[bindingVar]++;
+                        if (nonbindingArgNums.indexOf(i)<0) bound[bindingVar]++;
                         visit(x, path, root);
-                        if (i != nonbindingArgNum) bound[bindingVar]--;
+                        if (nonbindingArgNums.indexOf(i)<0) bound[bindingVar]--;
                         path.pop();
                     });
                 }

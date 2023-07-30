@@ -22,7 +22,8 @@
                ["&harr;","&vert;","&sect;","&times;","&beta;"]},
        "FreeMaps":[[],[],[],[],[],[]],
            Tree:{Cmd:"defthm",Definiendum: 4}}
-,
+        ,
+        {"Core":[[],[0,[1,0,1],[2,[3,2,3,0],[3,2,3,1]]],[]],"Skin":{"TermNames":["&rarr;","&equals;","&harr;","&beta;"]},"FreeMaps":[[],[],[],[]]},
            {"Core":[[],
                     [0,0,[0,1,[1,2,[2,[3,2,3],
                                     [4,[5,[6,0],1,2],
