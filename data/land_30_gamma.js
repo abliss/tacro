@@ -50,13 +50,12 @@
         {"Core":[[],[0,[1,0,[2,1,2]],[3,[4,0,1,3,4,5],[4,0,2,3,4,5]]],[]],"Skin":{"TermNames":["&rarr;","&forall;","&equals;","&harr;","&gamma;"]},"FreeMaps":[[],[[]],[],[],[[2,3,4]]]},
 // [gamma,0,1,2,3,4] means applying 1(0) from 2, 3 times gets 4
     {"Core":[[],
-             [0,0,
-              [1,[2,1,2,3,[3],0],
-               [4,0,3]]],
+              [0,[1,1,2,3,[2],0],
+               [3,0,3]],
              []],                 
      "Skin":{"TermNames":[
-         "&forall;","&harr;","&gamma;","&Oslash;","&equals;"]},
-     "FreeMaps":[[[]],[],[[]],[],[]]},
+         "&harr;","&gamma;","&Oslash;","&equals;"]},
+     "FreeMaps":[[],[[]],[],[]]},
     
     {"Core":[[],[0,0,[1,1,[2,[3,2,3,4,5,1],[4,1,0]]]],[[3,0,1],[4,0,1,2],[5,0,1,2]]],"Skin":{"TermNames":["&exist;","&forall;","&harr;","&gamma;","&equals;"]},"FreeMaps":[[[]],[[]],[],[[]],[]]},
     
