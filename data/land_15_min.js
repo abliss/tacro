@@ -23,7 +23,12 @@
         {"Core":[[],[0,[1,0,[1,1,[0,[2,0,1],[3,2,3]]]],[4,[5,0,2],[5,1,3]]],[[2,1],[3,0]]],"Skin":{"TermNames":["&rarr;","&forall;","&equals;","&harr;","&le;","min"]},"FreeMaps":[[],[[]],[],[],[],[[]]]},
         {"Core":[[],[0,[1,0,[1,1,[0,[2,0,1],[3,2,3]]]],[2,[4,0,2],[4,1,3]]],[[2,1],[3,0]]],"Skin":{"TermNames":["&rarr;","&forall;","&equals;","&harr;","min"]},"FreeMaps":[[],[[]],[],[],[[]]]},
         {"Core":[[],[0,[1,0,[2,1,2]],[3,[4,0,1],[4,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&forall;","&harr;","&le;","min"]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[]],[],[],[[]]]},
-        {"Core":[[],[0,[1,0,[2,1,2]],[3,[4,0,1],[4,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&forall;","&harr;","&equals;","min"]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[]],[],[],[[]]]}
+        {"Core":[[],[0,[1,0,[2,1,2]],[3,[4,0,1],[4,0,2]]],[]],"Skin":{"TermNames":["&rarr;","&forall;","&harr;","&equals;","min"]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[]],[],[],[[]]]},
+
+        {"Core":[[],[0,[1,0,[2,1,[3,0,2]]],[3,[4,0,1],2]],[[2,0]]],"Skin":{"Name":"qR4FQ","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2"],"TermNames":["&rarr;","&forall;","&harr;","&equals;","min"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[]],[],[],[[]]]}
+
+
+        
     ],
 })
 
