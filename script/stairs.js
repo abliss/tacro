@@ -247,11 +247,12 @@
 
         function applyChild(argNum) {
             // TODO: PICKUP: undummy
+            var dumpStep;
             try {
                 var varMap = box.tree.getVarMap(Ui.Game.state.work);
                 var factPath = (Ui.Game.state.anchorPath ? [2, argNum] : [argNum]);
                 var anchors = Ui.Game.state.anchorPath ? [Ui.Game.state.anchorPath] : undefined;
-                var dumpStep =
+                dumpStep =
                     {func:"applyFact",
                      args: [Ui.Game.state.workPath,
                             Ui.Game.stripFact(fact),
@@ -274,7 +275,8 @@
             } catch (e) {
                 console.log("Error in applyFact: " + e);
                 console.log(e.stack);
-                Ui.message(e + " " + e.stack);
+                Ui.Game.save(dumpStep);
+                Ui.message("applyFact error: " + e);
             }
         }
 
@@ -688,6 +690,7 @@
                   function(dump) {
                       try {
                           Game.verifySolution(dump);
+                          //XXX Ui.downloadDump("interim", dump);
                           //console.log("Verified dump.")
                       } catch (e) {
                           Ui.message("dump verify failed: \n" + dump.walkName + "\n" + JSON.stringify(dump) + "\n" + e + "\n" + e.stack);
@@ -768,7 +771,7 @@
         } catch (e) {
             console.log("Error in ground: " + e);
             console.log(e.stack);
-            Ui.message(e);
+            Ui.message("Error in ground:" + e + " " + e.stack);
         }
     };
     Game.prototype.stripFact = function(fact) {
@@ -1046,17 +1049,21 @@
         }
     };
 
-
+    Game.prototype.assume = function(goal) {
+        const Game = this;
+        const Ui = this.Ui;
+        var thm = new Game.Fact(goal);
+        thm.Tree.Proof=[];
+        //thm.Tree.Cmd = 'stmt'
+        thm.setHyps([]);
+        var factFp = Ui.addToShooter(thm).local;
+        Game.currentLand().thms.push(factFp);
+    }
     Game.prototype.cheat = function(n) {
         const Game = this;
         const Ui = this.Ui;
         while (n > 0) {
-            var thm = new Game.Fact(Game.state.work);
-            thm.Tree.Proof=[];
-            //thm.Tree.Cmd = 'stmt'
-            thm.setHyps([]);
-            var factFp = Ui.addToShooter(thm).local;
-            Game.currentLand().thms.push(factFp);
+            Game.assume(Game.state.work);
             Ui.message("");
             Game.currentLand().goals.shift();
             Game.nextGoal();

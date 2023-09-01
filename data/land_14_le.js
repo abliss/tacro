@@ -53,7 +53,9 @@
         ,
         {"Core":[[],[0,[1,[2,0,1]],[3,[4,2,[2,0,[0,[3,[5,0],2],1]]],[4,3,[2,0,[0,[3,[5,0],3],1]]]]],[[1,2,3]]],"Skin":{"Name":"ohS5HB","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2","V3"],"TermNames":["&rarr;","&not;","&forall;","&le;","&upsilon;","&sect;"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[],[[]],[],[[]],[]]}
 
-
+        ,
+        {"Core":[[],[0,0,[1,1,[2,[3,2,1],[3,3,1]]]],[[2,1],[3,1]]],"Skin":{"TermNames":["&rarr;","&exist;","&and;","&le;"]},"FreeMaps":[[],[[]],[],[]]}
+        
     ],
 
 })

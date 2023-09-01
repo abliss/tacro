@@ -51,7 +51,8 @@ function verify(dump, goalMark, goalFp, solnNum) {
             if (!e.hasOwnProperty("definiens")) {
                 delete work.Tree.Proof;
                 delete work.Tree.Deps;
-                console.error(`error with work after step ${i}: ` + JSON.stringify(work));
+                step.args.shift();
+                console.error(`error with work after step ${i}: ` + JSON.stringify(step) + "\n" + JSON.stringify(work));
                 throw e;
             }
         }

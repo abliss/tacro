@@ -294,7 +294,7 @@ Error.stackTraceLimit = Infinity;
              * where A is a detachable arrow (typically, -> detached with axMp)
              *
              * @param gOp: which op maps to G
-             * @param gArg: which arg of G varies in the consequent
+             * @param gArg: which arg (1 or 2) of G varies in the consequent
              * @param uOp: which op maps to U
              * @param uArg: 1 if [U,[D,a,b],[D,a,c]]], 2 if [U,[D,a,c],[D,a,b]]] TODO???
              * @param dOp: which op maps to D
@@ -365,6 +365,7 @@ Error.stackTraceLimit = Infinity;
 
             function assertEqual(msgTag, thing1, thing2) {
                 if (JSON.stringify(thing1) !== JSON.stringify(thing2)) {
+                    debugger;
                     throw new Error("Assertion error: " + msgTag +
                                     "\nWant:  " + JSON.stringify(thing1) +
                                     "\nHave:  " + JSON.stringify(thing2));
@@ -392,11 +393,7 @@ Error.stackTraceLimit = Infinity;
                 var toolAnchor = zpath(pusp.tool, pusp.toolAnchorPath);
                 var goalAnchor = zpath(pusp.goal, pusp.goalAnchorPath);
 
-                var want = JSON.stringify(toolAnchor);
-                var have = JSON.stringify(goalAnchor);
-                if (want != have) {
-                    throw new Error("Anchor mismatch: want " + want + " = " + have);
-                }
+                assertEqual("Anchor mismatch", toolAnchor, goalAnchor)
                 if ((pusp.toolAnchorPath.length != 1) ||
                     (pusp.toolAnchorPath[0] != 1)) {
                     throw new Error("Fancy tool anchor not implemented");
@@ -413,9 +410,9 @@ Error.stackTraceLimit = Infinity;
                     nameDep(work, this.fact),
                     nameDep(work, this.axMp)]);
                 var subbed = globalSub(this.fact, varMap, work);
-                var popped = pusp.stack.pop();
+                var popped = pusp.stackPop();
                 assertEqual("stack dist", subbed[1], popped);
-                pusp.stack.push(subbed[2]);
+                pusp.stackPush(subbed[2]);
 
                 pusp.goalPath.pop();
                 var goalParent = zpath(pusp.goal, pusp.goalPath);
@@ -500,7 +497,7 @@ Error.stackTraceLimit = Infinity;
                     for (var i = 0; i < numMandHyps; i++) {
                         varMap[i] = pusp.newSteps[firstMandHyp + i];
                     }
-                    pusp.stack.push(globalSub(this.fact, varMap, work));
+                    pusp.stackPush(globalSub(this.fact, varMap, work));
                     if (DEBUG) console.log("  pusp: ", JSON.stringify(pusp));
                 }
                 var parentArrowN = work.nameTerm(this.parentArrow.name,
@@ -541,9 +538,9 @@ Error.stackTraceLimit = Infinity;
                         nameDep(work, dstPU.fact),
                         nameDep(work, dstPU.axMp)]);
                     var subbed = globalSub(dstPU.fact, {0:step1, 1:nextTool ,2:toolAnchor}, work);
-                    var popped = pusp.stack.pop();
+                    var popped = pusp.stackPop();
                     assertEqual("stack dstPU", subbed[1], popped);
-                    pusp.stack.push(subbed[2]);
+                    pusp.stackPush(subbed[2]);
                     if (DEBUG) console.log("  pusp: ", JSON.stringify(pusp));
                     var dstParentArrowN = work.nameTerm(dstPU.parentArrow.name,
                                                         dstPU.parentArrow.freeMap);
@@ -556,21 +553,21 @@ Error.stackTraceLimit = Infinity;
                                       [pusp.tool[0],   // TODO: should be ?
                                        toolAnchor, step1],
                                       newNextTool];
-                    assertEqual("dst detach", topOfStack, pusp.stack.pop());
+                    assertEqual("dst detach", topOfStack, pusp.stackPop());
                     var detached = dstDetacher.detach(topOfStack, work);
                     pusp.pushNewSteps("detached:", detached.newSteps);
-                    var popped = pusp.stack.pop();
+                    var popped = pusp.stackPop();
                     assertEqual("dst detached", detached.result, popped);
-                    pusp.stack.push(detached.nowOnStack);
+                    pusp.stackPush(detached.nowOnStack);
                     nextTool = newNextTool;
                 } else {
                     pusp.pushNewSteps("axmp:", [nameDep(work, axMp)]);
-                    var top = pusp.stack.pop();
-                    var popped = pusp.stack.pop();
+                    var top = pusp.stackPop();
+                    var popped = pusp.stackPop();
                     // TODO: PICKUP: use detacher intrface instead
                     if (DEBUG) console.log("  work: ", JSON.stringify(work));
                     assertEqual("axmp", top[3-detacher.argNum], popped);
-                    pusp.stack.push(top[detacher.argNum]);
+                    pusp.stackPush(top[detacher.argNum]);
                 }
                 pusp.tool = nextTool;
                 pusp.toolPath = concatArr(toolPathPrefix, [nextToolArg]);
@@ -1093,7 +1090,13 @@ Error.stackTraceLimit = Infinity;
             // PushUpScratchPad
             var pusp = {};
             pusp.newSteps = [];
-            pusp.stack = []; // Only used for assertions
+            var stack = []; // Only used for assertions
+            pusp.stackPush = function(x) {
+                if (fingerprint(x) === 'Yhgen.') {
+                    debugger;
+                }
+                return stack.push(x);}
+            pusp.stackPop = function(x) { return stack.pop(x);}
             pusp.pushNewSteps = function(debugTag, steps) {
                 pusp.newSteps.push.apply(pusp.newSteps, steps);
                 if (DEBUG) {
@@ -1112,7 +1115,7 @@ Error.stackTraceLimit = Infinity;
 
             // #. invoke sequence of pushup theorems, ensuring presence in Deps
             pusp.tool = globalSub(fact, varMap, work);       // what's on the stack
-            pusp.stack.push(pusp.tool);
+            pusp.stackPush(pusp.tool);
             pusp.toolPath = clone(factPath);                 // path to subexp A
             pusp.goal = clone(work.Core[Fact.CORE_HYPS][0]); // what to prove
             pusp.goalPath = clone(workPath);                 // path to subexp B
@@ -1449,7 +1452,7 @@ Error.stackTraceLimit = Infinity;
                         var stepsToInsert = [x, greaseDep];
                         var opNum = work.nameTerm(greaseOp,
                                                   fact.FreeMaps[stmt[1][0]]);
-                        pusp.stack.push([opNum, x, pusp.stack.pop()]);
+                        pusp.stackPush([opNum, x, pusp.stackPop()]);
                         if (pusp.toolAnchorPath != undefined) {
                             // grease must be distributed
                             // TODO: this is super fragile
@@ -1459,7 +1462,7 @@ Error.stackTraceLimit = Infinity;
                                 JSON.stringify([rarr, greaseOp]);
                             var dist = scheme.factsByMark[mark];
                             if (!dist) throw new Error("No dist by mark " + mark);
-                            var top = pusp.stack.pop();
+                            var top = pusp.stackPop();
                             stepsToInsert.push(
                                 x,
                                 top[2][1],
@@ -1491,7 +1494,7 @@ Error.stackTraceLimit = Infinity;
                                 nameDep(work, syl),
                                 axmp, axmp
                             );
-                            pusp.stack.push([pusp.tool[0],
+                            pusp.stackPush([pusp.tool[0],
                                              top[2][1],
                                              [top[0], top[1], top[2][2]]]);
                         }
