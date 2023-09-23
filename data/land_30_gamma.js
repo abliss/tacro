@@ -57,7 +57,7 @@
         {"Core":[[],[0,[1,0,[2,1,[1,2,[0,[3,2,0],[3,3,1]]]]],[2,4,[4,2,3,5,6,4]]],[[3,0,1,4],[5,1,4],[6,4]]],"Skin":{"Name":"hUxM2B","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2","V3","V4","V5","V6"],"TermNames":["&rarr;","&forall;","&exist;","&equals;","&gamma;"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[]],[[]],[],[[2,3,4]]]}
 
 ,
-{"Core":[[],[0,[1,0,[2,1,[1,2,[0,[3,2,0],[3,3,1]]]]],[2,4,[1,5,[4,[5,2,3,6,7,5],[3,5,4]]]]],[[3,4,5],[6,2,4,5],[7,2,4,5]]],"Skin":{"Name":"mv0dk.","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2","V3","V4","V5","V6","V7"],"TermNames":["&rarr;","&forall;","&exist;","&equals;","&harr;","&gamma;"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[]],[[]],[],[],[[2,3,4]]]}
+        {"Core":[[],[0,[1,0,[2,1,[1,2,[0,[3,2,0],[3,3,1]]]]],[2,4,[1,5,[4,[5,2,3,6,7,5],[3,5,4]]]]],[[3,4,5],[6,1,2,4,5],[7,2,4,5]]],"Skin":{"Name":"mv0dk.","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2","V3","V4","V5","V6","V7"],"TermNames":["&rarr;","&forall;","&exist;","&equals;","&harr;","&gamma;"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[]],[[]],[],[],[[2,3,4]]]}
 
     ]
 })
