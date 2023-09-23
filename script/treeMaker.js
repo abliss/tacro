@@ -94,7 +94,7 @@
                         v=>root.fact.Skin.VarNames[v]).join("");
                 }
             });
-            this.div.className += " name" + varNum;            
+            this.div.className += " name" + (varNum%100); 
             this.span = this.div.appendChild(this.makeVar(text));
             this.span.className += " makeVar";
             this.freeListSpan = this.div.appendChild(document.createElement("span"));

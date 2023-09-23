@@ -80,8 +80,13 @@
         Ui.termToPane = {};
         Ui.shooterTreeWidth = 16; // XXXX in VW. sync with stairs.less
         Ui.workTreeWidth = 50; // XXXX in VW. sync with stairs.less
+        Ui.verbosity = 0;
     }
-
+    Ui.prototype.logX = function(msg) {
+        if (this.verbosity > 0) {
+            console.log("@" + (new Date()-0) + ": " + msg);
+        }
+    }
     Ui.prototype.makeThmBox = function(opts) {
         const Ui = this;
         if (opts.editable) {
@@ -247,6 +252,7 @@
 
         function applyChild(argNum) {
             // TODO: PICKUP: undummy
+            Ui.logX("applyChild start");
             var dumpStep;
             try {
                 var varMap = box.tree.getVarMap(Ui.Game.state.work);
@@ -260,24 +266,30 @@
                             varMap,
                             anchors]
                     };
+                Ui.logX("applyFact start");
                 var newWork = Ui.Game.engine.applyFact(Ui.Game.state.work, Ui.Game.state.workPath,
                                                     fact,
                                                     factPath,
                                                     varMap,
-                                                    anchors);
+                                                       anchors);
+                Ui.logX("applyFact end");
                 Ui.message("");
                 Ui.Game.state.url = "";
-                Ui.Game.setWorkPath([]);
-                Ui.Game.setAnchorPath();
+                //Ui.Game.setWorkPath([]);
+                //Ui.Game.setAnchorPath();
                 Ui.Game.setWork(newWork);
+                Ui.logX("setWork end");
                 Ui.Game.save(dumpStep);
+                Ui.logX("save end");
                 Ui.redraw();
+                Ui.logX("redraw end");
             } catch (e) {
                 console.log("Error in applyFact: " + e);
                 console.log(e.stack);
                 Ui.Game.save(dumpStep);
                 Ui.message("applyFact error: " + e);
             }
+            Ui.logX("applyChild end");
         }
 
         // Apply buttons (left and right)
@@ -487,11 +499,17 @@
                 if (logFp) {
                     // restore
                     Ui.Game.loadLogFp(logFp, function() {
+                        var numLands = Ui.Game.state.lands.length;
                         Ui.Game.state.lands.forEach(function(land) {
+                            var thms = land.thms.length;
                             land.thms.forEach(function(thmFp) {
                                 Ui.Game.storage.fpLoad("fact", thmFp, function(thmObj) {
                                     Ui.addToShooter(thmObj, land);
-                                    Ui.redraw();
+                                    if (--thms <= 0) {
+                                        if (--numLands <= 0) {
+                                            Ui.redraw();
+                                        };
+                                    }
                                 });
                             });
                         });
@@ -566,7 +584,34 @@
         Game.reflexives = {};
         Game.thms = {};
         Game.currentGoal = null;
+        Game.verifyStep = true;
     }
+    Game.prototype.rewind = function(n, logObj) {
+        var Game = this;
+        var parentFp = logObj.parent;
+        if (parentFp) {
+            if (n > 0) {
+                Game.storage.fpLoad("log", parentFp, function(logObj) {
+                    Game.rewind(n - 1 ,logObj)
+                });
+            } else {
+                Game.loadLogFp(parentFp);
+            }
+        };
+    };
+    Game.prototype.forward = function(n, logObj) {
+        var Game = this;
+        Game.storage.local.getItem(
+            "childOf/" + logObj.parent, function(childLogFp){
+                if (n <= 0) {
+                    Ui.Game.loadLogFp(childLogFp);
+                } else {
+                    Game.storage.fpLoad("log", logFp, function(logObj) {
+                        Game.forward(n-1, logObj);
+                    });
+                }
+            });
+    };
     Game.prototype.setAnchorPath = function(anchorPath) {
         const Game = this;
         const Ui = this.Ui;
@@ -869,13 +914,20 @@
             var idFact = Game.reflexives[k];
             try {
                 // TODO: should not be using exceptions for this
-                var workClone = new Game.Fact(JSON.parse(JSON.stringify(Game.state.work)));
+                Ui.logX("clone start: " + k);
+                var workClone = new Game.Fact(
+                    {Core: JSON.parse(JSON.stringify(Game.state.work.Core)),
+                     FreeMaps: Game.state.work.FreeMaps
+                    }) ;
+                Ui.logX("clone end: " + k);
                 Game.engine.getMandHyps(workClone, [], idFact, [], null, true);
+                Ui.logX("getMandHyps: " + k);
                 ground.removeAttribute('disabled');
                 ground.className = "enabled";
                 ground.onclick = Game.groundOut.bind(Game, idFact);
                 break;
             } catch (e) {
+                Ui.logX("caught " + k);
                 // can't ground this way
                 // TODO: need some way to tell the user why. Especially for
                 // definition dummy var issues.
@@ -886,34 +938,42 @@
     Game.prototype.setWork = function(work) {
         const Game = this;
         const Ui = this.Ui;
-        var verified = Game.verifyWork(work);
-        // Check for drift from planned FreeVar set. It would be nice to keep these
-        // in lockstep but that requires more sophisticted dummy-tracking than we
-        // currently do.
-        if (Game.currentGoal) {
-            var goalFree = Game.currentGoal.Core[Game.Fact.CORE_FREE]
-            // The engine sometimes spits out spurious FreeVar constraints of one
-            // bindingVar in another. Trim them out before comparing. See the proof
-            // of finds for example.
-            var bindingVars = verified ? verified.bindingVars : {};
-            var workFree = work.Core[Game.Fact.CORE_FREE]
-                .filter(f=>!(f[0] in bindingVars));
-            var expected = JSON.stringify(goalFree);
-            var actual = JSON.stringify(workFree);
-            if (expected != actual) {
-                Ui.message('FreeVar drift: want ' + expected + " have " + actual);
+        Ui.logX("verifyStep start");
+        if (Game.verifyStep) {
+            var verified = Game.verifyWork(work);
+            // Check for drift from planned FreeVar set. It would be nice to keep these
+            // in lockstep but that requires more sophisticted dummy-tracking than we
+            // currently do.
+            if (Game.currentGoal) {
+                var goalFree = Game.currentGoal.Core[Game.Fact.CORE_FREE]
+                // The engine sometimes spits out spurious FreeVar constraints of one
+                // bindingVar in another. Trim them out before comparing. See the proof
+                // of finds for example.
+                var bindingVars = verified ? verified.bindingVars : {};
+                var workFree = work.Core[Game.Fact.CORE_FREE]
+                    .filter(f=>!(f[0] in bindingVars));
+                var expected = JSON.stringify(goalFree);
+                var actual = JSON.stringify(workFree);
+                if (expected != actual) {
+                    Ui.message('FreeVar drift: want ' + expected + " have " + actual);
+                }
             }
         }
+        Ui.logX("verifyStep end");
         Game.state.work = work;
         Game.state.workHash = Game.engine.fingerprint(work);
+        Ui.logX("fingerprint end");
         Game.updateGroundButton();
+        Ui.logX("updtaeground end");
         // TODO: might we need an extra var here?
         Game.state.specifyOptions.Vars = work.Skin.VarNames;
         Game.chat.setWork(work);
+        Ui.logX("chatsetwork end");
         // TODO: XXX: will be slow
         for (var k in Ui.factToShooterBox) if (Ui.factToShooterBox.hasOwnProperty(k)) {
             Ui.factToShooterBox[k].box.tree.onchange();
         }
+        Ui.logX("onchange end");
     };
 
     Game.prototype.save = function(optDumpStep) {
@@ -934,7 +994,9 @@
             }
             Ui.history.pushState(logFp, Game.STATE_KEY, "#s=" + stateFp + "/" + Game.state.url);
         }
-        Game.verifyDump();
+        if (Game.verifyStep) {
+            Game.verifyDump();
+        }
     };
     var walkName = 0;
     Game.prototype.dump = function(logObj1, finishedFact, callback) {
@@ -1020,7 +1082,7 @@
         Game.storage.fpLoad("log", logFp, function(logObj) {
             Game.storage.fpLoad("state", logObj.state, function(stateObj) {
                 Game.log = {parent:logFp};
-                Game.expireOldStates(Game.MAX_STATES, logObj);
+                //XXXX Game.expireOldStates(Game.MAX_STATES, logObj);
                 Game.loadState(stateObj);
                 // TODO: should popstate? double-undo problem.
                 Ui.history.pushState(logFp, "state",
