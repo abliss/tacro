@@ -44,7 +44,7 @@
 ,
         {"Core":[[],[0,[1,0,[2,1,2]],[3,[4,0,1,3,4,5],[4,0,2,3,4,5]]],[]],"Skin":{"TermNames":["&rarr;","&forall;","&equals;","&harr;","&gamma;"]},"FreeMaps":[[],[[]],[],[],[[2,3,4]]]},
 // [gamma,0,1,2,3,4] means applying 1(0) from 2, 3 times, gets to 4
-        {"Core":[[],[0,[1,1,2,3,[2],4],[3,4,3]],[]],
+        {"Core":[[],[0,[1,0,1,2,[2],3],[3,3,2]],[]],
          "Skin":{"TermNames":["&rarr;","&gamma;","&Oslash;","&equals;"]},"FreeMaps":[[],[[2,3,4]],[],[]]},
 
 {"Core":[[],[0,[1,0,1,2,[2,3],4],[3,5,[4,[1,0,1,2,3,5],[5,0,[0,[6,0,5],[6,1,4]]]]]],[[1,5],[2,0,5],[3,0,5],[4,0,5]]],"Skin":{"Name":"gHAazB","HypNames":[],"DepNames":[],"VarNames":["V0","V1","V2","V3","V4","V5"],"TermNames":["&rarr;","&gamma;","&sect;","&exist;","&and;","&forall;","&equals;"],"Delimiters":[]},"Tree":{"Cmd":"stmt","Deps":[],"Proof":[]},"FreeMaps":[[],[[2,3,4]],[],[[]],[],[[]],[]]}
