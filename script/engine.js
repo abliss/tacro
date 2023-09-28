@@ -260,7 +260,7 @@ Error.stackTraceLimit = Infinity;
               Result: a PushUp wrapping a fact whose core stmt is of this form:
               [A,[T,a,b],
               [P,[G, ..., a, ... ],
-              [G, ..., b, ... ]]]
+                 [G, ..., b, ... ]]]
               where A is a detachable arrow having an ax-mp equivalent (usually, -> or <->) exposed through the pushup
               and P is some "parent arrow", often the same as T (but not if crossing a kind boundary, e.g. T is = and G is < and P is <->)
               and g tells which arg of G changes.

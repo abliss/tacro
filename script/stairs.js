@@ -917,6 +917,7 @@
                 Ui.logX("clone start: " + k);
                 var workClone = new Game.Fact(
                     {Core: JSON.parse(JSON.stringify(Game.state.work.Core)),
+                     Skin: JSON.parse(JSON.stringify(Game.state.work.Skin)),
                      FreeMaps: Game.state.work.FreeMaps
                     }) ;
                 Ui.logX("clone end: " + k);
@@ -927,7 +928,7 @@
                 ground.onclick = Game.groundOut.bind(Game, idFact);
                 break;
             } catch (e) {
-                Ui.logX("caught " + k);
+                Ui.logX("caught " + e);
                 // can't ground this way
                 // TODO: need some way to tell the user why. Especially for
                 // definition dummy var issues.
@@ -1011,6 +1012,11 @@
         });
         var steps = [];
         function walkLogObj(walkName, fp, logObj) {
+            //Ui.message("XXXX " + steps.length);
+            if (logObj === undefined) {
+                //Ui.message("Incomplete dump.");
+                //callback(({walkName, goal: undefined, steps, deps}));
+            }
             var step = logObj.step;
             if (step && step.goal) {
                 callback(({walkName, goal: step.goal, steps, deps}));

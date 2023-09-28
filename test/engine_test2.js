@@ -33,7 +33,7 @@ function verify(dump, goalMark, goalFp, solnNum) {
     dump.deps.forEach(function(dep) {engine.onAddFact(new Fact(dep))});
     dump.deps.forEach(function(dep) {engine.onAddFact(new Fact(dep))});
     var work = engine.canonicalize(startWork(dump.goal));
-    dump.steps.forEach(function(step, i) {
+    dump.steps.forEach(function(step, stepNum) {
         step.args = step.args.map(function(arg){
             if (arg && arg.Core) {
                 return new Fact(arg);
@@ -52,7 +52,7 @@ function verify(dump, goalMark, goalFp, solnNum) {
                 delete work.Tree.Proof;
                 delete work.Tree.Deps;
                 step.args.shift();
-                console.error(`error with work after step ${i}: ` + JSON.stringify(step) + "\n" + JSON.stringify(work));
+                console.error(`error with work after step ${stepNum}: ` + JSON.stringify(step) + "\n" + JSON.stringify(work));
                 throw e;
             }
         }
@@ -81,7 +81,7 @@ function check(land) {
         marks[mark] = 1;
     });
 
-    land.goals.forEach((goal, stepNum)=>{
+    land.goals.forEach((goal, goalNum)=>{
         goal.Core[Fact.CORE_HYPS]=[]; // remove hyps from defthms
         var goalMark = He.decode((new Fact(goal)).getMark());
         var goalFp = Engine.fingerprint(goalMark);
@@ -107,7 +107,7 @@ function check(land) {
                     });
                     verify(soln, goalMark, goalFp, solnNum);
                 } catch (e) {
-                    e.message = `Checking ${goalFp} ${solnNum} step ${stepNum}` + e.message;
+                    e.message = `Checking ${goalFp} ${solnNum} ` + e.message;
                     throw e;
                 }
             });

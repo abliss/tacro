@@ -199,6 +199,26 @@ async function test5() { // test double rewind
     }
 }
 
+async function test6() {
+    const scratchDir = "./scratch5"
+    require('fs').rmdirSync(scratchDir, {recursive: true});
+    const {Ui, Game} = require('../script/stairs.js');
+    const bigState = eval("("+require('fs').readFileSync('tacro-state.json','utf8')+")");
+    const ui = new Ui({});
+
+    ui.startup({
+        redrawDelay:1,
+        scratchDir,
+    });
+    ui.Game.verifyStep = false;
+    ui.Game.loadState(bigState);
+    ui.Game.auto=true;
+
+    await sleep(0.5);
+    const ax1Box = ui.factToShooterBox[ax1Mark].box;
+    ax1Box.deployButtons[2].onclick();
+}
+
 async function testAll() {
     await test1();
     await sleep(20);
@@ -209,6 +229,7 @@ async function testAll() {
     await test4();
     await test5();
     await sleep(20);
+    await test6();
 }
 
 testAll();
